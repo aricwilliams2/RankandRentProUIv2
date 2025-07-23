@@ -8,7 +8,8 @@ const initialFilters: Filters = {
 };
 
 // API Configuration - Updated for local development
-const API_BASE_URL = "https://www.rankandrenttool.com/api";
+//const API_BASE_URL = "https://www.rankandrenttool.com/api";
+const API_BASE_URL = "http://127.0.0.1:8000/api";
 
 // Transform API lead data to frontend format
 const transformAPILeadToFrontend = (apiLead: any): Lead => {
@@ -16,9 +17,9 @@ const transformAPILeadToFrontend = (apiLead: any): Lead => {
     id: apiLead.id,
     name: apiLead.name,
     email: apiLead.email,
-    phone: apiLead.phone || '',
+    phone: apiLead.phone || "",
     company: apiLead.company,
-    website: apiLead.website || '',
+    website: apiLead.website || "",
     status: apiLead.status,
     reviews: apiLead.reviews || 0,
     // Handle contacted as string "1", number 1, or boolean true
@@ -26,7 +27,7 @@ const transformAPILeadToFrontend = (apiLead: any): Lead => {
     callLogs: [], // Call logs will be managed separately
     createdAt: new Date(apiLead.created_at),
     updatedAt: new Date(apiLead.updated_at),
-    city: apiLead.city || 'Unknown', // Handle null city
+    city: apiLead.city || "Unknown", // Handle null city
     follow_up_at: apiLead.follow_up_at,
     notes: apiLead.notes,
   };
@@ -35,22 +36,22 @@ const transformAPILeadToFrontend = (apiLead: any): Lead => {
 // Transform lead data for API (frontend -> backend format)
 const transformLeadForAPI = (lead: Lead, fieldsToUpdate?: string[]) => {
   const apiData: any = {};
-  
+
   // If specific fields are provided, only include those
   if (fieldsToUpdate) {
-    fieldsToUpdate.forEach(field => {
+    fieldsToUpdate.forEach((field) => {
       switch (field) {
-        case 'contacted':
+        case "contacted":
           apiData.contacted = lead.contacted;
           break;
-        case 'notes':
+        case "notes":
           apiData.notes = lead.notes;
           break;
-        case 'follow_up_at':
+        case "follow_up_at":
           apiData.follow_up_at = lead.follow_up_at;
           break;
-        case 'city':
-          apiData.city = lead.city === 'Unknown' ? null : lead.city;
+        case "city":
+          apiData.city = lead.city === "Unknown" ? null : lead.city;
           break;
         // Add other fields as needed
       }
@@ -65,7 +66,7 @@ const transformLeadForAPI = (lead: Lead, fieldsToUpdate?: string[]) => {
     apiData.status = lead.status;
     apiData.reviews = lead.reviews;
     apiData.contacted = lead.contacted;
-    apiData.city = lead.city === 'Unknown' ? null : lead.city;
+    apiData.city = lead.city === "Unknown" ? null : lead.city;
     apiData.follow_up_at = lead.follow_up_at;
     apiData.notes = lead.notes;
   }
@@ -97,7 +98,7 @@ const fetchLeadsAPI = async (): Promise<Lead[]> => {
 
       const paginatedResponse = await response.json();
       console.log(`Page ${currentPage} response:`, paginatedResponse);
-      
+
       // Extract leads from the 'data' property
       const pageLeads = paginatedResponse.data.map(transformAPILeadToFrontend);
       allLeads = [...allLeads, ...pageLeads];
@@ -120,7 +121,7 @@ const updateLeadAPI = async (lead: Lead, fieldsToUpdate?: string[]) => {
   try {
     const leadData = transformLeadForAPI(lead, fieldsToUpdate);
     console.log(`Updating lead ${lead.id} with data:`, leadData);
-    
+
     const response = await fetch(`${API_BASE_URL}/leads/${lead.id}`, {
       method: "PUT", // Laravel API uses PUT for updates
       headers: {
@@ -149,7 +150,7 @@ const updateLeadAPI = async (lead: Lead, fieldsToUpdate?: string[]) => {
 const createLeadAPI = async (leadData: Partial<Lead>) => {
   try {
     console.log("Creating new lead with data:", leadData);
-    
+
     const response = await fetch(`${API_BASE_URL}/leads`, {
       method: "POST",
       headers: {
@@ -159,11 +160,11 @@ const createLeadAPI = async (leadData: Partial<Lead>) => {
       body: JSON.stringify({
         name: leadData.name,
         email: leadData.email,
-        phone: leadData.phone || '',
+        phone: leadData.phone || "",
         company: leadData.company,
-        website: leadData.website || '',
+        website: leadData.website || "",
         city: leadData.city || null,
-        status: leadData.status || 'New',
+        status: leadData.status || "New",
         notes: leadData.notes,
         reviews: leadData.reviews || 0,
         contacted: leadData.contacted || false,
@@ -189,7 +190,7 @@ const createLeadAPI = async (leadData: Partial<Lead>) => {
 const deleteLeadAPI = async (leadId: string) => {
   try {
     console.log(`Deleting lead ${leadId}...`);
-    
+
     const response = await fetch(`${API_BASE_URL}/leads/${leadId}`, {
       method: "DELETE",
       headers: {
@@ -236,7 +237,7 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Create areas from API data (group by city)
   const areas = useMemo<AreaData[]>(() => {
     const cityGroups = allLeads.reduce((acc, lead) => {
-      const city = lead.city || 'Unknown';
+      const city = lead.city || "Unknown";
       if (!acc[city]) {
         acc[city] = [];
       }
@@ -351,7 +352,7 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       // Update API first - only send the contacted field
-      await updateLeadAPI(updatedLead, ['contacted']);
+      await updateLeadAPI(updatedLead, ["contacted"]);
 
       // Update local state on success
       setAllLeads((prevLeads) => prevLeads.map((lead) => (lead.id === id ? updatedLead : lead)));
@@ -383,7 +384,7 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       // Update API first - send contacted status and notes
-      await updateLeadAPI(updatedLead, ['contacted', 'notes']);
+      await updateLeadAPI(updatedLead, ["contacted", "notes"]);
 
       // Update local state on success
       setAllLeads((prevLeads) => prevLeads.map((lead) => (lead.id === leadId ? updatedLead : lead)));
@@ -415,7 +416,7 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       // Update API first - send notes if they were updated
-      const fieldsToUpdate = updateData.notes ? ['notes'] : [];
+      const fieldsToUpdate = updateData.notes ? ["notes"] : [];
       if (fieldsToUpdate.length > 0) {
         await updateLeadAPI(updatedLead, fieldsToUpdate);
       }

@@ -1,46 +1,21 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Button,
-  Card,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  IconButton,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField,
-  Typography,
-  Chip,
-  Tooltip,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Divider,
-} from '@mui/material';
-import { Plus, Pencil, Trash2, Globe, Mail, Phone, History, MessageCircle, PhoneCall, StickyNote } from 'lucide-react';
-import type { Client } from '../types';
+import React, { useEffect, useState } from "react";
+import { Box, Button, Card, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography, Chip, Tooltip, List, ListItem, ListItemText, ListItemIcon, Divider } from "@mui/material";
+import { Plus, Pencil, Trash2, Globe, Mail, Phone, History, MessageCircle, PhoneCall, StickyNote } from "lucide-react";
+import type { Client } from "../types";
 
 // Mock data - replace with actual API calls
 const initialClients: Client[] = [
   {
-    id: '1',
-    name: 'Acme Corporation',
-    email: 'contact@acme.com',
-    phone: '(555) 123-4567',
+    id: "1",
+    name: "Acme Corporation",
+    email: "contact@acme.com",
+    phone: "(555) 123-4567",
     websites: [
       {
-        id: '1',
-        domain: 'acmeplumbing.com',
-        niche: 'Plumbing',
-        status: 'active',
+        id: "1",
+        domain: "acmeplumbing.com",
+        niche: "Plumbing",
+        status: "active",
         monthlyRevenue: 2500,
         phoneNumbers: [],
         leads: [],
@@ -49,43 +24,43 @@ const initialClients: Client[] = [
           backlinks: 150,
           organicKeywords: 500,
           organicTraffic: 2000,
-          topKeywords: ['plumbing', 'emergency plumber'],
-          competitors: ['competitor1.com'],
+          topKeywords: ["plumbing", "emergency plumber"],
+          competitors: ["competitor1.com"],
           lastUpdated: new Date(),
         },
         createdAt: new Date(),
         updatedAt: new Date(),
-      }
+      },
     ],
     communicationHistory: [
       {
-        id: '1',
-        clientId: '1',
-        type: 'call',
-        content: 'Discussed website rental terms - Client interested in 6-month contract',
+        id: "1",
+        clientId: "1",
+        type: "call",
+        content: "Discussed website rental terms - Client interested in 6-month contract",
         createdAt: new Date(),
-        updatedBy: 'system',
+        updatedBy: "system",
       },
       {
-        id: '2',
-        clientId: '1',
-        type: 'email',
-        content: 'Sent proposal and pricing details',
-        createdAt: new Date('2024-03-16T14:20:00'),
-        updatedBy: 'system',
+        id: "2",
+        clientId: "1",
+        type: "email",
+        content: "Sent proposal and pricing details",
+        createdAt: new Date("2024-03-16T14:20:00"),
+        updatedBy: "system",
       },
       {
-        id: '3',
-        clientId: '1',
-        type: 'note',
-        content: 'Client requested follow-up call next week',
-        createdAt: new Date('2024-03-17T09:15:00'),
-        updatedBy: 'system',
+        id: "3",
+        clientId: "1",
+        type: "note",
+        content: "Client requested follow-up call next week",
+        createdAt: new Date("2024-03-17T09:15:00"),
+        updatedBy: "system",
       },
     ],
     createdAt: new Date(),
     updatedAt: new Date(),
-  }
+  },
 ];
 
 export default function Clients() {
@@ -94,9 +69,9 @@ export default function Clients() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
+    name: "",
+    email: "",
+    phone: "",
   });
 
   const handleOpen = (client?: Client) => {
@@ -110,9 +85,9 @@ export default function Clients() {
     } else {
       setSelectedClient(null);
       setFormData({
-        name: '',
-        email: '',
-        phone: '',
+        name: "",
+        email: "",
+        phone: "",
       });
     }
     setOpen(true);
@@ -133,13 +108,13 @@ export default function Clients() {
     setSelectedClient(null);
   };
 
-  const getHistoryIcon = (type: 'email' | 'call' | 'note') => {
+  const getHistoryIcon = (type: "email" | "call" | "note") => {
     switch (type) {
-      case 'email':
+      case "email":
         return <MessageCircle size={20} />;
-      case 'call':
+      case "call":
         return <PhoneCall size={20} />;
-      case 'note':
+      case "note":
         return <StickyNote size={20} />;
     }
   };
@@ -147,15 +122,17 @@ export default function Clients() {
   const handleSubmit = () => {
     if (selectedClient) {
       // Update existing client
-      setClients(clients.map(client =>
-        client.id === selectedClient.id
-          ? {
-              ...client,
-              ...formData,
-              updatedAt: new Date(),
-            }
-          : client
-      ));
+      setClients(
+        clients.map((client) =>
+          client.id === selectedClient.id
+            ? {
+                ...client,
+                ...formData,
+                updatedAt: new Date(),
+              }
+            : client
+        )
+      );
     } else {
       // Add new client
       const newClient: Client = {
@@ -172,20 +149,68 @@ export default function Clients() {
   };
 
   const handleDelete = (id: string) => {
-    setClients(clients.filter(client => client.id !== id));
+    setClients(clients.filter((client) => client.id !== id));
   };
+
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     const url = "https://backlinks-and-keywords-fetcher.p.rapidapi.com/seolizer";
+
+  //     const options = {
+  //       method: "POST",
+  //       headers: {
+  //         "x-rapidapi-key": "f995f06a8amsh659af22d56e5216p19c1bejsn33130b55a44f",
+  //         "x-rapidapi-host": "backlinks-and-keywords-fetcher.p.rapidapi.com",
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({
+  //         approute: "domain_backlinks",
+  //         domain: "searchengineland.com",
+  //       }),
+  //     };
+
+  //     try {
+  //       const response = await fetch(url, options);
+  //       const result = await response.json();
+  //       console.log("Backlink Data:", result);
+  //     } catch (error) {
+  //       console.error("API error:", error);
+  //     }
+  //   };
+
+  //   fetchData();
+  // }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const url = "https://ahrefs-dr-rank-checker.p.rapidapi.com/keyword-generator?keyword=fishing&country=us";
+      const options = {
+        method: "GET",
+        headers: {
+          "x-rapidapi-key": "f995f06a8amsh659af22d56e5216p19c1bejsn33130b55a44f",
+          "x-rapidapi-host": "ahrefs-dr-rank-checker.p.rapidapi.com",
+        },
+      };
+
+      try {
+        const response = await fetch(url, options);
+        const result = await response.json();
+        console.log("Backlink Data:", result);
+      } catch (error) {
+        console.error("API error:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
         <Typography variant="h4" fontWeight="bold">
           Clients
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<Plus size={20} />}
-          onClick={() => handleOpen()}
-        >
+        <Button variant="contained" startIcon={<Plus size={20} />} onClick={() => handleOpen()}>
           Add Client
         </Button>
       </Box>
@@ -209,7 +234,7 @@ export default function Clients() {
                   <Typography variant="subtitle2">{client.name}</Typography>
                 </TableCell>
                 <TableCell>
-                  <Box sx={{ display: 'flex', gap: 2 }}>
+                  <Box sx={{ display: "flex", gap: 2 }}>
                     <Tooltip title={client.email}>
                       <IconButton size="small" color="primary">
                         <Mail size={18} />
@@ -221,18 +246,14 @@ export default function Clients() {
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="View History">
-                      <IconButton
-                        size="small"
-                        color="primary"
-                        onClick={() => handleHistoryOpen(client)}
-                      >
+                      <IconButton size="small" color="primary" onClick={() => handleHistoryOpen(client)}>
                         <History size={18} />
                       </IconButton>
                     </Tooltip>
                   </Box>
                 </TableCell>
                 <TableCell>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Box sx={{ display: "flex", gap: 1 }}>
                     {client.websites.map((website) => (
                       <Tooltip key={website.id} title={website.domain}>
                         <IconButton size="small" color="primary">
@@ -242,29 +263,16 @@ export default function Clients() {
                     ))}
                   </Box>
                 </TableCell>
+                <TableCell>${client.websites.reduce((sum, website) => sum + website.monthlyRevenue, 0).toLocaleString()}</TableCell>
                 <TableCell>
-                  ${client.websites.reduce((sum, website) => sum + website.monthlyRevenue, 0).toLocaleString()}
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    size="small"
-                    label={client.websites.length > 0 ? 'Active' : 'New'}
-                    color={client.websites.length > 0 ? 'success' : 'default'}
-                  />
+                  <Chip size="small" label={client.websites.length > 0 ? "Active" : "New"} color={client.websites.length > 0 ? "success" : "default"} />
                 </TableCell>
                 <TableCell align="right">
-                  <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleOpen(client)}
-                    >
+                  <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
+                    <IconButton size="small" onClick={() => handleOpen(client)}>
                       <Pencil size={18} />
                     </IconButton>
-                    <IconButton
-                      size="small"
-                      color="error"
-                      onClick={() => handleDelete(client.id)}
-                    >
+                    <IconButton size="small" color="error" onClick={() => handleDelete(client.id)}>
                       <Trash2 size={18} />
                     </IconButton>
                   </Box>
@@ -276,48 +284,25 @@ export default function Clients() {
       </TableContainer>
 
       <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {selectedClient ? 'Edit Client' : 'Add New Client'}
-        </DialogTitle>
+        <DialogTitle>{selectedClient ? "Edit Client" : "Add New Client"}</DialogTitle>
         <DialogContent>
-          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField
-              label="Name"
-              fullWidth
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            />
-            <TextField
-              label="Email"
-              type="email"
-              fullWidth
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            />
-            <TextField
-              label="Phone"
-              fullWidth
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            />
+          <Box sx={{ pt: 2, display: "flex", flexDirection: "column", gap: 2 }}>
+            <TextField label="Name" fullWidth value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+            <TextField label="Email" type="email" fullWidth value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+            <TextField label="Phone" fullWidth value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>
           <Button variant="contained" onClick={handleSubmit}>
-            {selectedClient ? 'Update' : 'Add'}
+            {selectedClient ? "Update" : "Add"}
           </Button>
         </DialogActions>
       </Dialog>
 
-      <Dialog
-        open={historyOpen}
-        onClose={handleHistoryClose}
-        maxWidth="sm"
-        fullWidth
-      >
+      <Dialog open={historyOpen} onClose={handleHistoryClose} maxWidth="sm" fullWidth>
         <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <History size={20} />
             <Typography variant="h6">Communication History</Typography>
           </Box>
@@ -332,13 +317,11 @@ export default function Clients() {
               .map((comm, index) => (
                 <React.Fragment key={comm.id}>
                   <ListItem alignItems="flex-start">
-                    <ListItemIcon sx={{ minWidth: 40 }}>
-                      {getHistoryIcon(comm.type)}
-                    </ListItemIcon>
+                    <ListItemIcon sx={{ minWidth: 40 }}>{getHistoryIcon(comm.type)}</ListItemIcon>
                     <ListItemText
                       primary={
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <Typography variant="subtitle2" sx={{ textTransform: 'capitalize' }}>
+                        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                          <Typography variant="subtitle2" sx={{ textTransform: "capitalize" }}>
                             {comm.type}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
@@ -349,9 +332,7 @@ export default function Clients() {
                       secondary={comm.content}
                     />
                   </ListItem>
-                  {index < selectedClient.communicationHistory.length - 1 && (
-                    <Divider variant="inset" component="li" />
-                  )}
+                  {index < selectedClient.communicationHistory.length - 1 && <Divider variant="inset" component="li" />}
                 </React.Fragment>
               ))}
           </List>
