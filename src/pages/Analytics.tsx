@@ -28,28 +28,7 @@ import {
   Select,
   MenuItem,
 } from '@mui/material';
-import { 
-  TrendingUp, 
-  Link as LinkIcon, 
-  Search, 
-  Globe, 
-  ArrowUpRight, 
-  ArrowDownRight, 
-  ExternalLink, 
-  RefreshCw, 
-  AlertTriangle, 
-  CheckCircle, 
-  Activity, 
-  Award, 
-  Target, 
-  Users, 
-  BarChart3, 
-  DollarSign, 
-  Zap, 
-  Eye, 
-  ExpandMore, 
-  TrendingDown 
-} from 'lucide-react';
+import { TrendingUp, Link as LinkIcon, Search, Globe, ArrowUpRight, ArrowDownRight, ExternalLink, RefreshCw, AlertTriangle, CheckCircle, Activity, Award, Target, Users, BarChart3, DollarSign, Zap, Eye, Expand as ExpandMore, TrendingDown } from 'lucide-react';
 import { useApiContext } from '../contexts/ApiContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { Website, UrlMetrics, KeywordMetrics, KeywordGenerator } from '../types';
