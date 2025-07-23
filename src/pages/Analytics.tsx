@@ -56,6 +56,8 @@ export default function Analytics() {
   const [searchUrl, setSearchUrl] = useState('');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedKeyword, setSelectedKeyword] = useState('');
+  const [analyzingKeywords, setAnalyzingKeywords] = useState<Record<string, KeywordMetrics | null>>({});
+  const [expandedKeywords, setExpandedKeywords] = useState<Set<string>>(new Set());
   
   // Loading and error states
   const [loading, setLoading] = useState(false);
@@ -184,6 +186,35 @@ export default function Analytics() {
   const handleKeywordFromList = async (keyword: string) => {
     setSearchKeyword(keyword);
     await handleKeywordSearch(keyword);
+  };
+
+  const handleAnalyzeKeywordIdea = async (keyword: string) => {
+    // Toggle expansion
+    const newExpanded = new Set(expandedKeywords);
+    if (newExpanded.has(keyword)) {
+      newExpanded.delete(keyword);
+      setExpandedKeywords(newExpanded);
+      return;
+    }
+
+    newExpanded.add(keyword);
+    setExpandedKeywords(newExpanded);
+
+    // Only fetch if we don't have data yet
+    if (!analyzingKeywords[keyword]) {
+      setLoading(true);
+      try {
+        const keywordData = await getKeywordMetrics(keyword);
+        setAnalyzingKeywords(prev => ({
+          ...prev,
+          [keyword]: keywordData
+        }));
+      } catch (err) {
+        setError(`Failed to analyze keyword: ${keyword}`);
+      } finally {
+        setLoading(false);
+      }
+    }
   };
 
   const formatNumber = (num: number) => {
@@ -672,40 +703,156 @@ export default function Analytics() {
                 </TableHead>
                 <TableBody>
                   {keywordIdeas.data.allIdeas.results.slice(0, 20).map((idea) => (
-                    <TableRow key={idea.id}>
-                      <TableCell>
-                        <Typography variant="body2" fontWeight="medium">
-                          {idea.keyword}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          size="small"
-                          label={idea.difficultyLabel}
-                          color={getDifficultyColor(idea.difficultyLabel)}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">
-                          {idea.volumeLabel.replace(/([A-Z])/g, ' $1').trim()}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" color="text.secondary">
-                          {new Date(idea.updatedAt).toLocaleDateString()}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          startIcon={<Target size={16} />}
-                          onClick={() => handleKeywordFromList(idea.keyword)}
-                        >
-                          Analyze
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+                    <React.Fragment key={idea.id}>
+                      <TableRow>
+                        <TableCell>
+                          <Typography variant="body2" fontWeight="medium">
+                            {idea.keyword}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            size="small"
+                            label={idea.difficultyLabel}
+                            color={getDifficultyColor(idea.difficultyLabel)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {idea.volumeLabel.replace(/([A-Z])/g, ' $1').trim()}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" color="text.secondary">
+                            {new Date(idea.updatedAt).toLocaleDateString()}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Button
+                            size="small"
+                            variant={expandedKeywords.has(idea.keyword) ? "contained" : "outlined"}
+                            startIcon={expandedKeywords.has(idea.keyword) ? 
+                              (loading && !analyzingKeywords[idea.keyword] ? <CircularProgress size={16} /> : <ExpandMore size={16} />) : 
+                              <Target size={16} />}
+                            onClick={() => handleAnalyzeKeywordIdea(idea.keyword)}
+                            disabled={loading && !analyzingKeywords[idea.keyword]}
+                          >
+                            {expandedKeywords.has(idea.keyword) ? 'Hide' : 'Analyze'}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                      {expandedKeywords.has(idea.keyword) && (
+                        <TableRow>
+                          <TableCell colSpan={5} sx={{ p: 0, borderBottom: 'none' }}>
+                            <Box sx={{ p: 3, backgroundColor: 'grey.50' }}>
+                              {analyzingKeywords[idea.keyword] && analyzingKeywords[idea.keyword]?.success ? (
+                                <Box>
+                                  <Typography variant="subtitle2" fontWeight="bold" gutterBottom sx={{ mb: 2 }}>
+                                    Detailed Analysis: "{idea.keyword}"
+                                  </Typography>
+                                  <Grid container spacing={2}>
+                                    <Grid item xs={6} sm={4} md={2}>
+                                      <Card variant="outlined" sx={{ textAlign: 'center', p: 2 }}>
+                                        <Search size={20} color="primary" />
+                                        <Typography variant="h6" fontWeight="bold" sx={{ mt: 1 }}>
+                                          {formatNumber(analyzingKeywords[idea.keyword]!.data.searchVolume)}
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary">
+                                          US Searches
+                                        </Typography>
+                                      </Card>
+                                    </Grid>
+                                    <Grid item xs={6} sm={4} md={2}>
+                                      <Card variant="outlined" sx={{ textAlign: 'center', p: 2 }}>
+                                        <Globe size={20} color="primary" />
+                                        <Typography variant="h6" fontWeight="bold" sx={{ mt: 1 }}>
+                                          {formatNumber(analyzingKeywords[idea.keyword]!.data.globalSearchVolume)}
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary">
+                                          Global Volume
+                                        </Typography>
+                                      </Card>
+                                    </Grid>
+                                    <Grid item xs={6} sm={4} md={2}>
+                                      <Card variant="outlined" sx={{ textAlign: 'center', p: 2 }}>
+                                        <Eye size={20} color="primary" />
+                                        <Typography variant="h6" fontWeight="bold" sx={{ mt: 1 }}>
+                                          {formatNumber(analyzingKeywords[idea.keyword]!.data.clicks)}
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary">
+                                          Clicks
+                                        </Typography>
+                                      </Card>
+                                    </Grid>
+                                    <Grid item xs={6} sm={4} md={2}>
+                                      <Card variant="outlined" sx={{ textAlign: 'center', p: 2 }}>
+                                        <DollarSign size={20} color="secondary" />
+                                        <Typography variant="h6" fontWeight="bold" sx={{ mt: 1 }}>
+                                          ${analyzingKeywords[idea.keyword]!.data.cpc.toFixed(2)}
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary">
+                                          Cost Per Click
+                                        </Typography>
+                                      </Card>
+                                    </Grid>
+                                    <Grid item xs={6} sm={4} md={2}>
+                                      <Card variant="outlined" sx={{ textAlign: 'center', p: 2 }}>
+                                        <Zap size={20} color="secondary" />
+                                        <Typography variant="h6" fontWeight="bold" sx={{ mt: 1 }}>
+                                          {formatNumber(analyzingKeywords[idea.keyword]!.data.trafficPotential)}
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary">
+                                          Traffic Potential
+                                        </Typography>
+                                      </Card>
+                                    </Grid>
+                                    <Grid item xs={6} sm={4} md={2}>
+                                      <Card variant="outlined" sx={{ textAlign: 'center', p: 2 }}>
+                                        <AlertTriangle size={20} color="error" />
+                                        <Typography variant="h6" fontWeight="bold" sx={{ mt: 1 }}>
+                                          {analyzingKeywords[idea.keyword]!.data.difficulty}
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary">
+                                          Difficulty
+                                        </Typography>
+                                      </Card>
+                                    </Grid>
+                                  </Grid>
+                                  <Box sx={{ mt: 2, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                                    <Chip 
+                                      size="small" 
+                                      label={`CTR: ${((analyzingKeywords[idea.keyword]!.data.clicks / analyzingKeywords[idea.keyword]!.data.searchVolume) * 100).toFixed(1)}%`}
+                                      color="info"
+                                    />
+                                    <Chip 
+                                      size="small" 
+                                      label={`Traffic Value: $${(analyzingKeywords[idea.keyword]!.data.trafficPotential * analyzingKeywords[idea.keyword]!.data.cpc).toFixed(2)}`}
+                                      color="success"
+                                    />
+                                    <Chip 
+                                      size="small" 
+                                      label={`Competition: ${analyzingKeywords[idea.keyword]!.data.difficulty > 70 ? 'High' : analyzingKeywords[idea.keyword]!.data.difficulty > 40 ? 'Medium' : 'Low'}`}
+                                      color={analyzingKeywords[idea.keyword]!.data.difficulty > 70 ? 'error' : analyzingKeywords[idea.keyword]!.data.difficulty > 40 ? 'warning' : 'success'}
+                                    />
+                                  </Box>
+                                </Box>
+                              ) : loading && !analyzingKeywords[idea.keyword] ? (
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 2 }}>
+                                  <CircularProgress size={24} sx={{ mr: 2 }} />
+                                  <Typography variant="body2" color="text.secondary">
+                                    Analyzing keyword metrics...
+                                  </Typography>
+                                </Box>
+                              ) : (
+                                <Alert severity="error">
+                                  Failed to load keyword metrics. Please try again.
+                                </Alert>
+                              )}
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </React.Fragment>
                   ))}
                 </TableBody>
               </Table>
