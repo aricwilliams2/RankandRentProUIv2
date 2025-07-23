@@ -30,28 +30,7 @@ import {
   AccordionSummary,
   AccordionDetails,
 } from '@mui/material';
-import {
-  TrendingUp,
-  Link as LinkIcon,
-  Search,
-  Globe,
-  ArrowUpRight,
-  ArrowDownRight,
-  ExternalLink,
-  RefreshCw,
-  AlertTriangle,
-  CheckCircle,
-  Activity,
-  Award,
-  Target,
-  Users,
-  BarChart3,
-  DollarSign,
-  Zap,
-  Eye,
-  ExpandMore,
-  TrendingDown,
-} from 'lucide-react';
+import { TrendingUp, Link as LinkIcon, Search, Globe, ArrowUpRight, ArrowDownRight, ExternalLink, RefreshCw, AlertTriangle, CheckCircle, Activity, Award, Target, Users, BarChart3, DollarSign, Zap, Eye, Expand as ExpandMore, TrendingDown } from 'lucide-react';
 import { useApiContext } from '../contexts/ApiContext';
 import type { Website, SEOMetrics, UrlMetrics, KeywordMetrics, KeywordGenerator } from '../types';
 
