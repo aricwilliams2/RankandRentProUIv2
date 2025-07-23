@@ -1,5 +1,6 @@
 import React, { forwardRef, useState } from "react";
-import { ExternalLink, Phone, Check, MessageSquare, Calendar, X, ChevronDown, ChevronUp, Clock, AlertTriangle, Edit, Save, MoreHorizontal, Trash2, Pencil, MapPin } from "lucide-react";
+import { ExternalLink, Phone, Check, MessageSquare, Calendar, X, ChevronDown, ChevronUp, Clock, AlertTriangle, Edit, Save, MoreHorizontal, Trash2, Pencil, MapPin, BarChart3 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import StarRating from "./StarRating";
 import { Lead, CallLog } from "../types";
 import { useLeadContext } from "../contexts/LeadContext";
@@ -12,6 +13,7 @@ interface LeadItemProps {
 
 const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }, ref) => {
   const { setLastCalledIndex, toggleContactStatus, addCallLog, updateCallLog, deleteLead } = useLeadContext();
+  const navigate = useNavigate();
   const [showCallDialog, setShowCallDialog] = useState(false);
   const [showCallHistory, setShowCallHistory] = useState(false);
   const [showAllLogs, setShowAllLogs] = useState(false);
@@ -52,6 +54,27 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
     }
   };
 
+  const handleViewAnalytics = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (lead.website) {
+      // Extract domain from website URL
+      let domain = lead.website;
+      try {
+        const url = new URL(lead.website.startsWith('http') ? lead.website : `https://${lead.website}`);
+        domain = url.hostname.replace('www.', '');
+      } catch {
+        // If URL parsing fails, use the website string as is
+        domain = lead.website.replace(/^https?:\/\//, '').replace('www.', '').split('/')[0];
+      }
+      
+      navigate('/analytics', {
+        state: {
+          domain: domain,
+          keywords: [lead.name.toLowerCase(), `${lead.name.toLowerCase()} services`] // Generate keywords from lead name
+        }
+      });
+    }
+  };
   const handleSubmitCallLog = () => {
     if (callNotes.trim()) {
       addCallLog(lead.id, {
@@ -185,6 +208,11 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
           </div>
         </div>
         <div className="flex gap-1 ml-2">
+          {lead.website && (
+            <button onClick={handleViewAnalytics} className="p-1 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors" title="View Analytics">
+              <BarChart3 className="w-3 h-3" />
+            </button>
+          )}
           <button onClick={handleEditClick} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit Lead">
             <Pencil className="w-3 h-3" />
           </button>
@@ -389,6 +417,11 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
         </td>
         <td className="p-3 lg:p-4">
           <div className="flex items-center gap-1">
+            {lead.website && (
+              <button onClick={handleViewAnalytics} className="p-1 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors" title="View Analytics">
+                <BarChart3 className="w-4 h-4" />
+              </button>
+            )}
             <button onClick={handleEditClick} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit Lead">
               <Pencil className="w-4 h-4" />
             </button>

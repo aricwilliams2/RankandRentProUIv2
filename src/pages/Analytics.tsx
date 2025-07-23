@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -16,12 +16,6 @@ import {
   Chip,
   IconButton,
   Tooltip,
-  LinearProgress,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Divider,
   TextField,
   Alert,
   CircularProgress,
@@ -29,133 +23,154 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
-import { TrendingUp, Link as LinkIcon, Search, Globe, ArrowUpRight, ArrowDownRight, ExternalLink, RefreshCw, AlertTriangle, CheckCircle, Activity, Award, Target, Users, BarChart3, DollarSign, Zap, Eye, Expand as ExpandMore, TrendingDown } from 'lucide-react';
+import { 
+  TrendingUp, 
+  Link as LinkIcon, 
+  Search, 
+  Globe, 
+  ArrowUpRight, 
+  ArrowDownRight, 
+  ExternalLink, 
+  RefreshCw, 
+  AlertTriangle, 
+  CheckCircle, 
+  Activity, 
+  Award, 
+  Target, 
+  Users, 
+  BarChart3, 
+  DollarSign, 
+  Zap, 
+  Eye, 
+  ExpandMore, 
+  TrendingDown 
+} from 'lucide-react';
 import { useApiContext } from '../contexts/ApiContext';
-import type { Website, SEOMetrics, UrlMetrics, KeywordMetrics, KeywordGenerator } from '../types';
-
-// Mock data - replace with actual API calls
-const mockWebsites: Website[] = [
-  {
-    id: '1',
-    domain: 'acmeplumbing.com',
-    niche: 'Plumbing',
-    status: 'active',
-    monthlyRevenue: 2500,
-    phoneNumbers: [],
-    leads: [],
-    seoMetrics: {
-      domainAuthority: 35,
-      backlinks: 150,
-      organicKeywords: 500,
-      organicTraffic: 2000,
-      topKeywords: ['emergency plumber', 'plumbing services', '24/7 plumber', 'commercial plumbing'],
-      competitors: ['competitor1.com', 'competitor2.com'],
-      lastUpdated: new Date(),
-    },
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  }
-];
-
-interface CompetitorMetrics {
-  domain: string;
-  domainAuthority: number;
-  backlinks: number;
-  organicKeywords: number;
-  organicTraffic: number;
-  commonKeywords: string[];
-}
-
-const mockCompetitorMetrics: CompetitorMetrics[] = [
-  {
-    domain: 'competitor1.com',
-    domainAuthority: 42,
-    backlinks: 230,
-    organicKeywords: 750,
-    organicTraffic: 3500,
-    commonKeywords: ['emergency plumber', 'plumbing services'],
-  },
-  {
-    domain: 'competitor2.com',
-    domainAuthority: 28,
-    backlinks: 95,
-    organicKeywords: 320,
-    organicTraffic: 1200,
-    commonKeywords: ['24/7 plumber', 'commercial plumbing'],
-  },
-];
-
-interface Backlink {
-  id: string;
-  url: string;
-  domain: string;
-  domainAuthority: number;
-  anchor: string;
-  status: 'active' | 'lost' | 'new';
-  firstSeen: Date;
-  lastSeen: Date;
-}
-
-const mockBacklinks: Backlink[] = [
-  {
-    id: '1',
-    url: 'https://example.com/blog/best-plumbers',
-    domain: 'example.com',
-    domainAuthority: 45,
-    anchor: 'professional plumbing services',
-    status: 'active',
-    firstSeen: new Date('2024-01-15'),
-    lastSeen: new Date(),
-  },
-  {
-    id: '2',
-    url: 'https://directory.com/plumbers',
-    domain: 'directory.com',
-    domainAuthority: 55,
-    anchor: 'emergency plumber',
-    status: 'new',
-    firstSeen: new Date('2024-03-10'),
-    lastSeen: new Date(),
-  },
-  {
-    id: '3',
-    url: 'https://blog.com/home-maintenance',
-    domain: 'blog.com',
-    domainAuthority: 38,
-    anchor: '24/7 plumbing',
-    status: 'lost',
-    firstSeen: new Date('2023-12-01'),
-    lastSeen: new Date('2024-03-01'),
-  },
-];
+import { useLocation, useNavigate } from 'react-router-dom';
+import type { Website, UrlMetrics, KeywordMetrics, KeywordGenerator } from '../types';
 
 export default function Analytics() {
-  const [websites] = useState<Website[]>(mockWebsites);
-  const [competitors] = useState<CompetitorMetrics[]>(mockCompetitorMetrics);
-  const [backlinks] = useState<Backlink[]>(mockBacklinks);
-  const [selectedWebsite] = useState<Website>(websites[0]);
-  
-  // New Ahrefs data states
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { 
+    getUrlMetrics, 
+    getKeywordMetrics, 
+    getKeywordIdeas, 
+    getWebsites,
+    loading: apiLoading,
+    error: apiError 
+  } = useApiContext();
+
+  // State for dynamic data
+  const [websites, setWebsites] = useState<Website[]>([]);
+  const [selectedWebsite, setSelectedWebsite] = useState<Website | null>(null);
   const [urlMetrics, setUrlMetrics] = useState<UrlMetrics | null>(null);
   const [keywordMetrics, setKeywordMetrics] = useState<KeywordMetrics | null>(null);
   const [keywordIdeas, setKeywordIdeas] = useState<KeywordGenerator | null>(null);
+  
+  // Form states
   const [searchUrl, setSearchUrl] = useState('');
   const [searchKeyword, setSearchKeyword] = useState('');
+  const [selectedKeyword, setSelectedKeyword] = useState('');
+  
+  // Loading and error states
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
-  // Get API context
-  const { getUrlMetrics, getKeywordMetrics, getKeywordIdeas } = useApiContext();
 
-  const handleUrlSearch = async () => {
-    if (!searchUrl) return;
+  // Load websites on component mount
+  useEffect(() => {
+    const loadWebsites = async () => {
+      try {
+        const websitesData = await getWebsites();
+        setWebsites(websitesData);
+        
+        // Check if we have website data from navigation
+        const state = location.state as { website?: Website, domain?: string, keywords?: string[] };
+        if (state?.website) {
+          setSelectedWebsite(state.website);
+          setSearchUrl(state.website.domain);
+          if (state.website.seoMetrics?.topKeywords?.length > 0) {
+            setSearchKeyword(state.website.seoMetrics.topKeywords[0]);
+          }
+          // Auto-load analytics for the selected website
+          await loadAnalyticsForWebsite(state.website);
+        } else if (state?.domain) {
+          setSearchUrl(state.domain);
+          if (state.keywords && state.keywords.length > 0) {
+            setSearchKeyword(state.keywords[0]);
+          }
+          // Auto-load analytics for the domain
+          await handleUrlSearch(state.domain);
+          if (state.keywords && state.keywords.length > 0) {
+            await handleKeywordSearch(state.keywords[0]);
+          }
+        } else if (websitesData.length > 0) {
+          // Default to first website if no specific data passed
+          setSelectedWebsite(websitesData[0]);
+          setSearchUrl(websitesData[0].domain);
+        }
+      } catch (err) {
+        setError('Failed to load websites');
+      }
+    };
+
+    loadWebsites();
+  }, [location.state]);
+
+  const loadAnalyticsForWebsite = async (website: Website) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Load URL metrics for the website
+      const urlData = await getUrlMetrics(website.domain);
+      setUrlMetrics(urlData);
+
+      // Load keyword data for the top keyword if available
+      if (website.seoMetrics?.topKeywords?.length > 0) {
+        const topKeyword = website.seoMetrics.topKeywords[0];
+        const [metricsData, ideasData] = await Promise.all([
+          getKeywordMetrics(topKeyword),
+          getKeywordIdeas(topKeyword)
+        ]);
+        
+        setKeywordMetrics(metricsData);
+        setKeywordIdeas(ideasData);
+        setSelectedKeyword(topKeyword);
+      }
+    } catch (err) {
+      setError('Failed to load analytics data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleWebsiteChange = async (websiteId: string) => {
+    const website = websites.find(w => w.id === websiteId);
+    if (website) {
+      setSelectedWebsite(website);
+      setSearchUrl(website.domain);
+      if (website.seoMetrics?.topKeywords?.length > 0) {
+        setSearchKeyword(website.seoMetrics.topKeywords[0]);
+      }
+      await loadAnalyticsForWebsite(website);
+    }
+  };
+
+  const handleUrlSearch = async (url?: string) => {
+    const targetUrl = url || searchUrl;
+    if (!targetUrl) return;
     
     setLoading(true);
     setError(null);
     
     try {
-      const data = await getUrlMetrics(searchUrl);
+      const data = await getUrlMetrics(targetUrl);
       setUrlMetrics(data);
     } catch (err) {
       setError('Failed to fetch URL metrics');
@@ -164,20 +179,22 @@ export default function Analytics() {
     }
   };
 
-  const handleKeywordSearch = async () => {
-    if (!searchKeyword) return;
+  const handleKeywordSearch = async (keyword?: string) => {
+    const targetKeyword = keyword || searchKeyword;
+    if (!targetKeyword) return;
     
     setLoading(true);
     setError(null);
     
     try {
       const [metricsData, ideasData] = await Promise.all([
-        getKeywordMetrics(searchKeyword),
-        getKeywordIdeas(searchKeyword)
+        getKeywordMetrics(targetKeyword),
+        getKeywordIdeas(targetKeyword)
       ]);
       
       setKeywordMetrics(metricsData);
       setKeywordIdeas(ideasData);
+      setSelectedKeyword(targetKeyword);
     } catch (err) {
       setError('Failed to fetch keyword data');
     } finally {
@@ -185,38 +202,18 @@ export default function Analytics() {
     }
   };
 
-  const getMetricTrend = (current: number, baseline: number) => {
-    const percentage = ((current - baseline) / baseline) * 100;
-    return {
-      value: Math.abs(percentage).toFixed(1) + '%',
-      direction: percentage >= 0 ? 'up' : 'down',
-      color: percentage >= 0 ? 'success.main' : 'error.main',
-      icon: percentage >= 0 ? ArrowUpRight : ArrowDownRight,
-    };
+  const handleKeywordFromList = async (keyword: string) => {
+    setSearchKeyword(keyword);
+    await handleKeywordSearch(keyword);
   };
 
-  const getBacklinkStatusColor = (status: Backlink['status']) => {
-    switch (status) {
-      case 'active':
-        return 'success';
-      case 'new':
-        return 'info';
-      case 'lost':
-        return 'error';
-      default:
-        return 'default';
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1) + 'M';
+    } else if (num >= 1000) {
+      return (num / 1000).toFixed(1) + 'K';
     }
-  };
-
-  const getBacklinkStatusIcon = (status: Backlink['status']) => {
-    switch (status) {
-      case 'active':
-        return <CheckCircle size={16} />;
-      case 'new':
-        return <TrendingUp size={16} />;
-      case 'lost':
-        return <AlertTriangle size={16} />;
-    }
+    return num.toString();
   };
 
   const getDifficultyColor = (difficulty: string) => {
@@ -232,107 +229,126 @@ export default function Analytics() {
     }
   };
 
-  const formatNumber = (num: number) => {
-    if (num >= 1000000) {
-      return (num / 1000000).toFixed(1) + 'M';
-    } else if (num >= 1000) {
-      return (num / 1000).toFixed(1) + 'K';
-    }
-    return num.toString();
-  };
-
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Box>
           <Typography variant="h4" fontWeight="bold">
-            Analytics
+            Analytics Dashboard
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Last updated: {selectedWebsite.seoMetrics.lastUpdated.toLocaleString()}
-          </Typography>
+          {selectedWebsite && (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Analyzing: {selectedWebsite.domain} | {selectedWebsite.niche}
+            </Typography>
+          )}
         </Box>
         <Button
           variant="contained"
           startIcon={<RefreshCw size={20} />}
+          onClick={() => selectedWebsite && loadAnalyticsForWebsite(selectedWebsite)}
+          disabled={loading || !selectedWebsite}
         >
-          Refresh Metrics
+          Refresh Analytics
         </Button>
       </Box>
 
       {/* Error Alert */}
-      {error && (
+      {(error || apiError) && (
         <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
-          {error}
+          {error || apiError}
         </Alert>
       )}
 
-      {/* Search Controls */}
+      {/* Website Selection */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Globe size={20} />
-                URL Metrics Analysis
-              </Typography>
-              <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
-                <TextField
-                  label="Enter URL"
-                  value={searchUrl}
-                  onChange={(e) => setSearchUrl(e.target.value)}
-                  placeholder="e.g., medium.com"
-                  fullWidth
-                  size="small"
-                />
-                <Button
-                  variant="contained"
-                  onClick={handleUrlSearch}
-                  disabled={loading || !searchUrl}
-                  startIcon={loading ? <CircularProgress size={16} /> : <Search size={16} />}
-                  sx={{ minWidth: '120px' }}
-                >
-                  Analyze
-                </Button>
-              </Stack>
-            </CardContent>
-          </Card>
+        <Grid item xs={12} md={4}>
+          <FormControl fullWidth>
+            <InputLabel>Select Website</InputLabel>
+            <Select
+              value={selectedWebsite?.id || ''}
+              label="Select Website"
+              onChange={(e) => handleWebsiteChange(e.target.value)}
+            >
+              {websites.map((website) => (
+                <MenuItem key={website.id} value={website.id}>
+                  {website.domain} ({website.niche})
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </Grid>
         
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Target size={20} />
-                Keyword Research
-              </Typography>
-              <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
-                <TextField
-                  label="Enter Keyword"
-                  value={searchKeyword}
-                  onChange={(e) => setSearchKeyword(e.target.value)}
-                  placeholder="e.g., fishing"
-                  fullWidth
-                  size="small"
-                />
-                <Button
-                  variant="contained"
-                  onClick={handleKeywordSearch}
-                  disabled={loading || !searchKeyword}
-                  startIcon={loading ? <CircularProgress size={16} /> : <Search size={16} />}
-                  sx={{ minWidth: '120px' }}
-                >
-                  Research
-                </Button>
-              </Stack>
-            </CardContent>
-          </Card>
+        <Grid item xs={12} md={4}>
+          <Stack direction="row" spacing={2}>
+            <TextField
+              label="Custom URL"
+              value={searchUrl}
+              onChange={(e) => setSearchUrl(e.target.value)}
+              placeholder="e.g., medium.com"
+              fullWidth
+              size="small"
+            />
+            <Button
+              variant="outlined"
+              onClick={() => handleUrlSearch()}
+              disabled={loading || !searchUrl}
+              startIcon={loading ? <CircularProgress size={16} /> : <Search size={16} />}
+              sx={{ minWidth: '100px' }}
+            >
+              Analyze
+            </Button>
+          </Stack>
+        </Grid>
+        
+        <Grid item xs={12} md={4}>
+          <Stack direction="row" spacing={2}>
+            <TextField
+              label="Keyword Research"
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              placeholder="e.g., plumbing services"
+              fullWidth
+              size="small"
+            />
+            <Button
+              variant="outlined"
+              onClick={() => handleKeywordSearch()}
+              disabled={loading || !searchKeyword}
+              startIcon={loading ? <CircularProgress size={16} /> : <Target size={16} />}
+              sx={{ minWidth: '100px' }}
+            >
+              Research
+            </Button>
+          </Stack>
         </Grid>
       </Grid>
 
+      {/* Quick Keywords from Selected Website */}
+      {selectedWebsite?.seoMetrics?.topKeywords && selectedWebsite.seoMetrics.topKeywords.length > 0 && (
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Quick Keyword Analysis for {selectedWebsite.domain}
+            </Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              {selectedWebsite.seoMetrics.topKeywords.map((keyword) => (
+                <Chip
+                  key={keyword}
+                  label={keyword}
+                  onClick={() => handleKeywordFromList(keyword)}
+                  color={selectedKeyword === keyword ? 'primary' : 'default'}
+                  variant={selectedKeyword === keyword ? 'filled' : 'outlined'}
+                  sx={{ cursor: 'pointer', mb: 1 }}
+                />
+              ))}
+            </Stack>
+          </CardContent>
+        </Card>
+      )}
+
       {/* URL Metrics Results */}
       {urlMetrics && urlMetrics.success && (
-        <Accordion sx={{ mb: 3 }}>
+        <Accordion expanded sx={{ mb: 3 }}>
           <AccordionSummary expandIcon={<ExpandMore />}>
             <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <BarChart3 size={20} />
@@ -381,7 +397,7 @@ export default function Analytics() {
                           {formatNumber(Math.round(urlMetrics.data.page.traffic))}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          Traffic
+                          Monthly Traffic
                         </Typography>
                       </CardContent>
                     </Card>
@@ -407,7 +423,7 @@ export default function Analytics() {
                           {formatNumber(urlMetrics.data.page.organicKeywords)}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          Keywords
+                          Organic Keywords
                         </Typography>
                       </CardContent>
                     </Card>
@@ -468,7 +484,7 @@ export default function Analytics() {
                           {formatNumber(urlMetrics.data.domain.backlinks)}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          Backlinks
+                          Total Backlinks
                         </Typography>
                       </CardContent>
                     </Card>
@@ -481,7 +497,7 @@ export default function Analytics() {
                           {formatNumber(urlMetrics.data.domain.traffic)}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          Traffic
+                          Domain Traffic
                         </Typography>
                       </CardContent>
                     </Card>
@@ -494,7 +510,7 @@ export default function Analytics() {
                           ${formatNumber(urlMetrics.data.domain.trafficValue)}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          Traffic Value
+                          Domain Value
                         </Typography>
                       </CardContent>
                     </Card>
@@ -507,7 +523,7 @@ export default function Analytics() {
                           {formatNumber(urlMetrics.data.domain.organicKeywords)}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          Keywords
+                          Total Keywords
                         </Typography>
                       </CardContent>
                     </Card>
@@ -521,11 +537,11 @@ export default function Analytics() {
 
       {/* Keyword Metrics Results */}
       {keywordMetrics && keywordMetrics.success && (
-        <Accordion sx={{ mb: 3 }}>
+        <Accordion expanded sx={{ mb: 3 }}>
           <AccordionSummary expandIcon={<ExpandMore />}>
             <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Target size={20} />
-              Keyword Analysis: "{searchKeyword}"
+              Keyword Analysis: "{selectedKeyword}"
             </Typography>
           </AccordionSummary>
           <AccordionDetails>
@@ -579,7 +595,7 @@ export default function Analytics() {
                           ${keywordMetrics.data.cpc.toFixed(2)}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          CPC
+                          Cost Per Click
                         </Typography>
                       </CardContent>
                     </Card>
@@ -618,32 +634,34 @@ export default function Analytics() {
                     <Typography variant="subtitle2" gutterBottom>
                       Keyword Insights
                     </Typography>
-                    <List dense>
-                      <ListItem>
-                        <ListItemText
-                          primary="Competition Level"
-                          secondary={
-                            <Chip
-                              size="small"
-                              label={keywordMetrics.data.difficulty > 70 ? 'High' : keywordMetrics.data.difficulty > 40 ? 'Medium' : 'Low'}
-                              color={keywordMetrics.data.difficulty > 70 ? 'error' : keywordMetrics.data.difficulty > 40 ? 'warning' : 'success'}
-                            />
-                          }
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">
+                          Competition Level
+                        </Typography>
+                        <Chip
+                          size="small"
+                          label={keywordMetrics.data.difficulty > 70 ? 'High' : keywordMetrics.data.difficulty > 40 ? 'Medium' : 'Low'}
+                          color={keywordMetrics.data.difficulty > 70 ? 'error' : keywordMetrics.data.difficulty > 40 ? 'warning' : 'success'}
                         />
-                      </ListItem>
-                      <ListItem>
-                        <ListItemText
-                          primary="Click-through Rate"
-                          secondary={`${((keywordMetrics.data.clicks / keywordMetrics.data.searchVolume) * 100).toFixed(1)}%`}
-                        />
-                      </ListItem>
-                      <ListItem>
-                        <ListItemText
-                          primary="Traffic Value"
-                          secondary={`$${(keywordMetrics.data.trafficPotential * keywordMetrics.data.cpc).toFixed(2)}`}
-                        />
-                      </ListItem>
-                    </List>
+                      </Box>
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">
+                          Click-through Rate
+                        </Typography>
+                        <Typography variant="body2">
+                          {((keywordMetrics.data.clicks / keywordMetrics.data.searchVolume) * 100).toFixed(1)}%
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">
+                          Traffic Value
+                        </Typography>
+                        <Typography variant="body2">
+                          ${(keywordMetrics.data.trafficPotential * keywordMetrics.data.cpc).toFixed(2)}
+                        </Typography>
+                      </Box>
+                    </Box>
                   </CardContent>
                 </Card>
               </Grid>
@@ -654,7 +672,7 @@ export default function Analytics() {
 
       {/* Keyword Ideas Results */}
       {keywordIdeas && keywordIdeas.success && (
-        <Accordion sx={{ mb: 3 }}>
+        <Accordion expanded sx={{ mb: 3 }}>
           <AccordionSummary expandIcon={<ExpandMore />}>
             <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Search size={20} />
@@ -670,6 +688,7 @@ export default function Analytics() {
                     <TableCell>Difficulty</TableCell>
                     <TableCell>Volume</TableCell>
                     <TableCell>Last Updated</TableCell>
+                    <TableCell align="right">Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -697,6 +716,16 @@ export default function Analytics() {
                           {new Date(idea.updatedAt).toLocaleDateString()}
                         </Typography>
                       </TableCell>
+                      <TableCell align="right">
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          startIcon={<Target size={16} />}
+                          onClick={() => handleKeywordFromList(idea.keyword)}
+                        >
+                          Analyze
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -705,225 +734,28 @@ export default function Analytics() {
           </AccordionDetails>
         </Accordion>
       )}
-      <Grid container spacing={3}>
-        {/* Overview Cards */}
-        <Grid item xs={12} md={6} lg={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                <Award size={24} />
-                <Typography color="success.main" variant="body2">
-                  {getMetricTrend(selectedWebsite.seoMetrics.domainAuthority, 30).value}
-                </Typography>
-              </Box>
-              <Typography variant="h4" fontWeight="bold">
-                {selectedWebsite.seoMetrics.domainAuthority}
-              </Typography>
-              <Typography color="text.secondary" variant="body2">
-                Domain Authority
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
 
-        <Grid item xs={12} md={6} lg={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                <LinkIcon size={24} />
-                <Typography color="success.main" variant="body2">
-                  {getMetricTrend(selectedWebsite.seoMetrics.backlinks, 120).value}
-                </Typography>
-              </Box>
-              <Typography variant="h4" fontWeight="bold">
-                {selectedWebsite.seoMetrics.backlinks}
-              </Typography>
-              <Typography color="text.secondary" variant="body2">
-                Total Backlinks
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+      {/* Loading State */}
+      {(loading || apiLoading) && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+          <CircularProgress />
+        </Box>
+      )}
 
-        <Grid item xs={12} md={6} lg={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                <Search size={24} />
-                <Typography color="success.main" variant="body2">
-                  {getMetricTrend(selectedWebsite.seoMetrics.organicKeywords, 400).value}
-                </Typography>
-              </Box>
-              <Typography variant="h4" fontWeight="bold">
-                {selectedWebsite.seoMetrics.organicKeywords}
-              </Typography>
-              <Typography color="text.secondary" variant="body2">
-                Ranking Keywords
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={6} lg={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                <Users size={24} />
-                <Typography color="success.main" variant="body2">
-                  {getMetricTrend(selectedWebsite.seoMetrics.organicTraffic, 1500).value}
-                </Typography>
-              </Box>
-              <Typography variant="h4" fontWeight="bold">
-                {selectedWebsite.seoMetrics.organicTraffic.toLocaleString()}
-              </Typography>
-              <Typography color="text.secondary" variant="body2">
-                Monthly Organic Traffic
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Keyword Rankings */}
-        <Grid item xs={12} lg={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" fontWeight="medium" sx={{ mb: 3 }}>
-                Top Keywords
-              </Typography>
-              <List>
-                {selectedWebsite.seoMetrics.topKeywords.map((keyword, index) => (
-                  <React.Fragment key={keyword}>
-                    <ListItem>
-                      <ListItemIcon sx={{ minWidth: 40 }}>
-                        <Target size={20} />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={keyword}
-                        secondary={`Position ${index + 1}-${index + 3}`}
-                      />
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Chip
-                          size="small"
-                          label={`${Math.floor(Math.random() * 1000 + 500)} searches/mo`}
-                          color="primary"
-                        />
-                        <Activity size={16} />
-                      </Box>
-                    </ListItem>
-                    {index < selectedWebsite.seoMetrics.topKeywords.length - 1 && (
-                      <Divider variant="inset" component="li" />
-                    )}
-                  </React.Fragment>
-                ))}
-              </List>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Competitor Analysis */}
-        <Grid item xs={12} lg={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" fontWeight="medium" sx={{ mb: 3 }}>
-                Competitor Analysis
-              </Typography>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Domain</TableCell>
-                      <TableCell align="right">DA</TableCell>
-                      <TableCell align="right">Backlinks</TableCell>
-                      <TableCell align="right">Keywords</TableCell>
-                      <TableCell align="right">Traffic</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {competitors.map((competitor) => (
-                      <TableRow key={competitor.domain}>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Globe size={16} />
-                            {competitor.domain}
-                          </Box>
-                        </TableCell>
-                        <TableCell align="right">{competitor.domainAuthority}</TableCell>
-                        <TableCell align="right">{competitor.backlinks}</TableCell>
-                        <TableCell align="right">{competitor.organicKeywords}</TableCell>
-                        <TableCell align="right">{competitor.organicTraffic}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Backlinks */}
-        <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" fontWeight="medium" sx={{ mb: 3 }}>
-                Backlink Profile
-              </Typography>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Source</TableCell>
-                      <TableCell>Anchor Text</TableCell>
-                      <TableCell>DA</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell>First Seen</TableCell>
-                      <TableCell align="right">Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {backlinks.map((backlink) => (
-                      <TableRow key={backlink.id}>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <LinkIcon size={16} />
-                            <Typography variant="body2">{backlink.domain}</Typography>
-                          </Box>
-                        </TableCell>
-                        <TableCell>{backlink.anchor}</TableCell>
-                        <TableCell>{backlink.domainAuthority}</TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            {getBacklinkStatusIcon(backlink.status)}
-                            <Chip
-                              size="small"
-                              label={backlink.status}
-                              color={getBacklinkStatusColor(backlink.status)}
-                            />
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          {backlink.firstSeen.toLocaleDateString()}
-                        </TableCell>
-                        <TableCell align="right">
-                          <Tooltip title="Visit Link">
-                            <IconButton
-                              size="small"
-                              href={backlink.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              <ExternalLink size={16} />
-                            </IconButton>
-                          </Tooltip>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+      {/* Empty State */}
+      {!loading && !urlMetrics && !keywordMetrics && !keywordIdeas && (
+        <Card>
+          <CardContent sx={{ textAlign: 'center', py: 8 }}>
+            <BarChart3 size={64} color="text.secondary" />
+            <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>
+              No Analytics Data
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Select a website or enter a URL/keyword to start analyzing
+            </Typography>
+          </CardContent>
+        </Card>
+      )}
     </Box>
   );
 }

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Box, Button, Card, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography, Chip, Tooltip, List, ListItem, ListItemText, ListItemIcon, Divider } from "@mui/material";
-import { Plus, Pencil, Trash2, Globe, Mail, Phone, History, MessageCircle, PhoneCall, StickyNote } from "lucide-react";
+import { Plus, Pencil, Trash2, Globe, Mail, Phone, History, MessageCircle, PhoneCall, StickyNote, BarChart3 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import type { Client } from "../types";
 
 // Mock data - replace with actual API calls
@@ -68,6 +69,7 @@ export default function Clients() {
   const [open, setOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -150,6 +152,19 @@ export default function Clients() {
 
   const handleDelete = (id: string) => {
     setClients(clients.filter((client) => client.id !== id));
+  };
+
+  const handleViewAnalytics = (client: Client) => {
+    if (client.websites.length > 0) {
+      const website = client.websites[0]; // Use first website
+      navigate('/analytics', {
+        state: {
+          website: website,
+          domain: website.domain,
+          keywords: website.seoMetrics?.topKeywords || []
+        }
+      });
+    }
   };
 
   // useEffect(() => {
@@ -269,6 +284,17 @@ export default function Clients() {
                 </TableCell>
                 <TableCell align="right">
                   <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
+                    {client.websites.length > 0 && (
+                      <Tooltip title="View Analytics">
+                        <IconButton 
+                          size="small" 
+                          color="info"
+                          onClick={() => handleViewAnalytics(client)}
+                        >
+                          <BarChart3 size={18} />
+                        </IconButton>
+                      </Tooltip>
+                    )}
                     <IconButton size="small" onClick={() => handleOpen(client)}>
                       <Pencil size={18} />
                     </IconButton>
