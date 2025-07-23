@@ -22,6 +22,13 @@ import {
   ListItemText,
   ListItemIcon,
   Divider,
+  TextField,
+  Alert,
+  CircularProgress,
+  Stack,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from '@mui/material';
 import {
   TrendingUp,
@@ -38,8 +45,15 @@ import {
   Award,
   Target,
   Users,
+  BarChart3,
+  DollarSign,
+  Zap,
+  Eye,
+  ExpandMore,
+  TrendingDown,
 } from 'lucide-react';
-import type { Website, SEOMetrics } from '../types';
+import { useApiContext } from '../contexts/ApiContext';
+import type { Website, SEOMetrics, UrlMetrics, KeywordMetrics, KeywordGenerator } from '../types';
 
 // Mock data - replace with actual API calls
 const mockWebsites: Website[] = [
@@ -142,6 +156,55 @@ export default function Analytics() {
   const [competitors] = useState<CompetitorMetrics[]>(mockCompetitorMetrics);
   const [backlinks] = useState<Backlink[]>(mockBacklinks);
   const [selectedWebsite] = useState<Website>(websites[0]);
+  
+  // New Ahrefs data states
+  const [urlMetrics, setUrlMetrics] = useState<UrlMetrics | null>(null);
+  const [keywordMetrics, setKeywordMetrics] = useState<KeywordMetrics | null>(null);
+  const [keywordIdeas, setKeywordIdeas] = useState<KeywordGenerator | null>(null);
+  const [searchUrl, setSearchUrl] = useState('');
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Get API context
+  const { getUrlMetrics, getKeywordMetrics, getKeywordIdeas } = useApiContext();
+
+  const handleUrlSearch = async () => {
+    if (!searchUrl) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const data = await getUrlMetrics(searchUrl);
+      setUrlMetrics(data);
+    } catch (err) {
+      setError('Failed to fetch URL metrics');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleKeywordSearch = async () => {
+    if (!searchKeyword) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const [metricsData, ideasData] = await Promise.all([
+        getKeywordMetrics(searchKeyword),
+        getKeywordIdeas(searchKeyword)
+      ]);
+      
+      setKeywordMetrics(metricsData);
+      setKeywordIdeas(ideasData);
+    } catch (err) {
+      setError('Failed to fetch keyword data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getMetricTrend = (current: number, baseline: number) => {
     const percentage = ((current - baseline) / baseline) * 100;
@@ -177,6 +240,28 @@ export default function Analytics() {
     }
   };
 
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty.toLowerCase()) {
+      case 'easy':
+        return 'success';
+      case 'medium':
+        return 'warning';
+      case 'hard':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
+
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1) + 'M';
+    } else if (num >= 1000) {
+      return (num / 1000).toFixed(1) + 'K';
+    }
+    return num.toString();
+  };
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
@@ -196,6 +281,451 @@ export default function Analytics() {
         </Button>
       </Box>
 
+      {/* Error Alert */}
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
+      {/* Search Controls */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Globe size={20} />
+                URL Metrics Analysis
+              </Typography>
+              <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+                <TextField
+                  label="Enter URL"
+                  value={searchUrl}
+                  onChange={(e) => setSearchUrl(e.target.value)}
+                  placeholder="e.g., medium.com"
+                  fullWidth
+                  size="small"
+                />
+                <Button
+                  variant="contained"
+                  onClick={handleUrlSearch}
+                  disabled={loading || !searchUrl}
+                  startIcon={loading ? <CircularProgress size={16} /> : <Search size={16} />}
+                  sx={{ minWidth: '120px' }}
+                >
+                  Analyze
+                </Button>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+        
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Target size={20} />
+                Keyword Research
+              </Typography>
+              <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+                <TextField
+                  label="Enter Keyword"
+                  value={searchKeyword}
+                  onChange={(e) => setSearchKeyword(e.target.value)}
+                  placeholder="e.g., fishing"
+                  fullWidth
+                  size="small"
+                />
+                <Button
+                  variant="contained"
+                  onClick={handleKeywordSearch}
+                  disabled={loading || !searchKeyword}
+                  startIcon={loading ? <CircularProgress size={16} /> : <Search size={16} />}
+                  sx={{ minWidth: '120px' }}
+                >
+                  Research
+                </Button>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* URL Metrics Results */}
+      {urlMetrics && urlMetrics.success && (
+        <Accordion sx={{ mb: 3 }}>
+          <AccordionSummary expandIcon={<ExpandMore />}>
+            <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <BarChart3 size={20} />
+              URL Metrics: {searchUrl}
+            </Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Grid container spacing={3}>
+              {/* Page Metrics */}
+              <Grid item xs={12} md={6}>
+                <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                  Page Metrics
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={6} sm={4}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <LinkIcon size={24} color="primary" />
+                        <Typography variant="h6" fontWeight="bold">
+                          {formatNumber(urlMetrics.data.page.backlinks)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Backlinks
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={6} sm={4}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <Globe size={24} color="primary" />
+                        <Typography variant="h6" fontWeight="bold">
+                          {formatNumber(urlMetrics.data.page.refDomains)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Ref Domains
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={6} sm={4}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <Users size={24} color="primary" />
+                        <Typography variant="h6" fontWeight="bold">
+                          {formatNumber(Math.round(urlMetrics.data.page.traffic))}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Traffic
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={6} sm={4}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <DollarSign size={24} color="primary" />
+                        <Typography variant="h6" fontWeight="bold">
+                          ${formatNumber(Math.round(urlMetrics.data.page.trafficValue))}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Traffic Value
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={6} sm={4}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <Search size={24} color="primary" />
+                        <Typography variant="h6" fontWeight="bold">
+                          {formatNumber(urlMetrics.data.page.organicKeywords)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Keywords
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={6} sm={4}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <Award size={24} color="primary" />
+                        <Typography variant="h6" fontWeight="bold">
+                          {urlMetrics.data.page.urlRating}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          URL Rating
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+              </Grid>
+              
+              {/* Domain Metrics */}
+              <Grid item xs={12} md={6}>
+                <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                  Domain Metrics
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={6} sm={4}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <Award size={24} color="secondary" />
+                        <Typography variant="h6" fontWeight="bold">
+                          {urlMetrics.data.domain.domainRating}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Domain Rating
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={6} sm={4}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <TrendingUp size={24} color="secondary" />
+                        <Typography variant="h6" fontWeight="bold">
+                          #{formatNumber(urlMetrics.data.domain.ahrefsRank)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Ahrefs Rank
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={6} sm={4}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <LinkIcon size={24} color="secondary" />
+                        <Typography variant="h6" fontWeight="bold">
+                          {formatNumber(urlMetrics.data.domain.backlinks)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Backlinks
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={6} sm={4}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <Users size={24} color="secondary" />
+                        <Typography variant="h6" fontWeight="bold">
+                          {formatNumber(urlMetrics.data.domain.traffic)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Traffic
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={6} sm={4}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <DollarSign size={24} color="secondary" />
+                        <Typography variant="h6" fontWeight="bold">
+                          ${formatNumber(urlMetrics.data.domain.trafficValue)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Traffic Value
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={6} sm={4}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <Search size={24} color="secondary" />
+                        <Typography variant="h6" fontWeight="bold">
+                          {formatNumber(urlMetrics.data.domain.organicKeywords)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Keywords
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+              </Grid>
+            </Grid>
+          </AccordionDetails>
+        </Accordion>
+      )}
+
+      {/* Keyword Metrics Results */}
+      {keywordMetrics && keywordMetrics.success && (
+        <Accordion sx={{ mb: 3 }}>
+          <AccordionSummary expandIcon={<ExpandMore />}>
+            <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Target size={20} />
+              Keyword Analysis: "{searchKeyword}"
+            </Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={8}>
+                <Grid container spacing={2}>
+                  <Grid item xs={6} sm={4}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <Search size={24} color="primary" />
+                        <Typography variant="h6" fontWeight="bold">
+                          {formatNumber(keywordMetrics.data.searchVolume)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Monthly Searches (US)
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={6} sm={4}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <Globe size={24} color="primary" />
+                        <Typography variant="h6" fontWeight="bold">
+                          {formatNumber(keywordMetrics.data.globalSearchVolume)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Global Volume
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={6} sm={4}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <Eye size={24} color="primary" />
+                        <Typography variant="h6" fontWeight="bold">
+                          {formatNumber(keywordMetrics.data.clicks)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Clicks
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={6} sm={4}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <DollarSign size={24} color="secondary" />
+                        <Typography variant="h6" fontWeight="bold">
+                          ${keywordMetrics.data.cpc.toFixed(2)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          CPC
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={6} sm={4}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <Zap size={24} color="secondary" />
+                        <Typography variant="h6" fontWeight="bold">
+                          {formatNumber(keywordMetrics.data.trafficPotential)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Traffic Potential
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={6} sm={4}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <AlertTriangle size={24} color="error" />
+                        <Typography variant="h6" fontWeight="bold">
+                          {keywordMetrics.data.difficulty}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Difficulty Score
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Card variant="outlined" sx={{ height: '100%' }}>
+                  <CardContent>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Keyword Insights
+                    </Typography>
+                    <List dense>
+                      <ListItem>
+                        <ListItemText
+                          primary="Competition Level"
+                          secondary={
+                            <Chip
+                              size="small"
+                              label={keywordMetrics.data.difficulty > 70 ? 'High' : keywordMetrics.data.difficulty > 40 ? 'Medium' : 'Low'}
+                              color={keywordMetrics.data.difficulty > 70 ? 'error' : keywordMetrics.data.difficulty > 40 ? 'warning' : 'success'}
+                            />
+                          }
+                        />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemText
+                          primary="Click-through Rate"
+                          secondary={`${((keywordMetrics.data.clicks / keywordMetrics.data.searchVolume) * 100).toFixed(1)}%`}
+                        />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemText
+                          primary="Traffic Value"
+                          secondary={`$${(keywordMetrics.data.trafficPotential * keywordMetrics.data.cpc).toFixed(2)}`}
+                        />
+                      </ListItem>
+                    </List>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          </AccordionDetails>
+        </Accordion>
+      )}
+
+      {/* Keyword Ideas Results */}
+      {keywordIdeas && keywordIdeas.success && (
+        <Accordion sx={{ mb: 3 }}>
+          <AccordionSummary expandIcon={<ExpandMore />}>
+            <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Search size={20} />
+              Keyword Ideas ({keywordIdeas.data.allIdeas.results.length} of {formatNumber(keywordIdeas.data.allIdeas.total)})
+            </Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Keyword</TableCell>
+                    <TableCell>Difficulty</TableCell>
+                    <TableCell>Volume</TableCell>
+                    <TableCell>Last Updated</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {keywordIdeas.data.allIdeas.results.slice(0, 20).map((idea) => (
+                    <TableRow key={idea.id}>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight="medium">
+                          {idea.keyword}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          size="small"
+                          label={idea.difficultyLabel}
+                          color={getDifficultyColor(idea.difficultyLabel)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {idea.volumeLabel.replace(/([A-Z])/g, ' $1').trim()}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {new Date(idea.updatedAt).toLocaleDateString()}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </AccordionDetails>
+        </Accordion>
+      )}
       <Grid container spacing={3}>
         {/* Overview Cards */}
         <Grid item xs={12} md={6} lg={3}>

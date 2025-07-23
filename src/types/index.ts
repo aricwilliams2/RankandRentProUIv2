@@ -308,3 +308,60 @@ export interface SerpInsights {
   competitors: SerpCompetitor[];
   raw: any;
 }
+
+// New Ahrefs API Types
+export interface UrlMetrics {
+  success: boolean;
+  data: {
+    page: {
+      backlinks: number;
+      refDomains: number;
+      traffic: number;
+      trafficValue: number;
+      organicKeywords: number;
+      urlRating: number;
+      numberOfWordsOnPage: number;
+    };
+    domain: {
+      domainRating: number;
+      ahrefsRank: number;
+      backlinks: number;
+      refDomains: number;
+      traffic: number;
+      trafficValue: number;
+      organicKeywords: number;
+    };
+  };
+}
+
+export interface KeywordMetrics {
+  success: boolean;
+  data: {
+    keyword: string;
+    searchVolume: number;
+    clicks: number;
+    cpc: number;
+    difficulty: number;
+    globalSearchVolume: number;
+    trafficPotential: number;
+  };
+}
+
+export interface KeywordIdea {
+  id: string;
+  keyword: string;
+  country: string;
+  difficultyLabel: 'Easy' | 'Medium' | 'Hard' | 'Unknown';
+  volumeLabel: string;
+  updatedAt: string;
+}
+
+export interface KeywordGenerator {
+  success: boolean;
+  data: {
+    allIdeas: {
+      results: KeywordIdea[];
+      total: number;
+    };
+  };
+}

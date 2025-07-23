@@ -20,7 +20,10 @@ import type {
   Task,
   SEOMetrics,
   Backlink,
-  KeywordData
+  KeywordData,
+  UrlMetrics,
+  KeywordMetrics,
+  KeywordGenerator
 } from '../types';
 
 interface ApiContextType {
@@ -82,6 +85,11 @@ interface ApiContextType {
   getWebsiteBacklinks: (websiteId: string) => Promise<Backlink[]>;
   getKeywordRankings: (websiteId: string) => Promise<KeywordData[]>;
   refreshAnalytics: (websiteId: string) => Promise<boolean>;
+  
+  // New Ahrefs methods
+  getUrlMetrics: (url: string) => Promise<UrlMetrics | null>;
+  getKeywordMetrics: (keyword: string, country?: string) => Promise<KeywordMetrics | null>;
+  getKeywordIdeas: (keyword: string, country?: string) => Promise<KeywordGenerator | null>;
 }
 
 const ApiContext = createContext<ApiContextType | undefined>(undefined);
@@ -285,7 +293,10 @@ export const ApiProvider: React.FC<{children: ReactNode}> = ({ children }) => {
         getWebsiteAnalytics: analyticsApi.getWebsiteAnalytics,
         getWebsiteBacklinks: analyticsApi.getWebsiteBacklinks,
         getKeywordRankings: analyticsApi.getKeywordRankings,
-        refreshAnalytics: analyticsApi.refreshAnalytics
+        refreshAnalytics: analyticsApi.refreshAnalytics,
+        getUrlMetrics: analyticsApi.getUrlMetrics,
+        getKeywordMetrics: analyticsApi.getKeywordMetrics,
+        getKeywordIdeas: analyticsApi.getKeywordIdeas
       }}
     >
       {children}
