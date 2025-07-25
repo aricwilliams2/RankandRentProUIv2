@@ -369,3 +369,23 @@ export interface KeywordGenerator {
     };
   };
 }
+
+// Google Rank Check Types
+export interface SerpResult {
+  rank: number;
+  title: string;
+  link: string;
+  description: string;
+  "domain authority": number;
+  "page authority": number;
+}
+
+export interface GoogleRankCheck {
+  status: string;
+  data: {
+    message: string;
+    rank: number;
+    SERP: SerpResult[];
+  };
+  message: string;
+}</parameter>

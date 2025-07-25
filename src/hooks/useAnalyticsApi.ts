@@ -165,6 +165,29 @@ export const useAnalyticsApi = () => {
       setLoading(false);
     }
   }, []);
+
+  const checkGoogleRank = useCallback(async (keyword: string, url: string, country: string = 'us'): Promise<GoogleRankCheck | null> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const apiUrl = `https://newrankandrentapi.onrender.com/api/google-rank-check?keyword=${encodeURIComponent(keyword)}&url=${encodeURIComponent(url)}&country=${country}&id=google-serp`;
+      const response = await fetch(apiUrl);
+      
+      if (!response.ok) {
+        throw new Error('Failed to check Google ranking');
+      }
+      
+      const data = await response.json();
+      return data;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return {
     loading,
     error,
@@ -175,6 +198,7 @@ export const useAnalyticsApi = () => {
     refreshAnalytics,
     getUrlMetrics,
     getKeywordMetrics,
-    getKeywordIdeas
+    getKeywordIdeas,
+    checkGoogleRank
   };
 };

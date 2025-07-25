@@ -90,6 +90,7 @@ interface ApiContextType {
   getUrlMetrics: (url: string) => Promise<UrlMetrics | null>;
   getKeywordMetrics: (keyword: string, country?: string) => Promise<KeywordMetrics | null>;
   getKeywordIdeas: (keyword: string, country?: string) => Promise<KeywordGenerator | null>;
+  checkGoogleRank: (keyword: string, url: string, country?: string) => Promise<GoogleRankCheck | null>;
 }
 
 const ApiContext = createContext<ApiContextType | undefined>(undefined);
@@ -296,7 +297,8 @@ export const ApiProvider: React.FC<{children: ReactNode}> = ({ children }) => {
         refreshAnalytics: analyticsApi.refreshAnalytics,
         getUrlMetrics: analyticsApi.getUrlMetrics,
         getKeywordMetrics: analyticsApi.getKeywordMetrics,
-        getKeywordIdeas: analyticsApi.getKeywordIdeas
+        getKeywordIdeas: analyticsApi.getKeywordIdeas,
+        checkGoogleRank: analyticsApi.checkGoogleRank
       }}
     >
       {children}
