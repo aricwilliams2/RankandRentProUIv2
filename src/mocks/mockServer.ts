@@ -1,5 +1,6 @@
 import { http } from 'msw';
 import { setupWorker } from 'msw/browser';
+import { sampleLeads } from '../data/sampleLeads';
 
 // Load sample data from provided JSON files
 const serpData = {
@@ -168,6 +169,32 @@ const competitorData = {
   total_items: 69
 };
 
+// Mock leads store
+let mockLeads = [...sampleLeads];
+let nextLeadId = Math.max(...mockLeads.map(lead => lead.id)) + 1;
+
+// Mock research data
+const mockResearchData = [
+  {
+    id: 1,
+    niche: "Junk Removal",
+    location: "Atlanta, GA",
+    competition: "Medium",
+    avgRent: 2500,
+    leadGenerated: 45,
+    createdAt: "2024-01-15"
+  },
+  {
+    id: 2,
+    niche: "Landscaping",
+    location: "Miami, FL", 
+    competition: "High",
+    avgRent: 3200,
+    leadGenerated: 62,
+    createdAt: "2024-01-20"
+  }
+];
+
 // Create mock handlers
 const handlers = [
   http.get('/api/serp', (req, res, ctx) => {
@@ -186,6 +213,67 @@ const handlers = [
     const domain = req.url.searchParams.get('domain');
     console.log('Mock Competitor API called with domain:', domain);
     return res(ctx.status(200), ctx.json(competitorData));
+  }),
+
+  http.get('/api/research', (req, res, ctx) => {
+    console.log('Mock Research API called');
+    return res(ctx.status(200), ctx.json(mockResearchData));
+  }),
+
+  // Leads API handlers
+  http.get('http://127.0.0.1:8000/api/leads', (req, res, ctx) => {
+    const page = parseInt(req.url.searchParams.get('page') || '1');
+    const limit = parseInt(req.url.searchParams.get('limit') || '10');
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedLeads = mockLeads.slice(startIndex, endIndex);
+    
+    console.log('Mock Leads API called - GET');
+    return res(ctx.status(200), ctx.json({
+      leads: paginatedLeads,
+      total: mockLeads.length,
+      page,
+      totalPages: Math.ceil(mockLeads.length / limit)
+    }));
+  }),
+
+  http.post('http://127.0.0.1:8000/api/leads', async (req, res, ctx) => {
+    const newLead = await req.json();
+    const lead = {
+      ...newLead,
+      id: nextLeadId++,
+      createdAt: new Date().toISOString()
+    };
+    mockLeads.push(lead);
+    console.log('Mock Leads API called - POST');
+    return res(ctx.status(201), ctx.json(lead));
+  }),
+
+  http.put('http://127.0.0.1:8000/api/leads/:id', async (req, res, ctx) => {
+    const leadId = parseInt(ctx.params.id);
+    const updatedData = await req.json();
+    const leadIndex = mockLeads.findIndex(lead => lead.id === leadId);
+    
+    if (leadIndex === -1) {
+      return res(ctx.status(404), ctx.json({ error: 'Lead not found' }));
+    }
+    
+    mockLeads[leadIndex] = { ...mockLeads[leadIndex], ...updatedData };
+    console.log('Mock Leads API called - PUT');
+    return res(ctx.status(200), ctx.json(mockLeads[leadIndex]));
+  }),
+
+  http.delete('http://127.0.0.1:8000/api/leads/:id', (req, res, ctx) => {
+    const leadId = parseInt(ctx.params.id);
+    const leadIndex = mockLeads.findIndex(lead => lead.id === leadId);
+    
+    if (leadIndex === -1) {
+      return res(ctx.status(404), ctx.json({ error: 'Lead not found' }));
+    }
+    
+    mockLeads.splice(leadIndex, 1);
+    console.log('Mock Leads API called - DELETE');
+    return res(ctx.status(200), ctx.json({ message: 'Lead deleted successfully' }));
   })
 ];
 
@@ -194,7 +282,7 @@ export const worker = setupWorker(...handlers);
 
 // Start the worker
 export const startMockServer = () => {
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     worker.start({
       onUnhandledRequest: 'bypass'
     }).catch(error => {
