@@ -105,14 +105,8 @@ export const useAnalyticsApi = () => {
     setError(null);
     
     try {
-      const apiUrl = `https://ahrefs-dr-rank-checker.p.rapidapi.com/url-metrics?url=${encodeURIComponent(url)}`;
-      const response = await fetch(apiUrl, {
-        method: 'GET',
-        headers: {
-          'x-rapidapi-key': 'f995f06a8amsh659af22d56e5216p19c1bejsn33130b55a44f',
-          'x-rapidapi-host': 'ahrefs-dr-rank-checker.p.rapidapi.com'
-        }
-      });
+      const apiUrl = `https://newrankandrentapi.onrender.com/api/url-metrics?url=${encodeURIComponent(url)}`;
+      const response = await fetch(apiUrl);
       
       if (!response.ok) {
         throw new Error('Failed to fetch URL metrics');
@@ -133,14 +127,8 @@ export const useAnalyticsApi = () => {
     setError(null);
     
     try {
-      const apiUrl = `https://ahrefs-dr-rank-checker.p.rapidapi.com/keyword-metrics?keyword=${encodeURIComponent(keyword)}&country=${country}`;
-      const response = await fetch(apiUrl, {
-        method: 'GET',
-        headers: {
-          'x-rapidapi-key': 'f995f06a8amsh659af22d56e5216p19c1bejsn33130b55a44f',
-          'x-rapidapi-host': 'ahrefs-dr-rank-checker.p.rapidapi.com'
-        }
-      });
+      const apiUrl = `https://newrankandrentapi.onrender.com/api/keyword-metrics?keyword=${encodeURIComponent(keyword)}&country=${country}`;
+      const response = await fetch(apiUrl);
       
       if (!response.ok) {
         throw new Error('Failed to fetch keyword metrics');
@@ -161,14 +149,8 @@ export const useAnalyticsApi = () => {
     setError(null);
     
     try {
-      const apiUrl = `https://ahrefs-dr-rank-checker.p.rapidapi.com/keyword-generator?keyword=${encodeURIComponent(keyword)}&country=${country}`;
-      const response = await fetch(apiUrl, {
-        method: 'GET',
-        headers: {
-          'x-rapidapi-key': 'f995f06a8amsh659af22d56e5216p19c1bejsn33130b55a44f',
-          'x-rapidapi-host': 'ahrefs-dr-rank-checker.p.rapidapi.com'
-        }
-      });
+      const apiUrl = `https://newrankandrentapi.onrender.com/api/keyword-generator?keyword=${encodeURIComponent(keyword)}&country=${country}`;
+      const response = await fetch(apiUrl);
       
       if (!response.ok) {
         throw new Error('Failed to fetch keyword ideas');

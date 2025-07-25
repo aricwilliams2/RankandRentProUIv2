@@ -363,5 +363,9 @@ export interface KeywordGenerator {
       results: KeywordIdea[];
       total: number;
     };
+    questionIdeas?: {
+      results: KeywordIdea[];
+      total: number;
+    };
   };
 }
