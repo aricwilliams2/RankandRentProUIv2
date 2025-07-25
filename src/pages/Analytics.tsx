@@ -27,11 +27,12 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Link,
 } from '@mui/material';
-import { TrendingUp, Link as LinkIcon, Search, Globe, ArrowUpRight, ArrowDownRight, ExternalLink, RefreshCw, AlertTriangle, CheckCircle, Activity, Award, Target, Users, BarChart3, DollarSign, Zap, Eye, Expand as ExpandMore, TrendingDown } from 'lucide-react';
+import { TrendingUp, Link as LinkIcon, Search, Globe, ArrowUpRight, ArrowDownRight, ExternalLink, RefreshCw, AlertTriangle, CheckCircle, Activity, Award, Target, Users, BarChart3, DollarSign, Zap, Eye, Expand as ExpandMore, TrendingDown, XCircle } from 'lucide-react';
 import { useApiContext } from '../contexts/ApiContext';
 import { useLocation, useNavigate } from 'react-router-dom';
-import type { Website, UrlMetrics, KeywordMetrics, KeywordGenerator } from '../types';
+import type { Website, UrlMetrics, KeywordMetrics, KeywordGenerator, GoogleRankCheck } from '../types';
 
 export default function Analytics() {
   const location = useLocation();
@@ -41,6 +42,7 @@ export default function Analytics() {
     getKeywordMetrics, 
     getKeywordIdeas, 
     getWebsites,
+    checkGoogleRank,
     loading: apiLoading,
     error: apiError 
   } = useApiContext();
@@ -58,6 +60,11 @@ export default function Analytics() {
   const [selectedKeyword, setSelectedKeyword] = useState('');
   const [analyzingKeywords, setAnalyzingKeywords] = useState<Record<string, KeywordMetrics | null>>({});
   const [expandedKeywords, setExpandedKeywords] = useState<Set<string>>(new Set());
+  
+  // Google Rank Check State
+  const [rankCheckKeyword, setRankCheckKeyword] = useState('');
+  const [rankCheckUrl, setRankCheckUrl] = useState('');
+  const [rankCheckData, setRankCheckData] = useState<GoogleRankCheck | null>(null);
   
   // Loading and error states
   const [loading, setLoading] = useState(false);
@@ -217,6 +224,30 @@ export default function Analytics() {
         setLoading(false);
       }
     }
+  };
+
+  const handleRankCheck = async () => {
+    if (!rankCheckKeyword.trim() || !rankCheckUrl.trim()) return;
+    
+    try {
+      const result = await checkGoogleRank(rankCheckKeyword, rankCheckUrl);
+      setRankCheckData(result);
+    } catch (error) {
+      console.error('Failed to check ranking:', error);
+    }
+  };
+
+  const getRankColor = (rank: number) => {
+    if (rank <= 3) return 'text-green-600 bg-green-50';
+    if (rank <= 10) return 'text-blue-600 bg-blue-50';  
+    if (rank <= 20) return 'text-orange-600 bg-orange-50';
+    return 'text-red-600 bg-red-50';
+  };
+
+  const getRankIcon = (rank: number) => {
+    if (rank <= 3) return <Award className="w-4 h-4" />;
+    if (rank <= 10) return <CheckCircle className="w-4 h-4" />;
+    return <XCircle className="w-4 h-4" />;
   };
 
   const formatNumber = (num: number) => {
@@ -678,6 +709,156 @@ export default function Analytics() {
                 </Card>
               </Grid>
             </Grid>
+            
+            {/* Google Rank Checker */}
+            <Box sx={{ mt: 4 }}>
+              <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Award size={20} />
+                Google Rank Checker
+              </Typography>
+              
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2, mb: 3 }}>
+                    <TextField
+                      label="Keyword"
+                      value={rankCheckKeyword}
+                      onChange={(e) => setRankCheckKeyword(e.target.value)}
+                      placeholder="e.g., junk removal wilmington"
+                      fullWidth
+                      variant="outlined"
+                      size="small"
+                    />
+                    <TextField
+                      label="Website URL"
+                      value={rankCheckUrl}
+                      onChange={(e) => setRankCheckUrl(e.target.value)}
+                      placeholder="e.g., https://hancockhauling.com"
+                      fullWidth
+                      variant="outlined"
+                      size="small"
+                    />
+                    <Button
+                      variant="contained"
+                      onClick={handleRankCheck}
+                      disabled={loading || !rankCheckKeyword.trim() || !rankCheckUrl.trim()}
+                      startIcon={loading ? <CircularProgress size={16} /> : <Search size={16} />}
+                      sx={{ minWidth: '120px' }}
+                    >
+                      {loading ? 'Checking...' : 'Check Rank'}
+                    </Button>
+                  </Box>
+                  
+                  {rankCheckData && (
+                    <Box>
+                      {/* Rank Summary */}
+                      <Box sx={{ mb: 3, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1, borderRadius: '8px', ...getRankColor(rankCheckData.data.rank).split(' ').reduce((acc, cls) => {
+                            const [prop, value] = cls.split('-');
+                            if (prop === 'text') acc.color = value === 'green' ? 'success.main' : value === 'blue' ? 'info.main' : value === 'orange' ? 'warning.main' : 'error.main';
+                            if (prop === 'bg') acc.bgcolor = value === 'green' ? 'success.light' : value === 'blue' ? 'info.light' : value === 'orange' ? 'warning.light' : 'error.light';
+                            return acc;
+                          }, {}) }}>
+                            {getRankIcon(rankCheckData.data.rank)}
+                            <Typography variant="h6" fontWeight="bold">
+                              Rank #{rankCheckData.data.rank}
+                            </Typography>
+                          </Box>
+                        </Box>
+                        <Typography variant="body2" color="text.secondary">
+                          {rankCheckData.data.message}
+                        </Typography>
+                      </Box>
+                      
+                      {/* SERP Results */}
+                      <Typography variant="subtitle1" fontWeight="medium" sx={{ mb: 2 }}>
+                        Top 10 Search Results
+                      </Typography>
+                      
+                      <TableContainer>
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow>
+                              <TableCell width="60px">Rank</TableCell>
+                              <TableCell>Title & URL</TableCell>
+                              <TableCell width="100px">DA</TableCell>
+                              <TableCell width="100px">PA</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {rankCheckData.data.SERP.slice(0, 10).map((result) => (
+                              <TableRow 
+                                key={result.rank}
+                                sx={{ 
+                                  bgcolor: result.rank === rankCheckData.data.rank ? 'success.light' : 'inherit',
+                                  '&:hover': { bgcolor: 'action.hover' }
+                                }}
+                              >
+                                <TableCell>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    {result.rank <= 3 && <Award size={16} color="gold" />}
+                                    <Typography variant="body2" fontWeight="medium">
+                                      #{result.rank}
+                                    </Typography>
+                                  </Box>
+                                </TableCell>
+                                <TableCell>
+                                  <Box>
+                                    <Typography 
+                                      variant="body2" 
+                                      fontWeight="medium" 
+                                      sx={{ 
+                                        display: '-webkit-box',
+                                        WebkitLineClamp: 2,
+                                        WebkitBoxOrient: 'vertical',
+                                        overflow: 'hidden',
+                                        mb: 0.5
+                                      }}
+                                    >
+                                      {result.title}
+                                    </Typography>
+                                    <Link 
+                                      href={result.link} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      sx={{ 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        gap: 0.5,
+                                        fontSize: '0.75rem',
+                                        color: 'text.secondary'
+                                      }}
+                                    >
+                                      <LinkIcon size={12} />
+                                      {new URL(result.link).hostname}
+                                    </Link>
+                                  </Box>
+                                </TableCell>
+                                <TableCell>
+                                  <Chip 
+                                    label={result["domain authority"]} 
+                                    size="small"
+                                    color={result["domain authority"] >= 60 ? 'success' : result["domain authority"] >= 30 ? 'warning' : 'error'}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Chip 
+                                    label={result["page authority"]} 
+                                    size="small"
+                                    color={result["page authority"] >= 40 ? 'success' : result["page authority"] >= 20 ? 'warning' : 'error'}
+                                  />
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            </Box>
           </AccordionDetails>
         </Accordion>
       )}
