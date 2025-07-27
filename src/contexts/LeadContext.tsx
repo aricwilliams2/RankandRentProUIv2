@@ -75,39 +75,26 @@ const transformLeadForAPI = (lead: Lead, fieldsToUpdate?: string[]) => {
   return apiData;
 };
 
-// API call to fetch leads with pagination support
-const fetchLeadsAPI = async (): Promise<Lead[]> => {
+// API call to fetch leads with pagination supportconst fetchLeadsAPI = async (): Promise<Lead[]> => {
   try {
-    let allLeads: Lead[] = [];
-    let currentPage = 1;
-    let hasMorePages = true;
+    console.log("Fetching all leads...");
 
-    // Fetch all pages if there are multiple
-    while (hasMorePages) {
-      console.log(`Fetching leads page ${currentPage}...`);
-      const response = await fetch(`${API_BASE_URL}/leads?page=${currentPage}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-      });
+    const response = await fetch(`${API_BASE_URL}/leads`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    });
 
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status} ${response.statusText}`);
-      }
-
-      const paginatedResponse = await response.json();
-      console.log(`Page ${currentPage} response:`, paginatedResponse);
-
-      // Extract leads from the 'data' property
-      const pageLeads = paginatedResponse.data.map(transformAPILeadToFrontend);
-      allLeads = [...allLeads, ...pageLeads];
-
-      // Check if there are more pages
-      hasMorePages = paginatedResponse.next_page_url !== null;
-      currentPage++;
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status} ${response.statusText}`);
     }
+
+    const apiResponse = await response.json();
+    console.log("API Response:", apiResponse);
+
+    const allLeads = apiResponse.data.map(transformAPILeadToFrontend);
 
     console.log(`Total leads fetched: ${allLeads.length}`);
     return allLeads;
@@ -116,6 +103,7 @@ const fetchLeadsAPI = async (): Promise<Lead[]> => {
     throw error;
   }
 };
+
 
 // API call to update lead
 const updateLeadAPI = async (lead: Lead, fieldsToUpdate?: string[]) => {
