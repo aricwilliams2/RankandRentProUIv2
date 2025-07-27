@@ -74,6 +74,7 @@ export interface ClientContextType {
   updateClient: (id: string, updates: Partial<Client>) => Promise<Client>;
   deleteClient: (id: string) => Promise<void>;
   toggleContactStatus: (id: string) => Promise<void>;
+  refreshClients: () => Promise<void>;
   loading: boolean;
   error: string | null;
   sortField: SortField | null;

@@ -11,6 +11,7 @@ export default function Clients() {
     createClient, 
     updateClient, 
     deleteClient, 
+    refreshClients,
     loading, 
     error 
   } = useClientContext();
@@ -29,6 +30,30 @@ export default function Clients() {
     website: "",
     notes: "",
   });
+
+  // Refresh clients data when component mounts or becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        refreshClients();
+      }
+    };
+
+    const handleCustomRefresh = () => {
+      refreshClients();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('refreshClients', handleCustomRefresh);
+    
+    // Also refresh when component mounts
+    refreshClients();
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('refreshClients', handleCustomRefresh);
+    };
+  }, [refreshClients]);
 
   const handleOpen = (client?: Client) => {
     if (client) {
@@ -117,13 +142,21 @@ export default function Clients() {
   };
 
   const handleViewAnalytics = (client: Client) => {
-    if (client.websites.length > 0) {
-      const website = client.websites[0]; // Use first website
+    if (client.website) {
+      // Extract domain from website URL
+      let domain = client.website;
+      try {
+        const url = new URL(client.website.startsWith('http') ? client.website : `https://${client.website}`);
+        domain = url.hostname.replace('www.', '');
+      } catch {
+        // If URL parsing fails, use the website string as is
+        domain = client.website.replace(/^https?:\/\//, '').replace('www.', '').split('/')[0];
+      }
+      
       navigate('/analytics', {
         state: {
-          website: website,
-          domain: website.domain,
-          keywords: website.seoMetrics?.topKeywords || []
+          domain: domain,
+          keywords: [client.name.toLowerCase(), `${client.name.toLowerCase()} services`] // Generate keywords from client name
         }
       });
     }
@@ -218,6 +251,8 @@ export default function Clients() {
                   <Typography variant="body2">
                     {client.reviews || 0} reviews
                   </Typography>
+                </TableCell>
+                <TableCell>
                   <Chip
                     size="small"
                     label={client.contacted ? "Contacted" : "New"}

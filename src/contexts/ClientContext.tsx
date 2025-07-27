@@ -122,10 +122,22 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const refreshClients = async () => {
+    try {
+      setError(null);
+      const data = await fetchClientsAPI();
+      setClients(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load clients");
+      throw err;
+    }
+  };
+
   useEffect(() => {
     const loadClients = async () => {
       try {
         setLoading(true);
+        setError(null);
         setError(null);
         const data = await fetchClientsAPI();
         setClients(data);
@@ -225,6 +237,7 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({
         updateClient,
         deleteClient,
         toggleContactStatus,
+        refreshClients,
         loading,
         error,
         sortField,

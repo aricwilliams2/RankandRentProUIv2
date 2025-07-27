@@ -100,6 +100,14 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
         
         await createClient(clientData);
         alert(`Successfully converted "${lead.name}" to a client!`);
+        
+        // Refresh clients data in the background
+        // This ensures the clients tab shows updated data when navigated to
+        setTimeout(() => {
+          // Try to refresh if user switches to clients tab
+          const event = new CustomEvent('refreshClients');
+          window.dispatchEvent(event);
+        }, 500);
       } catch (error) {
         console.error("Failed to convert lead to client:", error);
         alert("Failed to convert lead to client. Please try again.");
