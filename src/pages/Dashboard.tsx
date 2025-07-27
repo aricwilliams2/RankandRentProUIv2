@@ -111,7 +111,6 @@ export default function Dashboard() {
   // Debug: Log tasks when they change
   React.useEffect(() => {
     console.log('Dashboard - Current tasks:', tasks);
-    console.log('Dashboard - Tasks count:', tasks.length);
   }, [tasks]);
 
   const handleTaskDialogOpen = (task?: Task) => {
