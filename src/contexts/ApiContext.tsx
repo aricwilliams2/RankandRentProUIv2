@@ -179,7 +179,7 @@ export const ApiProvider: React.FC<{children: ReactNode}> = ({ children }) => {
 
   // Task methods
   const getTasks = useCallback(async (status?: string) => {
-    const result = await dashboardApi.getTasks(status as Task['status']);
+    const result = await dashboardApi.getTasks(status as Task['status'] | undefined);
     setTasks(result);
     return result;
   }, [dashboardApi]);
@@ -191,7 +191,7 @@ export const ApiProvider: React.FC<{children: ReactNode}> = ({ children }) => {
       await getTasks();
     }
     return result;
-  }, [dashboardApi]);
+  }, [dashboardApi, getTasks]);
 
   const deleteTask = useCallback(async (id: string) => {
     const result = await dashboardApi.deleteTask(id);
@@ -200,7 +200,7 @@ export const ApiProvider: React.FC<{children: ReactNode}> = ({ children }) => {
       await getTasks();
     }
     return result;
-  }, [dashboardApi]);
+  }, [dashboardApi, getTasks]);
 
   // Initialize data
   React.useEffect(() => {
