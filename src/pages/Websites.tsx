@@ -30,6 +30,9 @@ import {
   MenuItem,
   CircularProgress,
   Stack,
+  FormControl,
+  InputLabel,
+  Select,
 } from '@mui/material';
 import {
   Globe,
@@ -210,7 +213,7 @@ Contact us today to learn more about our professional ${contentKeywords} service
         </Typography>
       </Box>
     );
-  };
+  }
 
   return (
     <Box>
@@ -451,7 +454,6 @@ Contact us today to learn more about our professional ${contentKeywords} service
                 <Typography variant="subtitle2" sx={{ width: '100%' }}>
                   Recommended Keywords:
                 </Typography>
-                {selectedWebsite?.seoMetrics.topKeywords.map((keyword, index) => (
                 {/* Mock keywords for content generation */}
                 {['emergency ' + selectedWebsite?.niche.toLowerCase(), selectedWebsite?.niche.toLowerCase() + ' services', 'professional ' + selectedWebsite?.niche.toLowerCase()].map((keyword, index) => (
                   <Chip
