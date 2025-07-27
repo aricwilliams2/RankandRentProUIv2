@@ -213,13 +213,13 @@ export const processSerpData = (data: SerpResponse): any[] => {
     .filter(result => result.content[0] === 'organic')
     .map(result => {
       const content = result.content[1];
-      const link = content.link[1];
+      const link = content.link;
       const metrics = link.metrics;
       
       return {
-        domain: link.url[1].url.replace(/^https?:\/\//, '').split('/')[0],
+        domain: link.url.replace(/^https?:\/\//, '').split('/')[0],
         title: link.title,
-        url: link.url[1].url,
+        url: link.url,
         metrics: metrics ? {
           domainRating: metrics.domainRating || 0,
           organicKeywords: metrics.keywords || 0,

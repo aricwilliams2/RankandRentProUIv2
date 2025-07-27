@@ -9,9 +9,9 @@ const serpData = {
     results: [
       {
         content: ["organic", {
-          link: ["Some", {
+          link: {
             title: "Junk Pick Up Services Near Me | What We Take",
-            url: ["Url", { url: "https://www.1800gotjunk.com/us_en/what-we-take/what_we_take" }],
+            url: "https://www.1800gotjunk.com/us_en/what-we-take/what_we_take",
             metrics: {
               rank: 88313,
               domainRating: 71,
@@ -24,7 +24,7 @@ const serpData = {
               topKeyword: "junk removal",
               topVolume: 80000,
             }
-          }],
+          },
           siteLinks: []
         }],
         pos: 3,
@@ -32,9 +32,9 @@ const serpData = {
       },
       {
         content: ["organic", {
-          link: ["Some", {
+          link: {
             title: "Eco-Friendly Junk Removal Services",
-            url: ["Url", { url: "https://www.collegehunkshaulingjunk.com/junk-removal/" }],
+            url: "https://www.collegehunkshaulingjunk.com/junk-removal/",
             metrics: {
               rank: 132376,
               domainRating: 69,
@@ -47,7 +47,7 @@ const serpData = {
               topKeyword: "haul away junk",
               topVolume: 9100,
             }
-          }],
+          },
           siteLinks: []
         }],
         pos: 4,
@@ -55,9 +55,9 @@ const serpData = {
       },
       {
         content: ["organic", {
-          link: ["Some", {
+          link: {
             title: "Junk King: North America's Best Junk Removal and Hauling ...",
-            url: ["Url", { url: "https://www.junk-king.com/" }],
+            url: "https://www.junk-king.com/",
             metrics: {
               rank: 226361,
               domainRating: 63,
@@ -70,7 +70,7 @@ const serpData = {
               topKeyword: "junk king",
               topVolume: 8700,
             }
-          }],
+          },
           siteLinks: []
         }],
         pos: 5,

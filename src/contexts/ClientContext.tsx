@@ -50,6 +50,22 @@ const updateClientAPI = async (
   };
 
   // If specific fields are provided, only send those
+  if (fieldsToUpdate && fieldsToUpdate.length > 0) {
+    const filteredData: any = {};
+    fieldsToUpdate.forEach((field) => {
+      if (data.hasOwnProperty(field)) {
+        filteredData[field] = data[field];
+      }
+    });
+    Object.assign(data, filteredData);
+  }
+    website: client.website || null,
+    contacted: client.contacted || false,
+    follow_up_at: client.follow_up_at || null,
+    notes: client.notes || null,
+  };
+
+  // If specific fields are provided, only send those
   if (fieldsToUpdate) {
     const filteredData: any = {};
     fieldsToUpdate.forEach((field) => {
