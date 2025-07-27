@@ -67,12 +67,28 @@ export interface LeadContextType {
   deleteLead: (leadId: string) => Promise<boolean>;
 }
 
+// Client Context Type
+export interface ClientContextType {
+  clients: Client[];
+  createClient: (data: Partial<Client>) => Promise<Client>;
+  updateClient: (id: string, updates: Partial<Client>) => Promise<Client>;
+  deleteClient: (id: string) => Promise<void>;
+  toggleContactStatus: (id: string) => Promise<void>;
+  loading: boolean;
+  error: string | null;
+  sortField: SortField | null;
+  sortDirection: SortDirection;
+  setSortField: (field: SortField | null) => void;
+  setSortDirection: (direction: SortDirection) => void;
+}
+
 // Core Types for other parts of the app
 export interface Client {
   id: string;
   name: string;
   email: string;
   phone: string;
+  contacted?: boolean;
   websites: Website[];
   communicationHistory: Communication[];
   createdAt: Date;

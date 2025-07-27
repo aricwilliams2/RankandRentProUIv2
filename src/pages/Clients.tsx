@@ -2,73 +2,23 @@ import React, { useEffect, useState } from "react";
 import { Box, Button, Card, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography, Chip, Tooltip, List, ListItem, ListItemText, ListItemIcon, Divider } from "@mui/material";
 import { Plus, Pencil, Trash2, Globe, Mail, Phone, History, MessageCircle, PhoneCall, StickyNote, BarChart3 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useClientContext } from "../contexts/ClientContext";
 import type { Client } from "../types";
 
-// Mock data - replace with actual API calls
-const initialClients: Client[] = [
-  {
-    id: "1",
-    name: "Acme Corporation",
-    email: "contact@acme.com",
-    phone: "(555) 123-4567",
-    websites: [
-      {
-        id: "1",
-        domain: "acmeplumbing.com",
-        niche: "Plumbing",
-        status: "active",
-        monthlyRevenue: 2500,
-        phoneNumbers: [],
-        leads: [],
-        seoMetrics: {
-          domainAuthority: 35,
-          backlinks: 150,
-          organicKeywords: 500,
-          organicTraffic: 2000,
-          topKeywords: ["plumbing", "emergency plumber"],
-          competitors: ["competitor1.com"],
-          lastUpdated: new Date(),
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ],
-    communicationHistory: [
-      {
-        id: "1",
-        clientId: "1",
-        type: "call",
-        content: "Discussed website rental terms - Client interested in 6-month contract",
-        createdAt: new Date(),
-        updatedBy: "system",
-      },
-      {
-        id: "2",
-        clientId: "1",
-        type: "email",
-        content: "Sent proposal and pricing details",
-        createdAt: new Date("2024-03-16T14:20:00"),
-        updatedBy: "system",
-      },
-      {
-        id: "3",
-        clientId: "1",
-        type: "note",
-        content: "Client requested follow-up call next week",
-        createdAt: new Date("2024-03-17T09:15:00"),
-        updatedBy: "system",
-      },
-    ],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
-
 export default function Clients() {
-  const [clients, setClients] = useState<Client[]>(initialClients);
+  const { 
+    clients, 
+    createClient, 
+    updateClient, 
+    deleteClient, 
+    loading, 
+    error 
+  } = useClientContext();
+  
   const [open, setOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
@@ -98,6 +48,7 @@ export default function Clients() {
   const handleClose = () => {
     setOpen(false);
     setSelectedClient(null);
+    setSubmitting(false);
   };
 
   const handleHistoryOpen = (client: Client) => {
@@ -121,37 +72,36 @@ export default function Clients() {
     }
   };
 
-  const handleSubmit = () => {
-    if (selectedClient) {
-      // Update existing client
-      setClients(
-        clients.map((client) =>
-          client.id === selectedClient.id
-            ? {
-                ...client,
-                ...formData,
-                updatedAt: new Date(),
-              }
-            : client
-        )
-      );
-    } else {
-      // Add new client
-      const newClient: Client = {
-        id: String(Date.now()),
-        ...formData,
-        websites: [],
-        communicationHistory: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      setClients([...clients, newClient]);
+  const handleSubmit = async () => {
+    try {
+      setSubmitting(true);
+      
+      if (selectedClient) {
+        // Update existing client
+        await updateClient(selectedClient.id, formData);
+      } else {
+        // Create new client
+        await createClient(formData);
+      }
+      
+      handleClose();
+    } catch (err) {
+      console.error("Failed to save client:", err);
+      // Error is handled by the context
+    } finally {
+      setSubmitting(false);
     }
-    handleClose();
   };
 
-  const handleDelete = (id: string) => {
-    setClients(clients.filter((client) => client.id !== id));
+  const handleDelete = async (id: string) => {
+    if (window.confirm("Are you sure you want to delete this client?")) {
+      try {
+        await deleteClient(id);
+      } catch (err) {
+        console.error("Failed to delete client:", err);
+        // Error is handled by the context
+      }
+    }
   };
 
   const handleViewAnalytics = (client: Client) => {
@@ -167,60 +117,24 @@ export default function Clients() {
     }
   };
 
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     const url = "https://backlinks-and-keywords-fetcher.p.rapidapi.com/seolizer";
-
-  //     const options = {
-  //       method: "POST",
-  //       headers: {
-  //         "x-rapidapi-key": "f995f06a8amsh659af22d56e5216p19c1bejsn33130b55a44f",
-  //         "x-rapidapi-host": "backlinks-and-keywords-fetcher.p.rapidapi.com",
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify({
-  //         approute: "domain_backlinks",
-  //         domain: "searchengineland.com",
-  //       }),
-  //     };
-
-  //     try {
-  //       const response = await fetch(url, options);
-  //       const result = await response.json();
-  //       console.log("Backlink Data:", result);
-  //     } catch (error) {
-  //       console.error("API error:", error);
-  //     }
-  //   };
-
-  //   fetchData();
-  // }, []);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const url = "https://ahrefs-dr-rank-checker.p.rapidapi.com/keyword-generator?keyword=fishing&country=us";
-      const options = {
-        method: "GET",
-        headers: {
-          "x-rapidapi-key": "f995f06a8amsh659af22d56e5216p19c1bejsn33130b55a44f",
-          "x-rapidapi-host": "ahrefs-dr-rank-checker.p.rapidapi.com",
-        },
-      };
-
-      try {
-        const response = await fetch(url, options);
-        const result = await response.json();
-        console.log("Backlink Data:", result);
-      } catch (error) {
-        console.error("API error:", error);
-      }
-    };
-
-    fetchData();
-  }, []);
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+        <Typography>Loading clients...</Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box>
+      {error && (
+        <Box sx={{ mb: 2 }}>
+          <Typography color="error" variant="body2">
+            {error}
+          </Typography>
+        </Box>
+      )}
+      
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
         <Typography variant="h4" fontWeight="bold">
           Clients
