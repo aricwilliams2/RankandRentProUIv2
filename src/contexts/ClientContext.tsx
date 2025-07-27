@@ -49,7 +49,7 @@ const updateClientAPI = async (
     notes: client.notes || null,
   };
 
-  // If specific fields are provided, only send those
+  // ✅ FIXED HERE
   if (fieldsToUpdate && fieldsToUpdate.length > 0) {
     const filteredData: any = {};
     fieldsToUpdate.forEach((field) => {
@@ -57,13 +57,7 @@ const updateClientAPI = async (
         filteredData[field] = data[field];
       }
     });
-    Object.assign(data, filteredData);
-  } else {
-    fieldsToUpdate.forEach((field) => {
-      if (field !== "id") {
-        data[field] = client[field];
-      }
-    });
+    Object.assign(data, filteredData); // Only apply filtered fields
   }
 
   const response = await fetch(`${API_BASE_URL}/clients/${client.id}`, {
