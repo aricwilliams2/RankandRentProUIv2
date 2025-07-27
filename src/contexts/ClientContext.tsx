@@ -58,7 +58,6 @@ const updateClientAPI = async (
       }
     });
     Object.assign(data, filteredData);
-  }
   } else {
     fieldsToUpdate.forEach((field) => {
       if (field !== "id") {
@@ -75,11 +74,7 @@ const updateClientAPI = async (
     body: JSON.stringify(data),
   });
 
-  return {
-    ...updated,
-    createdAt: new Date(updated.created_at),
-    updatedAt: new Date(updated.updated_at),
-  };
+  const updated = await response.json();
   return {
     ...updated,
     createdAt: new Date(updated.created_at),
@@ -112,10 +107,6 @@ const createClientAPI = async (clientData: Partial<Client>): Promise<Client> => 
   });
   const client = await response.json();
   return {
-    ...client,
-    createdAt: new Date(client.created_at),
-    updatedAt: new Date(client.updated_at),
-  };
     ...client,
     createdAt: new Date(client.created_at),
     updatedAt: new Date(client.updated_at),
