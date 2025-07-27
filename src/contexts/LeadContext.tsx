@@ -9,7 +9,8 @@ const initialFilters: Filters = {
 
 // API Configuration - Updated for local development
 //const API_BASE_URL = "https://www.rankandrenttool.com/api";
-const API_BASE_URL = "http://127.0.0.1:8000/api";
+//const API_BASE_URL = "http://127.0.0.1:8000/api";
+const API_BASE_URL = "https://newrankandrentapi.onrender.com"
 
 // Transform API lead data to frontend format
 const transformAPILeadToFrontend = (apiLead: any): Lead => {
