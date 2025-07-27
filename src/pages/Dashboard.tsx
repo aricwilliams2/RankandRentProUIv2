@@ -96,6 +96,7 @@ export default function Dashboard() {
   const [taskDialogOpen, setTaskDialogOpen] = React.useState(false);
   const [selectedTask, setSelectedTask] = React.useState<Task | null>(null);
   const [taskFilter, setTaskFilter] = React.useState("all");
+  const [formData, setFormData] = React.useState({
     title: "",
     description: "",
     websiteId: "",
@@ -112,6 +113,11 @@ export default function Dashboard() {
         title: task.title,
         description: task.description,
         websiteId: task.websiteId,
+        priority: task.priority,
+        status: task.status,
+        assignee: task.assignee,
+        dueDate: task.dueDate.toISOString().split('T')[0],
+      });
     } else {
       setSelectedTask(null);
       setFormData({
@@ -431,7 +437,6 @@ export default function Dashboard() {
           <Button variant="contained" onClick={handleTaskSubmit}>
             {selectedTask ? "Update" : "Add"}
           </Button>
-            disabled={!formData.title || !formData.website_id || !formData.due_date}
         </DialogActions>
       </Dialog>
     </Box>
