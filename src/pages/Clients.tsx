@@ -117,11 +117,13 @@ export default function Clients() {
   };
 
   const handleViewAnalytics = (client: Client) => {
-    if (client.website) {
+    if (client.websites.length > 0) {
+      const website = client.websites[0]; // Use first website
       navigate('/analytics', {
         state: {
-          domain: client.website,
-          keywords: [client.name.toLowerCase(), `${client.name.toLowerCase()} services`]
+          website: website,
+          domain: website.domain,
+          keywords: website.seoMetrics?.topKeywords || []
         }
       });
     }
@@ -160,8 +162,8 @@ export default function Clients() {
             <TableRow>
               <TableCell>Name</TableCell>
               <TableCell>Contact</TableCell>
-              <TableCell>Website</TableCell>
-              <TableCell>Reviews</TableCell>
+              <TableCell>Websites</TableCell>
+              <TableCell>Revenue</TableCell>
               <TableCell>Status</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
@@ -215,6 +217,7 @@ export default function Clients() {
                 <TableCell>
                   <Typography variant="body2">
                     {client.reviews || 0} reviews
+                  </Typography>
                   <Chip
                     size="small"
                     label={client.contacted ? "Contacted" : "New"}
