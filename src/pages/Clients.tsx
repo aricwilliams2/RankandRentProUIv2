@@ -202,7 +202,7 @@ export default function Clients() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {clients&& clients.map((client) => (
+            {clients&& clients?.map((client) => (
               <TableRow key={client.id}>
                 <TableCell>
                   <Typography variant="subtitle2">{client.name}</Typography>
