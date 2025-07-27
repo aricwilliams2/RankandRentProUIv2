@@ -75,7 +75,8 @@ const transformLeadForAPI = (lead: Lead, fieldsToUpdate?: string[]) => {
   return apiData;
 };
 
-// API call to fetch leads with pagination supportconst fetchLeadsAPI = async (): Promise<Lead[]> => {
+// API call to fetch leads with pagination support
+const fetchLeadsAPI = async (): Promise<Lead[]> => {
   try {
     console.log("Fetching all leads...");
 
@@ -92,8 +93,6 @@ const transformLeadForAPI = (lead: Lead, fieldsToUpdate?: string[]) => {
     }
 
     const apiResponse = await response.json();
-    console.log("API Response:", apiResponse);
-
     const allLeads = apiResponse.data.map(transformAPILeadToFrontend);
 
     console.log(`Total leads fetched: ${allLeads.length}`);
@@ -103,6 +102,7 @@ const transformLeadForAPI = (lead: Lead, fieldsToUpdate?: string[]) => {
     throw error;
   }
 };
+
 
 
 // API call to update lead
