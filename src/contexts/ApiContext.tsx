@@ -224,6 +224,8 @@ export const ApiProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     };
     
     loadInitialData();
+  }
+  )
 
   return (
     <ApiContext.Provider
