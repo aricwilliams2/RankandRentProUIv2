@@ -194,7 +194,7 @@ Contact us today to learn more about our professional ${contentKeywords} service
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-        <Typography>Loading websites...</Typography>
+        <CircularProgress />
       </Box>
     );
   }
@@ -358,6 +358,7 @@ Contact us today to learn more about our professional ${contentKeywords} service
               value={formData.domain}
               onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
               placeholder="example.com"
+              required
             />
             <TextField
               label="Niche"
@@ -365,6 +366,7 @@ Contact us today to learn more about our professional ${contentKeywords} service
               value={formData.niche}
               onChange={(e) => setFormData({ ...formData, niche: e.target.value })}
               placeholder="e.g., Plumbing, Real Estate, etc."
+              required
             />
             <FormControl fullWidth>
               <InputLabel>Status</InputLabel>
