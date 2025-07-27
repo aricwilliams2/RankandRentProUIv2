@@ -1,9 +1,10 @@
 import React, { forwardRef, useState } from "react";
-import { ExternalLink, Phone, Check, MessageSquare, Calendar, X, ChevronDown, ChevronUp, Clock, AlertTriangle, Edit, Save, MoreHorizontal, Trash2, Pencil, MapPin, BarChart3 } from "lucide-react";
+import { ExternalLink, Phone, Check, MessageSquare, Calendar, X, ChevronDown, ChevronUp, Clock, AlertTriangle, Edit, Save, MoreHorizontal, Trash2, Pencil, MapPin, BarChart3, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import StarRating from "./StarRating";
 import { Lead, CallLog } from "../types";
 import { useLeadContext } from "../contexts/LeadContext";
+import { useClientContext } from "../contexts/ClientContext";
 import LeadFormDialog from "./LeadFormDialog";
 
 interface LeadItemProps {
@@ -13,6 +14,7 @@ interface LeadItemProps {
 
 const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }, ref) => {
   const { setLastCalledIndex, toggleContactStatus, addCallLog, updateCallLog, deleteLead } = useLeadContext();
+  const { createClient } = useClientContext();
   const navigate = useNavigate();
   const [showCallDialog, setShowCallDialog] = useState(false);
   const [showCallHistory, setShowCallHistory] = useState(false);
@@ -24,6 +26,7 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
   const [callOutcome, setCallOutcome] = useState<CallLog["outcome"]>("follow_up_1_day");
   const [callNotes, setCallNotes] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [convertingToClient, setConvertingToClient] = useState(false);
 
   const handleCallLogClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -73,6 +76,36 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
           keywords: [lead.name.toLowerCase(), `${lead.name.toLowerCase()} services`] // Generate keywords from lead name
         }
       });
+    }
+  };
+
+  const handleConvertToClient = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (window.confirm(`Convert "${lead.name}" to a client?`)) {
+      setConvertingToClient(true);
+      try {
+        // Map lead data to client format
+        const clientData = {
+          name: lead.name,
+          email: lead.email || '',
+          phone: lead.phone,
+          city: lead.city === 'Unknown' ? null : (lead.city || null),
+          reviews: lead.reviews || 0,
+          website: lead.website || null,
+          contacted: lead.contacted,
+          follow_up_at: lead.follow_up_at || null,
+          notes: lead.notes || null,
+        };
+        
+        await createClient(clientData);
+        alert(`Successfully converted "${lead.name}" to a client!`);
+      } catch (error) {
+        console.error("Failed to convert lead to client:", error);
+        alert("Failed to convert lead to client. Please try again.");
+      } finally {
+        setConvertingToClient(false);
+      }
     }
   };
   const handleSubmitCallLog = () => {
@@ -210,6 +243,13 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
         <div className="flex gap-1 ml-2">
           {lead.website && (
             <button onClick={handleViewAnalytics} className="p-1 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors" title="View Analytics">
+              <BarChart3 className="w-3 h-3" />
+            </button>
+          )}
+          <button onClick={handleConvertToClient} disabled={convertingToClient} className="p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors disabled:opacity-50" title="Convert to Client">
+            <UserPlus className="w-3 h-3" />
+          </button>
+          <button onClick={handleEditClick} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit Lead">
               <BarChart3 className="w-3 h-3" />
             </button>
           )}
@@ -419,6 +459,13 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
           <div className="flex items-center gap-1">
             {lead.website && (
               <button onClick={handleViewAnalytics} className="p-1 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors" title="View Analytics">
+                <BarChart3 className="w-4 h-4" />
+              </button>
+            )}
+            <button onClick={handleConvertToClient} disabled={convertingToClient} className="p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors disabled:opacity-50" title="Convert to Client">
+              <UserPlus className="w-4 h-4" />
+            </button>
+            <button onClick={handleEditClick} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit Lead">
                 <BarChart3 className="w-4 h-4" />
               </button>
             )}
