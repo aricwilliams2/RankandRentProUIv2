@@ -137,15 +137,16 @@ export interface SEOMetrics {
 
 export interface Task {
   id: string;
-  websiteId: string;
+  website_id: string;
+  website_domain?: string;
   title: string;
   description: string;
   status: "todo" | "in_progress" | "completed";
   priority: "low" | "medium" | "high";
   assignee: string;
-  dueDate: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  due_date: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Invoice {
@@ -409,4 +410,4 @@ export interface GoogleRankCheck {
     SERP: SerpResult[];
   };
   message: string;
-}</parameter>
+}
