@@ -40,56 +40,6 @@ const stats = [
   { label: "Phone Numbers", value: "12", change: "+3", icon: Phone },
 ];
 
-const mockTasks: Task[] = [
-  {
-    id: "1",
-    websiteId: "1",
-    title: "Optimize meta descriptions",
-    description: "Update meta descriptions for all service pages",
-    status: "in_progress",
-    priority: "high",
-    assignee: "John Doe",
-    dueDate: new Date("2024-03-25"),
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "2",
-    websiteId: "1",
-    title: "Build local citations",
-    description: "Create business listings on top local directories",
-    status: "todo",
-    priority: "medium",
-    assignee: "Jane Smith",
-    dueDate: new Date("2024-03-28"),
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
-
-const mockWebsites: Website[] = [
-  {
-    id: "1",
-    domain: "acmeplumbing.com",
-    niche: "Plumbing",
-    status: "active",
-    monthlyRevenue: 2500,
-    phoneNumbers: [],
-    leads: [],
-    seoMetrics: {
-      domainAuthority: 35,
-      backlinks: 150,
-      organicKeywords: 500,
-      organicTraffic: 2000,
-      topKeywords: ["plumbing", "emergency plumber"],
-      competitors: ["competitor1.com"],
-      lastUpdated: new Date(),
-    },
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
-
 export default function Dashboard() {
   const theme = useTheme();
   const [tasks, setTasks] = React.useState<Task[]>(mockTasks);
