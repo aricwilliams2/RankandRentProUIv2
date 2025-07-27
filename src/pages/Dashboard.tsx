@@ -434,8 +434,7 @@ export default function Dashboard() {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleTaskDialogClose}>Cancel</Button>
-          <Button variant="contained" onClick={handleTaskSubmit}
-            disabled={!formData.title || !formData.websiteId || !formData.dueDate}>
+          <Button variant="contained" onClick={handleTaskSubmit}>
             {selectedTask ? "Update" : "Add"}
           </Button>
         </DialogActions>
