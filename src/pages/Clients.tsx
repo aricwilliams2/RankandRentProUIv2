@@ -161,14 +161,7 @@ export default function Clients() {
       });
     }
   };
-  if (!clients) {
-  return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-      <Typography>Loading clients...</Typography>
-    </Box>
-  );
-}
-
+  
 
   if (loading) {
     return (
@@ -210,7 +203,7 @@ export default function Clients() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {clients.map((client) => (
+            {clients?.map((client) => (
               <TableRow key={client.id}>
                 <TableCell>
                   <Typography variant="subtitle2">{client.name}</Typography>
@@ -235,7 +228,7 @@ export default function Clients() {
                   </Box>
                 </TableCell>
                 <TableCell>
-                  {client.website ? (
+                  {client?.website ? (
                     <Tooltip title={client.website}>
                       <IconButton
                         size="small"
