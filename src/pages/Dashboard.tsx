@@ -97,6 +97,7 @@ export default function Dashboard() {
   const [taskDialogOpen, setTaskDialogOpen] = React.useState(false);
   const [selectedTask, setSelectedTask] = React.useState<Task | null>(null);
   const [taskFilter, setTaskFilter] = React.useState("all");
+  const [loading, setLoading] = React.useState(false);
   const [formData, setFormData] = React.useState({
     title: "",
     description: "",
@@ -238,6 +239,13 @@ export default function Dashboard() {
         </Box>
       </Box>
 
+      {loading && (
+        <Box sx={{ textAlign: 'center' }}>
+          <CircularProgress />
+          <Typography sx={{ mt: 2 }}>Loading tasks from API...</Typography>
+        </Box>
+      )}
+
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {stats.map((stat) => {
           const Icon = stat.icon;
@@ -286,7 +294,7 @@ export default function Dashboard() {
                   </TableHead>
                   <TableBody>
                     {filteredTasks.map((task) => {
-                      const website = websites.find((w) => w.id === task.websiteId);
+                      const website = websites.find(w => w.id === task.websiteId);
                       return (
                         <TableRow key={task.id}>
                           <TableCell>
@@ -333,6 +341,18 @@ export default function Dashboard() {
                         </TableRow>
                       );
                     })}
+                    {filteredTasks.length === 0 && !loading && (
+                      <TableRow>
+                        <TableCell colSpan={7} align="center">
+                          <Typography color="text.secondary">
+                            {taskFilter === "all" 
+                              ? "No tasks found. Create your first task!" 
+                              : `No ${taskFilter.replace('_', ' ')} tasks found.`
+                            }
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </TableContainer>
