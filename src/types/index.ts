@@ -88,9 +88,12 @@ export interface Client {
   name: string;
   email: string;
   phone: string;
+  city?: string;
+  reviews?: number;
+  website?: string;
   contacted?: boolean;
-  websites: Website[];
-  communicationHistory: Communication[];
+  follow_up_at?: string;
+  notes?: string;
   createdAt: Date;
   updatedAt: Date;
 }

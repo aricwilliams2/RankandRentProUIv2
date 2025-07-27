@@ -24,6 +24,10 @@ export default function Clients() {
     name: "",
     email: "",
     phone: "",
+    city: "",
+    reviews: 0,
+    website: "",
+    notes: "",
   });
 
   const handleOpen = (client?: Client) => {
@@ -33,6 +37,10 @@ export default function Clients() {
         name: client.name,
         email: client.email,
         phone: client.phone,
+        city: client.city || "",
+        reviews: client.reviews || 0,
+        website: client.website || "",
+        notes: client.notes || "",
       });
     } else {
       setSelectedClient(null);
@@ -40,6 +48,10 @@ export default function Clients() {
         name: "",
         email: "",
         phone: "",
+        city: "",
+        reviews: 0,
+        website: "",
+        notes: "",
       });
     }
     setOpen(true);
@@ -105,13 +117,11 @@ export default function Clients() {
   };
 
   const handleViewAnalytics = (client: Client) => {
-    if (client.websites.length > 0) {
-      const website = client.websites[0]; // Use first website
+    if (client.website) {
       navigate('/analytics', {
         state: {
-          website: website,
-          domain: website.domain,
-          keywords: website.seoMetrics?.topKeywords || []
+          domain: client.website,
+          keywords: [client.name.toLowerCase(), `${client.name.toLowerCase()} services`]
         }
       });
     }
@@ -150,8 +160,8 @@ export default function Clients() {
             <TableRow>
               <TableCell>Name</TableCell>
               <TableCell>Contact</TableCell>
-              <TableCell>Websites</TableCell>
-              <TableCell>Revenue</TableCell>
+              <TableCell>Website</TableCell>
+              <TableCell>Reviews</TableCell>
               <TableCell>Status</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
@@ -161,6 +171,11 @@ export default function Clients() {
               <TableRow key={client.id}>
                 <TableCell>
                   <Typography variant="subtitle2">{client.name}</Typography>
+                  {client.city && (
+                    <Typography variant="caption" color="text.secondary">
+                      {client.city}
+                    </Typography>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Box sx={{ display: "flex", gap: 2 }}>
@@ -174,31 +189,41 @@ export default function Clients() {
                         <Phone size={18} />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title="View History">
-                      <IconButton size="small" color="primary" onClick={() => handleHistoryOpen(client)}>
-                        <History size={18} />
-                      </IconButton>
-                    </Tooltip>
                   </Box>
                 </TableCell>
                 <TableCell>
-                  <Box sx={{ display: "flex", gap: 1 }}>
-                    {client.websites.map((website) => (
-                      <Tooltip key={website.id} title={website.domain}>
-                        <IconButton size="small" color="primary">
-                          <Globe size={18} />
-                        </IconButton>
-                      </Tooltip>
-                    ))}
-                  </Box>
+                  {client.website ? (
+                    <Tooltip title={client.website}>
+                      <IconButton
+                        size="small"
+                        color="primary"
+                        component="a"
+                        href={client.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Globe size={18} />
+                      </IconButton>
+                    </Tooltip>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">
+                      No website
+                    </Typography>
+                  )}
                 </TableCell>
                 <TableCell>${client.websites.reduce((sum, website) => sum + website.monthlyRevenue, 0).toLocaleString()}</TableCell>
                 <TableCell>
-                  <Chip size="small" label={client.websites.length > 0 ? "Active" : "New"} color={client.websites.length > 0 ? "success" : "default"} />
+                  <Typography variant="body2">
+                    {client.reviews || 0} reviews
+                  <Chip
+                    size="small"
+                    label={client.contacted ? "Contacted" : "New"}
+                    color={client.contacted ? "success" : "default"}
+                  />
                 </TableCell>
                 <TableCell align="right">
                   <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
-                    {client.websites.length > 0 && (
+                    {client.website && (
                       <Tooltip title="View Analytics">
                         <IconButton 
                           size="small" 
@@ -227,60 +252,72 @@ export default function Clients() {
         <DialogTitle>{selectedClient ? "Edit Client" : "Add New Client"}</DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2, display: "flex", flexDirection: "column", gap: 2 }}>
-            <TextField label="Name" fullWidth value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
-            <TextField label="Email" type="email" fullWidth value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
-            <TextField label="Phone" fullWidth value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
+            <TextField
+              label="Name *"
+              fullWidth
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+            />
+            <TextField
+              label="Email *"
+              type="email"
+              fullWidth
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              required
+            />
+            <TextField
+              label="Phone *"
+              fullWidth
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              required
+            />
+            <TextField
+              label="City"
+              fullWidth
+              value={formData.city}
+              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+            />
+            <TextField
+              label="Website"
+              type="url"
+              fullWidth
+              value={formData.website}
+              onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+              placeholder="https://example.com"
+            />
+            <TextField
+              label="Reviews Count"
+              type="number"
+              fullWidth
+              value={formData.reviews}
+              onChange={(e) => setFormData({ ...formData, reviews: parseInt(e.target.value) || 0 })}
+              inputProps={{ min: 0 }}
+            />
+            <TextField
+              label="Notes"
+              multiline
+              rows={3}
+              fullWidth
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+            />
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>
-          <Button variant="contained" onClick={handleSubmit}>
+          <Button
+            variant="contained"
+            onClick={handleSubmit}
+            disabled={submitting || !formData.name || !formData.email || !formData.phone}
+          >
             {selectedClient ? "Update" : "Add"}
           </Button>
         </DialogActions>
       </Dialog>
 
-      <Dialog open={historyOpen} onClose={handleHistoryClose} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <History size={20} />
-            <Typography variant="h6">Communication History</Typography>
-          </Box>
-          <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>
-            {selectedClient?.name}
-          </Typography>
-        </DialogTitle>
-        <DialogContent>
-          <List>
-            {selectedClient?.communicationHistory
-              .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-              .map((comm, index) => (
-                <React.Fragment key={comm.id}>
-                  <ListItem alignItems="flex-start">
-                    <ListItemIcon sx={{ minWidth: 40 }}>{getHistoryIcon(comm.type)}</ListItemIcon>
-                    <ListItemText
-                      primary={
-                        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                          <Typography variant="subtitle2" sx={{ textTransform: "capitalize" }}>
-                            {comm.type}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {new Date(comm.createdAt).toLocaleString()}
-                          </Typography>
-                        </Box>
-                      }
-                      secondary={comm.content}
-                    />
-                  </ListItem>
-                  {index < selectedClient.communicationHistory.length - 1 && <Divider variant="inset" component="li" />}
-                </React.Fragment>
-              ))}
-          </List>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleHistoryClose}>Close</Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 }

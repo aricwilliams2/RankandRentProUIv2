@@ -37,12 +37,28 @@ const updateClientAPI = async (
   client: Client,
   fieldsToUpdate?: string[]
 ): Promise<Client> => {
-  const data: any = {};
+  const data: any = {
+    name: client.name,
+    email: client.email,
+    phone: client.phone,
+    city: client.city || null,
+    reviews: client.reviews || 0,
+    website: client.website || null,
+    contacted: client.contacted || false,
+    follow_up_at: client.follow_up_at || null,
+    notes: client.notes || null,
+  };
 
-  if (!fieldsToUpdate) {
-    // Remove id from full object
-    const { id, ...cleaned } = client;
-    Object.assign(data, cleaned);
+  // If specific fields are provided, only send those
+  if (fieldsToUpdate) {
+    const filteredData: any = {};
+    fieldsToUpdate.forEach((field) => {
+      if (data.hasOwnProperty(field)) {
+        filteredData[field] = data[field];
+      }
+    });
+    Object.assign(data, filteredData);
+  }
   } else {
     fieldsToUpdate.forEach((field) => {
       if (field !== "id") {
@@ -59,7 +75,11 @@ const updateClientAPI = async (
     body: JSON.stringify(data),
   });
 
-  const updated = await response.json();
+  return {
+    ...updated,
+    createdAt: new Date(updated.created_at),
+    updatedAt: new Date(updated.updated_at),
+  };
   return {
     ...updated,
     createdAt: new Date(updated.created_at),
@@ -73,13 +93,29 @@ const updateClientAPI = async (
 
 
 const createClientAPI = async (clientData: Partial<Client>): Promise<Client> => {
+  const data = {
+    name: clientData.name,
+    email: clientData.email,
+    phone: clientData.phone,
+    city: clientData.city || null,
+    reviews: clientData.reviews || 0,
+    website: clientData.website || null,
+    contacted: clientData.contacted || false,
+    follow_up_at: clientData.follow_up_at || null,
+    notes: clientData.notes || null,
+  };
+
   const response = await fetch(`${API_BASE_URL}/clients`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(clientData),
+    body: JSON.stringify(data),
   });
   const client = await response.json();
   return {
+    ...client,
+    createdAt: new Date(client.created_at),
+    updatedAt: new Date(client.updated_at),
+  };
     ...client,
     createdAt: new Date(client.created_at),
     updatedAt: new Date(client.updated_at),
