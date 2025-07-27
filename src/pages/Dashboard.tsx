@@ -103,8 +103,9 @@ export default function Dashboard() {
     priority: "medium",
     status: "todo",
     assignee: "",
-    dueDate: "",
-  });
+    console.log('Dashboard - Current tasks:', tasks);
+    console.log('Dashboard - Tasks count:', tasks.length);
+  }, [tasks]);
 
   const handleTaskDialogOpen = (task?: Task) => {
     if (task) {
@@ -114,7 +115,7 @@ export default function Dashboard() {
         description: task.description,
         websiteId: task.websiteId,
         priority: task.priority,
-        status: task.status,
+  // Debug: Log tasks when they change
         assignee: task.assignee,
         dueDate: task.dueDate.toISOString().split('T')[0],
       });
@@ -200,6 +201,10 @@ export default function Dashboard() {
     return task.status === taskFilter;
   });
 
+  console.log('Dashboard render - Tasks:', tasks);
+  console.log('Dashboard render - Filtered tasks:', filteredTasks);
+  console.log('Dashboard render - Current filter:', taskFilter);
+
   return (
     <Box>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
@@ -224,6 +229,9 @@ export default function Dashboard() {
           <Button variant="contained" startIcon={<Plus size={20} />} onClick={() => handleTaskDialogOpen()}>
             Add Task
           </Button>
+        <Box sx={{ textAlign: 'center' }}>
+          <CircularProgress />
+          <Typography sx={{ mt: 2 }}>Loading tasks from API...</Typography>
         </Box>
       </Box>
 
@@ -275,7 +283,6 @@ export default function Dashboard() {
                   </TableHead>
                   <TableBody>
                     {filteredTasks.map((task) => {
-                      const website = websites.find((w) => w.id === task.websiteId);
                       return (
                         <TableRow key={task.id}>
                           <TableCell>
@@ -322,6 +329,18 @@ export default function Dashboard() {
                         </TableRow>
                       );
                     })}
+                    {filteredTasks.length === 0 && !loading && (
+                      <TableRow>
+                        <TableCell colSpan={7} align="center">
+                          <Typography color="text.secondary">
+                            {taskFilter === "all" 
+                              ? "No tasks found. Create your first task!" 
+                              : `No ${taskFilter.replace('_', ' ')} tasks found.`
+                            }
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </TableContainer>

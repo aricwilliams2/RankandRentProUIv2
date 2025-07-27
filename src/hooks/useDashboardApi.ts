@@ -65,20 +65,28 @@ export const useDashboardApi = () => {
     setError(null);
     
     try {
+      console.log('Fetching tasks from API...');
       const url = status 
         ? `/api/tasks?status=${status}` 
         : '/api/tasks';
+      
+      console.log('API URL:', url);
       const response = await fetch(url);
       const data = await response.json();
       
       // Convert string dates to Date objects
-      return data.map((task: any) => ({
+      const tasks = data.data.map((task: any) => ({
         ...task,
         dueDate: new Date(task.dueDate),
+      console.log('API Response:', data);
         createdAt: new Date(task.createdAt),
         updatedAt: new Date(task.updatedAt)
       }));
+      
+      console.log('Processed tasks:', tasks);
+      return tasks;
     } catch (err) {
+      console.error('Error fetching tasks:', err);
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
       return [];
     } finally {

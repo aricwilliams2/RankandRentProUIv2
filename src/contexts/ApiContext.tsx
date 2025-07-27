@@ -206,6 +206,8 @@ export const ApiProvider: React.FC<{children: ReactNode}> = ({ children }) => {
   React.useEffect(() => {
     const loadInitialData = async () => {
       try {
+        console.log('Loading initial data...');
+        
         // Load websites
         getWebsites();
         
@@ -217,15 +219,17 @@ export const ApiProvider: React.FC<{children: ReactNode}> = ({ children }) => {
         setInvoices(invoicesResult);
         
         // Load tasks
-        await getTasks();
+        console.log('Loading tasks from API...');
+        const tasksResult = await dashboardApi.getTasks();
+        console.log('Tasks loaded:', tasksResult);
+        setTasks(tasksResult);
       } catch (err) {
         console.error('Error loading initial data:', err);
       }
     };
     
     loadInitialData();
-  }
-  )
+  }, []);
 
   return (
     <ApiContext.Provider
