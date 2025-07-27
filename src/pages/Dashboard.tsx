@@ -108,10 +108,7 @@ export default function Dashboard() {
     dueDate: "",
   });
 
-  // Debug: Log tasks when they change
-  React.useEffect(() => {
-    console.log('Dashboard - Current tasks:', tasks);
-  }, [tasks]);
+  
 
   const handleTaskDialogOpen = (task?: Task) => {
     if (task) {
