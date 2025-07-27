@@ -78,7 +78,6 @@ export const useDashboardApi = () => {
       const tasks = data.data.map((task: any) => ({
         ...task,
         dueDate: new Date(task.dueDate),
-      console.log('API Response:', data);
         createdAt: new Date(task.createdAt),
         updatedAt: new Date(task.updatedAt)
       }));
