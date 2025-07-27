@@ -92,35 +92,33 @@ export default function Dashboard() {
     setSelectedTask(null);
   };
 
-  const handleTaskSubmit = () => {
-    if (selectedTask) {
-      setTasks(
-        tasks.map((task) =>
-          task.id === selectedTask.id
-            ? {
-                ...task,
-                ...formData,
-                dueDate: new Date(formData.dueDate),
-                updatedAt: new Date(),
-              }
-            : task
-        )
-      );
-    } else {
-      const newTask: Task = {
-        id: String(Date.now()),
+  const handleTaskSubmit = async () => {
+    try {
+      setLoading(true);
+      const taskData = {
         ...formData,
-        dueDate: new Date(formData.dueDate),
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        id: selectedTask?.id,
       };
-      setTasks([...tasks, newTask]);
+      
+      console.log('Submitting task data:', taskData);
+      await saveTask(taskData);
+      handleTaskDialogClose();
+    } catch (error) {
+      console.error("Failed to save task:", error);
+    } finally {
+      setLoading(false);
     }
-    handleTaskDialogClose();
   };
 
-  const handleTaskDelete = (id: string) => {
-    setTasks(tasks.filter((task) => task.id !== id));
+  const handleTaskDelete = async (id: string) => {
+    if (window.confirm("Are you sure you want to delete this task?")) {
+      try {
+        console.log('Deleting task:', id);
+        await deleteTask(id);
+      } catch (error) {
+        console.error("Failed to delete task:", error);
+      }
+    }
   };
 
   const getStatusColor = (status: Task["status"]) => {
@@ -411,8 +409,12 @@ export default function Dashboard() {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleTaskDialogClose}>Cancel</Button>
-          <Button variant="contained" onClick={handleTaskSubmit}>
-            {selectedTask ? "Update" : "Add"}
+          <Button
+            variant="contained"
+            onClick={handleTaskSubmit}
+            disabled={loading || !formData.title || !formData.website_id || !formData.due_date}
+          >
+            {loading ? 'Saving...' : (selectedTask ? "Update" : "Add")}
           </Button>
         </DialogActions>
       </Dialog>
