@@ -104,10 +104,11 @@ export interface Website {
   domain: string;
   niche: string;
   status: "active" | "pending" | "rented";
-  monthlyRevenue: number;
-  phoneNumbers: PhoneNumber[];
-  leads: Lead[];
-  seoMetrics: SEOMetrics;
+  monthly_revenue: number;
+  domain_authority: number;
+  backlinks: number;
+  organic_keywords: number;
+  organic_traffic: number;
   createdAt: Date;
   updatedAt: Date;
 }
