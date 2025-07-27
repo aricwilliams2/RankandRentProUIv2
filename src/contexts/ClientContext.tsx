@@ -32,15 +32,23 @@ const fetchClientsAPI = async (): Promise<Client[]> => {
   }));
 };
 
+
 const updateClientAPI = async (
   client: Client,
   fieldsToUpdate?: string[]
 ): Promise<Client> => {
   const data: any = {};
+
   if (!fieldsToUpdate) {
-    Object.assign(data, client);
+    // Remove id from full object
+    const { id, ...cleaned } = client;
+    Object.assign(data, cleaned);
   } else {
-    fieldsToUpdate.forEach((field) => (data[field] = client[field]));
+    fieldsToUpdate.forEach((field) => {
+      if (field !== "id") {
+        data[field] = client[field];
+      }
+    });
   }
 
   const response = await fetch(`${API_BASE_URL}/clients/${client.id}`, {
@@ -50,6 +58,7 @@ const updateClientAPI = async (
     },
     body: JSON.stringify(data),
   });
+
   const updated = await response.json();
   return {
     ...updated,
@@ -59,6 +68,9 @@ const updateClientAPI = async (
     communicationHistory: updated.communicationHistory || [],
   };
 };
+
+
+
 
 const createClientAPI = async (clientData: Partial<Client>): Promise<Client> => {
   const response = await fetch(`${API_BASE_URL}/clients`, {
