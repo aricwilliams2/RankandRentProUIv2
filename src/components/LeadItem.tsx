@@ -252,7 +252,7 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
           <button onClick={handleEditClick} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit Lead">
               <BarChart3 className="w-3 h-3" />
             </button>
-          )}
+          
           <button onClick={handleEditClick} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit Lead">
             <Pencil className="w-3 h-3" />
           </button>
