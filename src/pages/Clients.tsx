@@ -162,8 +162,8 @@ export default function Clients() {
             <TableRow>
               <TableCell>Name</TableCell>
               <TableCell>Contact</TableCell>
-              <TableCell>Websites</TableCell>
-              <TableCell>Revenue</TableCell>
+              <TableCell>Website</TableCell>
+              <TableCell>Reviews</TableCell>
               <TableCell>Status</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
