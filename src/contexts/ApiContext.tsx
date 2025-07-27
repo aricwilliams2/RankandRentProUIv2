@@ -179,7 +179,7 @@ export const ApiProvider: React.FC<{children: ReactNode}> = ({ children }) => {
 
   // Task methods
   const getTasks = useCallback(async (status?: string) => {
-    const result = await dashboardApi.getTasks(status as any);
+    const result = await dashboardApi.getTasks(status as Task['status']);
     setTasks(result);
     return result;
   }, [dashboardApi]);
@@ -187,14 +187,8 @@ export const ApiProvider: React.FC<{children: ReactNode}> = ({ children }) => {
   const saveTask = useCallback(async (task: Partial<Task>) => {
     const result = await dashboardApi.saveTask(task);
     if (result) {
-      setTasks(prev => {
-        const existing = prev.findIndex(t => t.id === result.id);
-        if (existing >= 0) {
-          return [...prev.slice(0, existing), result, ...prev.slice(existing + 1)];
-        } else {
-          return [...prev, result];
-        }
-      });
+      // Refresh all tasks after save to get latest data
+      await getTasks();
     }
     return result;
   }, [dashboardApi]);
@@ -202,7 +196,8 @@ export const ApiProvider: React.FC<{children: ReactNode}> = ({ children }) => {
   const deleteTask = useCallback(async (id: string) => {
     const result = await dashboardApi.deleteTask(id);
     if (result) {
-      setTasks(prev => prev.filter(t => t.id !== id));
+      // Refresh all tasks after delete to get latest data
+      await getTasks();
     }
     return result;
   }, [dashboardApi]);
@@ -211,11 +206,6 @@ export const ApiProvider: React.FC<{children: ReactNode}> = ({ children }) => {
   React.useEffect(() => {
     const loadInitialData = async () => {
       try {
-        // Load research data if needed
-        const researchResponse = await fetch('/api/research');
-        const researchData = await researchResponse.json();
-        setResearch(researchData);
-        
         // Load websites
         getWebsites();
         
@@ -227,14 +217,13 @@ export const ApiProvider: React.FC<{children: ReactNode}> = ({ children }) => {
         setInvoices(invoicesResult);
         
         // Load tasks
-        getTasks();
+        await getTasks();
       } catch (err) {
         console.error('Error loading initial data:', err);
       }
     };
     
     loadInitialData();
-  }, [getWebsites, getClients, revenueApi, getTasks]);
 
   return (
     <ApiContext.Provider
