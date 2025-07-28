@@ -223,6 +223,7 @@ Contact us today to learn more about our professional ${contentKeywords} service
       </Box>
 
       {loading && websites.length === 0 ? (
+<<<<<<< HEAD
         <Box sx={{ display: "flex", justifyContent: "center", my: 8 }}>
           <CircularProgress />
         </Box>
@@ -250,6 +251,23 @@ Contact us today to learn more about our professional ${contentKeywords} service
                       <IconButton size="small" color="error" onClick={() => handleWebsiteDelete(website.id)}>
                         <Trash2 size={18} />
                       </IconButton>
+=======
+        <Box sx={{ display: 'flex', justifyContent: 'center', my: 8 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+      <Grid container spacing={3}>
+        {websites.map((website) => (
+          <Grid item xs={12} key={website.id}>
+            <Card>
+              <CardContent>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 3 }}>
+                  <Box>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                      <Globe size={20} />
+                      <Typography variant="h6">{website.domain}</Typography>
+                      <Chip size="small" label={website.status} color={website.status === "active" ? "success" : "default"} />
+>>>>>>> 98460583450435b60f7e045955cc17632ccf7b92
                     </Box>
                   </Box>
 
@@ -319,11 +337,87 @@ Contact us today to learn more about our professional ${contentKeywords} service
                       Write Content
                     </Button>
                   </Box>
+<<<<<<< HEAD
                 </CardContent>
               </Card>
             </Grid>
           ))}
         </Grid>
+=======
+                </Box>
+
+                <Grid container spacing={2} sx={{ mb: 3 }}>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                          <Typography variant="body2" color="text.secondary">
+                            Monthly Revenue
+                          </Typography>
+                          <DollarSign size={16} />
+                        </Box>
+                        <Typography variant="h6">${(website.monthlyRevenue || 0).toLocaleString()}</Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                          <Typography variant="body2" color="text.secondary">
+                            Leads
+                          </Typography>
+                          <Users size={16} />
+                        </Box>
+                        <Typography variant="h6">{website.leads?.length || 0}</Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                          <Typography variant="body2" color="text.secondary">
+                            Phone Numbers
+                          </Typography>
+                          <Phone size={16} />
+                        </Box>
+                        <Typography variant="h6">{website.phoneNumbers?.length || 0}</Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                          <Typography variant="body2" color="text.secondary">
+                            Organic Traffic
+                          </Typography>
+                          <TrendingUp size={16} />
+                        </Box>
+                        <Typography variant="h6">{website.seoMetrics?.organicTraffic?.toLocaleString() || 0}</Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+
+                <Box sx={{ display: "flex", gap: 2 }}>
+                  <Button variant="outlined" size="small" startIcon={<Users size={18} />} onClick={() => handleLeadsDialogOpen(website)}>
+                    View Leads
+                  </Button>
+                  <Button variant="outlined" size="small" startIcon={<ExternalLink size={18} />} href={`https://${website.domain}`} target="_blank" rel="noopener noreferrer">
+                    Visit Website
+                  </Button>
+                  <Button variant="outlined" size="small" startIcon={<FileText size={18} />} onClick={() => handleContentDialogOpen(website)}>
+                    Write Content
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+>>>>>>> 98460583450435b60f7e045955cc17632ccf7b92
       )}
 
       {/* Website Dialog */}
@@ -337,16 +431,29 @@ Contact us today to learn more about our professional ${contentKeywords} service
         </DialogContent>
         <DialogActions>
           <Button onClick={handleWebsiteDialogClose}>Cancel</Button>
+<<<<<<< HEAD
           <Button variant="contained" onClick={handleWebsiteSubmit} disabled={submitting || !formData.domain || !formData.niche}>
+=======
+          <Button 
+            variant="contained" 
+            onClick={handleWebsiteSubmit}
+            disabled={submitting || !formData.domain || !formData.niche}
+          >
+>>>>>>> 98460583450435b60f7e045955cc17632ccf7b92
             {submitting ? (
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <CircularProgress size={20} />
                 <span>{selectedWebsite ? "Updating..." : "Creating..."}</span>
               </Box>
+<<<<<<< HEAD
             ) : selectedWebsite ? (
               "Update"
             ) : (
               "Add"
+=======
+            ) : (
+              selectedWebsite ? "Update" : "Add"
+>>>>>>> 98460583450435b60f7e045955cc17632ccf7b92
             )}
           </Button>
         </DialogActions>
@@ -365,6 +472,7 @@ Contact us today to learn more about our professional ${contentKeywords} service
         </DialogTitle>
         <DialogContent>
           {selectedWebsite?.leads && selectedWebsite.leads.length > 0 ? (
+<<<<<<< HEAD
             <TableContainer>
               <Table>
                 <TableHead>
@@ -406,9 +514,33 @@ Contact us today to learn more about our professional ${contentKeywords} service
                           <Chip size="small" label={lead.status} color={getLeadStatusColor(lead.status)} />
                         </TableCell>
                         <TableCell>
+=======
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Contact</TableCell>
+                  <TableCell>Source</TableCell>
+                  <TableCell>Value</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Date</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {selectedWebsite?.leads
+                  .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+                  .map((lead) => (
+                    <TableRow key={lead.id}>
+                      <TableCell>{lead.name}</TableCell>
+                      <TableCell>
+                        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                          <Typography variant="body2">{lead.email}</Typography>
+>>>>>>> 98460583450435b60f7e045955cc17632ccf7b92
                           <Typography variant="body2" color="text.secondary">
                             {new Date(lead.createdAt).toLocaleDateString()}
                           </Typography>
+<<<<<<< HEAD
                         </TableCell>
                       </TableRow>
                     ))}
@@ -417,6 +549,36 @@ Contact us today to learn more about our professional ${contentKeywords} service
             </TableContainer>
           ) : (
             <Box sx={{ textAlign: "center", py: 4 }}>
+=======
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Tooltip title={lead.source}>
+                          <Box sx={{ display: "flex", alignItems: "center" }}>{getLeadSourceIcon(lead.source)}</Box>
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                          <Typography>${lead.value}</Typography>
+                          {lead.value > 300 ? <ArrowUpRight size={16} color="green" /> : <ArrowDownRight size={16} color="red" />}
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Chip size="small" label={lead.status} color={getLeadStatusColor(lead.status)} />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {new Date(lead.createdAt).toLocaleDateString()}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          ) : (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+>>>>>>> 98460583450435b60f7e045955cc17632ccf7b92
               <Typography variant="body1" color="text.secondary">
                 No leads found for this website
               </Typography>
