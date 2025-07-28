@@ -14,6 +14,8 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Chip,
+  IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -24,28 +26,33 @@ import {
   FormControl,
   InputLabel,
   useTheme,
-  Alert,
   CircularProgress,
-  Chip,
-  IconButton
+  Alert,
 } from "@mui/material";
-import { useClientContext } from "../contexts/ClientContext";
-import { useLeadContext } from "../contexts/LeadContext";
+import { TrendingUp, Users, Globe2, Phone, DollarSign, Plus, Calendar, Edit2, Trash2 } from "lucide-react";
+import type { Website, Task } from "../types";
+import { useTaskContext } from "../contexts/TaskContext";
+import { useApiContext } from "../contexts/ApiContext";
 
-import { TrendingUp, Users, Globe2, Plus, Calendar, Edit2, Trash2 } from "lucide-react";
+
 
 export default function Dashboard() {
-  const { clients } = useClientContext();
-  const { leads } = useLeadContext();
+  const { tasks, createTask, updateTask, deleteTask, refreshTasks, loading, error } = useTaskContext();
+  const { 
+    websites, 
+    clients, 
+    invoices, 
+    getWebsites, 
+    getClients, 
+    getInvoices,
+    loading: apiLoading 
+  } = useApiContext();
+
   const theme = useTheme();
   const [taskDialogOpen, setTaskDialogOpen] = React.useState(false);
-  const [selectedTask, setSelectedTask] = React.useState(null);
-  const [submitting, setSubmitting] = React.useState(false);
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState("");
+  const [selectedTask, setSelectedTask] = React.useState<Task | null>(null);
   const [taskFilter, setTaskFilter] = React.useState("all");
-  const [websites, setWebsites] = React.useState([]);
-  const [tasks, setTasks] = React.useState([]);
+  const [submitting, setSubmitting] = React.useState(false);
   const [formData, setFormData] = React.useState({
     title: "",
     description: "",
@@ -56,21 +63,80 @@ export default function Dashboard() {
     dueDate: "",
   });
 
-  const totalLeads = leads?.length || 0;
+  // Load tasks on component mount
+  useEffect(() => {
+    refreshTasks();
+    getWebsites();
+    getClients();
+    getInvoices();
+  }, []); // Remove refreshTasks from dependencies to prevent infinite loop
 
+  // Calculate dynamic stats from real data
   const calculateStats = React.useMemo(() => {
+    // Total Revenue from paid invoices
+    const totalRevenue = invoices
+      .filter(invoice => invoice.status === 'paid')
+      .reduce((sum, invoice) => sum + invoice.amount, 0);
+
+    // Active Websites
+    const activeWebsites = websites.filter(website => website.status === 'active').length;
+
+    // Total Leads from all websites
+    const totalLeads = websites.reduce((sum, website) => sum + (website.leads?.length || 0), 0);
+
+    // Active Clients
+    const activeClients = clients.length;
+
+    // Total Phone Numbers from all websites
+    const totalPhoneNumbers = websites.reduce((sum, website) => sum + (website.phoneNumbers?.length || 0), 0);
+
+    // Calculate changes (mock percentages since we don't have historical data)
+    // In a real app, you'd calculate these from historical data
+    const getRandomChange = () => {
+      const isPositive = Math.random() > 0.3; // 70% chance of positive change
+      const percentage = (Math.random() * 20 + 5).toFixed(1); // 5-25% change
+      return isPositive ? `+${percentage}%` : `-${percentage}%`;
+    };
+
     return [
       { 
-        label: "Total Leads",
+        label: "Total Revenue", 
+        value: `$${totalRevenue.toLocaleString()}`, 
+        change: getRandomChange(), 
+        icon: DollarSign,
+        isPositive: totalRevenue > 0
+      },
+      { 
+        label: "Active Websites", 
+        value: activeWebsites.toString(), 
+        change: activeWebsites > 0 ? `+${Math.floor(activeWebsites * 0.1) || 1}` : "0", 
+        icon: Globe2,
+        isPositive: activeWebsites > 0
+      },
+      { 
+        label: "Total Leads", 
         value: totalLeads.toString(), 
-        change: totalLeads > 0 ? `+${Math.floor(totalLeads * 0.1) || 1}` : "0", 
+        change: totalLeads > 0 ? `+${Math.floor(totalLeads * 0.15) || 1}` : "0", 
         icon: TrendingUp,
         isPositive: totalLeads > 0
       },
+      { 
+        label: "Active Clients", 
+        value: activeClients.toString(), 
+        change: activeClients > 0 ? `+${Math.floor(activeClients * 0.1) || 1}` : "0", 
+        icon: Users,
+        isPositive: activeClients > 0
+      },
+      { 
+        label: "Phone Numbers", 
+        value: totalPhoneNumbers.toString(), 
+        change: totalPhoneNumbers > 0 ? `+${Math.floor(totalPhoneNumbers * 0.2) || 1}` : "0", 
+        icon: Phone,
+        isPositive: totalPhoneNumbers > 0
+      },
     ];
-  }, [websites, clients, leads]);
-
-  const handleTaskDialogOpen = (task) => {
+  }, [websites, clients, invoices]);
+  const handleTaskDialogOpen = (task?: Task) => {
     if (task) {
       setSelectedTask(task);
       setFormData({
@@ -99,6 +165,7 @@ export default function Dashboard() {
 
   const handleTaskDialogClose = () => {
     setTaskDialogOpen(false);
+    setSelectedTask(null);
     setSubmitting(false);
   };
 
@@ -109,36 +176,52 @@ export default function Dashboard() {
         title: formData.title,
         description: formData.description,
         websiteId: formData.websiteId,
-        status: formData.status,
-        priority: formData.priority,
+        status: formData.status as "todo" | "in_progress" | "completed",
+        priority: formData.priority as "low" | "medium" | "high",
         assignee: formData.assignee,
         dueDate: new Date(formData.dueDate),
       };
-      // Add task submission logic here
+
+      if (selectedTask) {
+        await updateTask(selectedTask.id, taskData);
+      } else {
+        await createTask(taskData);
+      }
+      
+      handleTaskDialogClose();
+    } catch (err) {
+      console.error("Failed to save task:", err);
+      // Error is handled by the context
     } finally {
       setSubmitting(false);
-      handleTaskDialogClose();
     }
   };
 
-  const handleTaskDelete = (taskId) => {
-    // Add task deletion logic here
+  const handleTaskDelete = async (id: string) => {
+    if (window.confirm("Are you sure you want to delete this task?")) {
+      try {
+        await deleteTask(id);
+      } catch (err) {
+        console.error("Failed to delete task:", err);
+        // Error is handled by the context
+      }
+    }
   };
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: Task["status"]) => {
     switch (status) {
       case "completed":
         return "success";
       case "in_progress":
         return "warning";
       case "todo":
-        return "default";
+        return "info";
       default:
         return "default";
     }
   };
 
-  const getPriorityColor = (priority) => {
+  const getPriorityColor = (priority: Task["priority"]) => {
     switch (priority) {
       case "high":
         return "error";
@@ -163,7 +246,7 @@ export default function Dashboard() {
           {error}
         </Alert>
       )}
-
+      
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
         <Typography variant="h4" fontWeight="bold">
           Dashboard Overview
@@ -198,8 +281,8 @@ export default function Dashboard() {
                 <CardContent>
                   <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
                     <Icon size={24} color={theme.palette.primary.main} />
-                    <Typography
-                      color={stat.isPositive ? "success.main" : "error.main"}
+                    <Typography 
+                      color={stat.isPositive ? "success.main" : "error.main"} 
                       variant="body2"
                     >
                       {stat.change}
@@ -323,11 +406,37 @@ export default function Dashboard() {
                         width: 8,
                         height: 8,
                         borderRadius: "50%",
-                        backgroundColor: "success.main",
+                        bgcolor: "success.main",
                       }}
                     />
                     <Typography variant="body2" fontWeight="medium">
                       New lead captured
+                    </Typography>
+                  </Box>
+                  <Typography variant="caption" color="text.secondary">
+                    2 minutes ago
+                  </Typography>
+                </Box>
+                <Divider />
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    p: 1,
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <Box
+                      sx={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: "50%",
+                        bgcolor: "primary.main",
+                      }}
+                    />
+                    <Typography variant="body2" fontWeight="medium">
+                      Website ranking improved
                     </Typography>
                   </Box>
                   <Typography variant="caption" color="text.secondary">
@@ -355,9 +464,6 @@ export default function Dashboard() {
                     {website.domain}
                   </MenuItem>
                 ))}
-                <MenuItem value="1">Website 1</MenuItem>
-                <MenuItem value="2">Website 2</MenuItem>
-                <MenuItem value="3">Website 3</MenuItem>
               </Select>
             </FormControl>
             <TextField label="Assignee" fullWidth value={formData.assignee} onChange={(e) => setFormData({ ...formData, assignee: e.target.value })} />

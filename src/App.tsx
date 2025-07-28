@@ -10,7 +10,6 @@ import Research from "./pages/Research";
 import Settings from "./pages/Settings";
 import { ApiProvider } from "./contexts/ApiContext";
 import { ClientProvider } from "./contexts/ClientContext";
-import { LeadProvider } from "./contexts/LeadContext";
 import LeadSniperProFunc from "./pages/LeadSniperPro";
 import { TaskProvider } from "./contexts/TaskContext";
 
@@ -18,25 +17,23 @@ const App = () => {
   return (
     <ApiProvider>
       <ClientProvider>
-        <LeadProvider>
-          <TaskProvider>
-            <Router>
-              <Layout>
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/Leads" element={<LeadSniperProFunc />} />
-                  <Route path="/clients" element={<Clients />} />
-                  <Route path="/websites" element={<Websites />} />
-                  <Route path="/phone-numbers" element={<PhoneNumbers />} />
-                  <Route path="/analytics" element={<Analytics />} />
-                  <Route path="/revenue" element={<Revenue />} />
-                  <Route path="/research" element={<Research />} />
-                  <Route path="/settings" element={<Settings />} />
-                </Routes>
-              </Layout>
-            </Router>
-          </TaskProvider>
-        </LeadProvider>
+        <TaskProvider>
+          <Router>
+            <Layout>
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/Leads" element={<LeadSniperProFunc />} />
+                <Route path="/clients" element={<Clients />} />
+                <Route path="/websites" element={<Websites />} />
+                <Route path="/phone-numbers" element={<PhoneNumbers />} />
+                <Route path="/analytics" element={<Analytics />} />
+                <Route path="/revenue" element={<Revenue />} />
+                <Route path="/research" element={<Research />} />
+                <Route path="/settings" element={<Settings />} />
+              </Routes>
+            </Layout>
+          </Router>
+        </TaskProvider>
       </ClientProvider>
     </ApiProvider>
   );
