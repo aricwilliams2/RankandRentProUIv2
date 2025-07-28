@@ -30,23 +30,19 @@ import {
   Alert,
 } from "@mui/material";
 import { TrendingUp, Users, Globe2, Phone, DollarSign, Plus, Calendar, Edit2, Trash2 } from "lucide-react";
-import type { Website, Task } from "../types";
+import type { Task } from "../types";
 import { useTaskContext } from "../contexts/TaskContext";
 import { useApiContext } from "../contexts/ApiContext";
-
-
+import { useClientContext } from "../contexts/ClientContext";
+import { useLeadContext } from "../contexts/LeadContext";
+import { useWebsiteContext } from "../contexts/WebsiteContext";
 
 export default function Dashboard() {
   const { tasks, createTask, updateTask, deleteTask, refreshTasks, loading, error } = useTaskContext();
-  const { 
-    websites, 
-    clients, 
-    invoices, 
-    getWebsites, 
-    getClients, 
-    getInvoices,
-    loading: apiLoading 
-  } = useApiContext();
+  const { invoices, getWebsites, getClients, getInvoices } = useApiContext();
+  const { clients } = useClientContext();
+  const { leads } = useLeadContext();
+  const { websites } = useWebsiteContext();
 
   const theme = useTheme();
   const [taskDialogOpen, setTaskDialogOpen] = React.useState(false);
@@ -74,21 +70,19 @@ export default function Dashboard() {
   // Calculate dynamic stats from real data
   const calculateStats = React.useMemo(() => {
     // Total Revenue from paid invoices
-    const totalRevenue = invoices
-      .filter(invoice => invoice.status === 'paid')
-      .reduce((sum, invoice) => sum + invoice.amount, 0);
+    const totalRevenue = invoices.filter((invoice) => invoice.status === "paid").reduce((sum, invoice) => sum + invoice.amount, 0);
 
     // Active Websites
-    const activeWebsites = websites.filter(website => website.status === 'active').length;
+    const activeWebsites = websites.filter((website: any) => website.status === "active").length;
 
     // Total Leads from all websites
-    const totalLeads = websites.reduce((sum, website) => sum + (website.leads?.length || 0), 0);
+    const totalLeads = leads?.length;
 
     // Active Clients
-    const activeClients = clients.length;
+    const activeClients = clients?.length;
 
     // Total Phone Numbers from all websites
-    const totalPhoneNumbers = websites.reduce((sum, website) => sum + (website.phoneNumbers?.length || 0), 0);
+    const totalPhoneNumbers = 0;
 
     // Calculate changes (mock percentages since we don't have historical data)
     // In a real app, you'd calculate these from historical data
@@ -99,40 +93,40 @@ export default function Dashboard() {
     };
 
     return [
-      { 
-        label: "Total Revenue", 
-        value: `$${totalRevenue.toLocaleString()}`, 
-        change: getRandomChange(), 
+      {
+        label: "Total Revenue",
+        value: `$${totalRevenue.toLocaleString()}`,
+        change: getRandomChange(),
         icon: DollarSign,
-        isPositive: totalRevenue > 0
+        isPositive: totalRevenue > 0,
       },
-      { 
-        label: "Active Websites", 
-        value: activeWebsites.toString(), 
-        change: activeWebsites > 0 ? `+${Math.floor(activeWebsites * 0.1) || 1}` : "0", 
+      {
+        label: "Active Websites",
+        value: activeWebsites.toString(),
+        change: activeWebsites > 0 ? `+${Math.floor(activeWebsites * 0.1) || 1}` : "0",
         icon: Globe2,
-        isPositive: activeWebsites > 0
+        isPositive: activeWebsites > 0,
       },
-      { 
-        label: "Total Leads", 
-        value: totalLeads.toString(), 
-        change: totalLeads > 0 ? `+${Math.floor(totalLeads * 0.15) || 1}` : "0", 
+      {
+        label: "Total Leads",
+        value: totalLeads.toString(),
+        change: totalLeads > 0 ? `+${Math.floor(totalLeads * 0.15) || 1}` : "0",
         icon: TrendingUp,
-        isPositive: totalLeads > 0
+        isPositive: totalLeads > 0,
       },
-      { 
-        label: "Active Clients", 
-        value: activeClients.toString(), 
-        change: activeClients > 0 ? `+${Math.floor(activeClients * 0.1) || 1}` : "0", 
+      {
+        label: "Active Clients",
+        value: activeClients.toString(),
+        change: activeClients > 0 ? `+${Math.floor(activeClients * 0.1) || 1}` : "0",
         icon: Users,
-        isPositive: activeClients > 0
+        isPositive: activeClients > 0,
       },
-      { 
-        label: "Phone Numbers", 
-        value: totalPhoneNumbers.toString(), 
-        change: totalPhoneNumbers > 0 ? `+${Math.floor(totalPhoneNumbers * 0.2) || 1}` : "0", 
+      {
+        label: "Phone Numbers",
+        value: totalPhoneNumbers.toString(),
+        change: totalPhoneNumbers > 0 ? `+${Math.floor(totalPhoneNumbers * 0.2) || 1}` : "0",
         icon: Phone,
-        isPositive: totalPhoneNumbers > 0
+        isPositive: totalPhoneNumbers > 0,
       },
     ];
   }, [websites, clients, invoices]);
@@ -187,7 +181,7 @@ export default function Dashboard() {
       } else {
         await createTask(taskData);
       }
-      
+
       handleTaskDialogClose();
     } catch (err) {
       console.error("Failed to save task:", err);
@@ -246,7 +240,7 @@ export default function Dashboard() {
           {error}
         </Alert>
       )}
-      
+
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
         <Typography variant="h4" fontWeight="bold">
           Dashboard Overview
@@ -281,10 +275,7 @@ export default function Dashboard() {
                 <CardContent>
                   <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
                     <Icon size={24} color={theme.palette.primary.main} />
-                    <Typography 
-                      color={stat.isPositive ? "success.main" : "error.main"} 
-                      variant="body2"
-                    >
+                    <Typography color={stat.isPositive ? "success.main" : "error.main"} variant="body2">
                       {stat.change}
                     </Typography>
                   </Box>
@@ -309,7 +300,7 @@ export default function Dashboard() {
                 Project Tasks
               </Typography>
               {loading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
                   <CircularProgress />
                 </Box>
               ) : (
@@ -328,7 +319,7 @@ export default function Dashboard() {
                     </TableHead>
                     <TableBody>
                       {filteredTasks.map((task) => {
-                        const website = websites.find((w) => w.id === task.websiteId);
+                        const website = websites.find((w: any) => w.id === task.websiteId);
                         return (
                           <TableRow key={task.id}>
                             <TableCell>
@@ -459,7 +450,7 @@ export default function Dashboard() {
             <FormControl fullWidth>
               <InputLabel>Website</InputLabel>
               <Select value={formData.websiteId} label="Website" onChange={(e) => setFormData({ ...formData, websiteId: e.target.value })}>
-                {websites.map((website) => (
+                {websites.map((website: any) => (
                   <MenuItem key={website.id} value={website.id}>
                     {website.domain}
                   </MenuItem>
@@ -488,18 +479,16 @@ export default function Dashboard() {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleTaskDialogClose}>Cancel</Button>
-          <Button 
-            variant="contained" 
-            onClick={handleTaskSubmit}
-            disabled={submitting || !formData.title || !formData.dueDate}
-          >
+          <Button variant="contained" onClick={handleTaskSubmit} disabled={submitting || !formData.title || !formData.dueDate}>
             {submitting ? (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <CircularProgress size={20} />
                 <span>{selectedTask ? "Updating..." : "Creating..."}</span>
               </Box>
+            ) : selectedTask ? (
+              "Update"
             ) : (
-              selectedTask ? "Update" : "Add"
+              "Add"
             )}
           </Button>
         </DialogActions>
