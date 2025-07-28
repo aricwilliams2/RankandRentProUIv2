@@ -26,65 +26,20 @@ import {
   FormControl,
   InputLabel,
   useTheme,
-  CircularProgress,
-  Alert,
-} from "@mui/material";
-import { TrendingUp, Users, Globe2, Plus, Calendar, Edit2, Trash2 } from "lucide-react";
-import type { Website, Task } from "../types";
-import { useTaskContext } from "../contexts/TaskContext";
 import { useClientContext } from "../contexts/ClientContext";
 import { useLeadContext } from "../contexts/LeadContext";
 
 
 
 export default function Dashboard() {
-  const { tasks, createTask, updateTask, deleteTask, refreshTasks, loading, error } = useTaskContext();
-  const { clients } = useClientContext();
-  const { leads } = useLeadContext();
-
-  const theme = useTheme();
-  const [taskDialogOpen, setTaskDialogOpen] = React.useState(false);
-  const [selectedTask, setSelectedTask] = React.useState<Task | null>(null);
-  const [taskFilter, setTaskFilter] = React.useState("all");
-  const [submitting, setSubmitting] = React.useState(false);
-  const [formData, setFormData] = React.useState({
-    title: "",
-    description: "",
-    websiteId: "",
-    priority: "medium",
-    status: "todo",
-    assignee: "",
     dueDate: "",
   });
-
-  // Load tasks on component mount
-  useEffect(() => {
-    refreshTasks();
-  }, []); // Remove refreshTasks from dependencies to prevent infinite loop
-
-  // Calculate stats from available data
-  const calculateStats = React.useMemo(() => {
-    // Total Leads from LeadContext
-    const totalLeads = leads.length;
-
-    // Active Clients
-    const activeClients = clients.length;
-
-
-    return [
       { 
         label: "Total Leads", 
         value: totalLeads.toString(), 
         change: totalLeads > 0 ? `+${Math.floor(totalLeads * 0.1) || 1}` : "0", 
         icon: TrendingUp,
         isPositive: totalLeads > 0
-      },
-      { 
-        label: "Active Clients", 
-        value: activeClients.toString(), 
-        change: activeClients > 0 ? `+${Math.floor(activeClients * 0.1) || 1}` : "0", 
-        icon: Users,
-        isPositive: activeClients > 0
       },
     ];
   }, [websites, clients, leads]);
