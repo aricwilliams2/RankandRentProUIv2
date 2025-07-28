@@ -4,8 +4,24 @@ import { Client, ClientContextType, SortField, SortDirection } from "../types";
 const ClientContext = createContext<ClientContextType | undefined>(undefined);
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+// Helper function to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  const user = localStorage.getItem('user');
+  const userId = user ? JSON.parse(user).id : null;
+  
+  return {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` }),
+    ...(userId && { 'X-User-ID': userId }),
+  };
+};
+
 const fetchClientsAPI = async (): Promise<Client[]> => {
-  const response = await fetch(`${API_BASE_URL}/clients`);
+  const response = await fetch(`${API_BASE_URL}/clients`, {
+    headers: getAuthHeaders(),
+  });
   const json = await response.json();
   return json.data.map((client: any) => ({
     ...client,
@@ -42,9 +58,7 @@ const updateClientAPI = async (client: Client, fieldsToUpdate?: string[]): Promi
 
   const response = await fetch(`${API_BASE_URL}/clients/${client.id}`, {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
 
@@ -73,7 +87,7 @@ const createClientAPI = async (clientData: Partial<Client>): Promise<Client> => 
 
   const response = await fetch(`${API_BASE_URL}/clients`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
   const client = await response.json();
@@ -87,7 +101,10 @@ const createClientAPI = async (clientData: Partial<Client>): Promise<Client> => 
 };
 
 const deleteClientAPI = async (id: string) => {
-  await fetch(`${API_BASE_URL}/clients/${id}`, { method: "DELETE" });
+  await fetch(`${API_BASE_URL}/clients/${id}`, { 
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
 };
 
 export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

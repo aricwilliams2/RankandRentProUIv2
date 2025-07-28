@@ -10,6 +10,20 @@ const initialFilters: Filters = {
 // API Configuration - Updated for local development
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+// Helper function to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  const user = localStorage.getItem('user');
+  const userId = user ? JSON.parse(user).id : null;
+  
+  return {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` }),
+    ...(userId && { 'X-User-ID': userId }),
+  };
+};
+
 // Transform API lead data to frontend format
 const transformAPILeadToFrontend = (apiLead: any): Lead => {
   return {
@@ -80,10 +94,7 @@ const fetchLeadsAPI = async (): Promise<Lead[]> => {
 
     const response = await fetch(`${API_BASE_URL}/leads`, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
+      headers: getAuthHeaders(),
     });
 
     if (!response.ok) {
@@ -109,10 +120,7 @@ const updateLeadAPI = async (lead: Lead, fieldsToUpdate?: string[]) => {
 
     const response = await fetch(`${API_BASE_URL}/leads/${lead.id}`, {
       method: "PUT", // Laravel API uses PUT for updates
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(leadData),
     });
 
@@ -138,10 +146,7 @@ const createLeadAPI = async (leadData: Partial<Lead>) => {
 
     const response = await fetch(`${API_BASE_URL}/leads`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({
         name: leadData.name,
         email: leadData.email,
@@ -178,10 +183,7 @@ const deleteLeadAPI = async (leadId: string) => {
 
     const response = await fetch(`${API_BASE_URL}/leads/${leadId}`, {
       method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
+      headers: getAuthHeaders(),
     });
 
     if (!response.ok) {

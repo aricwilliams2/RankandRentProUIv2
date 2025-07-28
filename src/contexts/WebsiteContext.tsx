@@ -4,6 +4,20 @@ import { Website, WebsiteContextType } from "../types";
 const WebsiteContext = createContext<WebsiteContextType | undefined>(undefined);
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+// Helper function to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  const user = localStorage.getItem('user');
+  const userId = user ? JSON.parse(user).id : null;
+  
+  return {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` }),
+    ...(userId && { 'X-User-ID': userId }),
+  };
+};
+
 // Convert frontend camelCase to backend snake_case
 const transformWebsiteForAPI = (website: Partial<Website>) => {
   const apiWebsite: any = {};
@@ -24,7 +38,9 @@ const transformWebsiteForAPI = (website: Partial<Website>) => {
 };
 
 const fetchWebsitesAPI = async (): Promise<Website[]> => {
-  const response = await fetch(`${API_BASE_URL}/websites`);
+  const response = await fetch(`${API_BASE_URL}/websites`, {
+    headers: getAuthHeaders(),
+  });
   const json = await response.json();
 
   return json.data.map((site: any) => ({
@@ -48,7 +64,7 @@ const fetchWebsitesAPI = async (): Promise<Website[]> => {
 const createWebsiteAPI = async (website: Partial<Website>): Promise<Website> => {
   const response = await fetch(`${API_BASE_URL}/websites`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders(),
     body: JSON.stringify(transformWebsiteForAPI(website)),
   });
   const site = await response.json();
@@ -73,7 +89,7 @@ const createWebsiteAPI = async (website: Partial<Website>): Promise<Website> => 
 const updateWebsiteAPI = async (id: string, updates: Partial<Website>): Promise<Website> => {
   const response = await fetch(`${API_BASE_URL}/websites/${id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders(),
     body: JSON.stringify(transformWebsiteForAPI(updates)),
   });
   const site = await response.json();
@@ -96,7 +112,10 @@ const updateWebsiteAPI = async (id: string, updates: Partial<Website>): Promise<
 };
 
 const deleteWebsiteAPI = async (id: string) => {
-  await fetch(`${API_BASE_URL}/websites/${id}`, { method: "DELETE" });
+  await fetch(`${API_BASE_URL}/websites/${id}`, { 
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
 };
 
 export const WebsiteProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

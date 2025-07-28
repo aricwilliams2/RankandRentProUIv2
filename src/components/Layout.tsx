@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Box, Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, useTheme, useMediaQuery, AppBar, Toolbar, IconButton } from "@mui/material";
-import { LayoutDashboard, Users, Globe, Phone, LineChart, Calculator, Search, Settings, Menu as MenuIcon, X } from "lucide-react";
+import { Box, Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, useTheme, useMediaQuery, AppBar, Toolbar, IconButton, Button, Avatar, Menu, MenuItem } from "@mui/material";
+import { LayoutDashboard, Users, Globe, Phone, LineChart, Calculator, Search, Settings, Menu as MenuIcon, X, LogOut, User } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
@@ -22,6 +23,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -29,6 +32,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const handleDrawerClose = () => {
     setMobileOpen(false);
+  };
+
+  const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleProfileMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogout = () => {
+    logout();
+    handleProfileMenuClose();
   };
 
   const drawerContent = (
@@ -105,6 +121,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               {mobileOpen ? <X size={24} /> : <MenuIcon size={24} />}
             </IconButton>
             <img src={`https://www.rankandrenttool.com/Rank&.png`} alt="RankRent Pro" style={{ width: 70, objectFit: "contain" }} />
+            <Box sx={{ flexGrow: 1 }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="body2" sx={{ display: { xs: 'none', sm: 'block' } }}>
+                {user?.name}
+              </Typography>
+              <IconButton
+                size="small"
+                onClick={handleProfileMenuOpen}
+                sx={{ p: 0 }}
+              >
+                <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
+                  {user?.name?.charAt(0).toUpperCase()}
+                </Avatar>
+              </IconButton>
+            </Box>
           </Toolbar>
         </AppBar>
       )}
@@ -166,6 +197,57 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       >
         {children}
       </Box>
+
+      {/* User Profile Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleProfileMenuClose}
+        onClick={handleProfileMenuClose}
+        PaperProps={{
+          elevation: 0,
+          sx: {
+            overflow: 'visible',
+            filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
+            mt: 1.5,
+            '& .MuiAvatar-root': {
+              width: 32,
+              height: 32,
+              ml: -0.5,
+              mr: 1,
+            },
+            '&:before': {
+              content: '""',
+              display: 'block',
+              position: 'absolute',
+              top: 0,
+              right: 14,
+              width: 10,
+              height: 10,
+              bgcolor: 'background.paper',
+              transform: 'translateY(-50%) rotate(45deg)',
+              zIndex: 0,
+            },
+          },
+        }}
+        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+      >
+        <MenuItem onClick={handleProfileMenuClose}>
+          <ListItemIcon>
+            <User size={20} />
+          </ListItemIcon>
+          <ListItemText>
+            <Typography variant="body2">{user?.email}</Typography>
+          </ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleLogout}>
+          <ListItemIcon>
+            <LogOut size={20} />
+          </ListItemIcon>
+          <ListItemText>Logout</ListItemText>
+        </MenuItem>
+      </Menu>
     </Box>
   );
 }

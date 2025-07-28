@@ -245,6 +245,24 @@ export interface UserPreferences {
   timezone: string;
 }
 
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface AuthContextType {
+  user: User | null;
+  loading: boolean;
+  error: string | null;
+  login: (email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<void>;
+  logout: () => void;
+  isAuthenticated: boolean;
+}
+
 export interface APIIntegration {
   id: string;
   name: string;

@@ -4,6 +4,20 @@ import { Task, TaskContextType } from "../types";
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+// Helper function to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  const user = localStorage.getItem('user');
+  const userId = user ? JSON.parse(user).id : null;
+  
+  return {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` }),
+    ...(userId && { 'X-User-ID': userId }),
+  };
+};
+
 // Transform frontend camelCase to API snake_case
 const transformTaskForAPI = (task: Partial<Task>) => {
   const apiTask: any = {};
@@ -20,7 +34,9 @@ const transformTaskForAPI = (task: Partial<Task>) => {
 };
 
 const fetchTasksAPI = async (): Promise<Task[]> => {
-  const response = await fetch(`${API_BASE_URL}/tasks`);
+  const response = await fetch(`${API_BASE_URL}/tasks`, {
+    headers: getAuthHeaders(),
+  });
   const json = await response.json();
   return json.data.map((task: any) => ({
     id: String(task.id),
@@ -40,7 +56,7 @@ const createTaskAPI = async (task: Partial<Task>): Promise<Task> => {
   const apiTask = transformTaskForAPI(task);
   const response = await fetch(`${API_BASE_URL}/tasks`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders(),
     body: JSON.stringify(apiTask),
   });
   const created = await response.json();
@@ -62,7 +78,7 @@ const updateTaskAPI = async (id: string, updates: Partial<Task>): Promise<Task> 
   const apiUpdates = transformTaskForAPI(updates);
   const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders(),
     body: JSON.stringify(apiUpdates),
   });
   const updated = await response.json();
@@ -83,6 +99,7 @@ const updateTaskAPI = async (id: string, updates: Partial<Task>): Promise<Task> 
 const deleteTaskAPI = async (id: string) => {
   await fetch(`${API_BASE_URL}/tasks/${id}`, {
     method: "DELETE",
+    headers: getAuthHeaders(),
   });
 };
 

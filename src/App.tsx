@@ -1,5 +1,6 @@
 import { HashRouter as Router, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
+import LoginPage from "./components/LoginPage";
 import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import Websites from "./pages/Websites";
@@ -8,14 +9,38 @@ import Analytics from "./pages/Analytics";
 import Revenue from "./pages/Revenue";
 import Research from "./pages/Research";
 import Settings from "./pages/Settings";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ApiProvider } from "./contexts/ApiContext";
 import { ClientProvider } from "./contexts/ClientContext";
 import LeadSniperProFunc from "./pages/LeadSniperPro";
 import { TaskProvider } from "./contexts/TaskContext";
 import { LeadProvider } from "./contexts/LeadContext";
 import { WebsiteProvider } from "./contexts/WebsiteContext";
+import { Box, CircularProgress } from "@mui/material";
 
-const App = () => {
+const AppContent = () => {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        }}
+      >
+        <CircularProgress size={60} sx={{ color: 'white' }} />
+      </Box>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
+
   return (
     <ApiProvider>
       <ClientProvider>
@@ -42,6 +67,14 @@ const App = () => {
         </LeadProvider>
       </ClientProvider>
     </ApiProvider>
+  );
+};
+
+const App = () => {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 };
 
