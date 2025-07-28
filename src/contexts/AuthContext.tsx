@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, AuthContextType } from '../types';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { User, AuthContextType } from "../types";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -14,21 +14,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     const checkAuth = () => {
       try {
-        const storedUser = localStorage.getItem('user');
-        const token = localStorage.getItem('token');
-        
+        const storedUser = localStorage.getItem("user");
+        const token = localStorage.getItem("token");
+
         if (storedUser && token) {
           const userData = JSON.parse(storedUser);
           setUser({
             ...userData,
             created_at: new Date(userData.created_at),
-            updated_at: new Date(userData.updated_at)
+            updated_at: new Date(userData.updated_at),
           });
         }
       } catch (err) {
-        console.error('Error checking auth:', err);
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
+        console.error("Error checking auth:", err);
+        localStorage.removeItem("user");
+        localStorage.removeItem("token");
       } finally {
         setLoading(false);
       }
@@ -43,9 +43,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     try {
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, password }),
       });
@@ -53,20 +53,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
+        throw new Error(data.message || "Login failed");
       }
 
       const userData = {
         ...data.user,
         created_at: new Date(data.user.created_at),
-        updated_at: new Date(data.user.updated_at)
+        updated_at: new Date(data.user.updated_at),
       };
 
       setUser(userData);
-      localStorage.setItem('user', JSON.stringify(userData));
-      localStorage.setItem('token', data.token);
+      localStorage.setItem("user", JSON.stringify(userData));
+      localStorage.setItem("token", data.token);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(err instanceof Error ? err.message : "Login failed");
       throw err;
     } finally {
       setLoading(false);
@@ -79,9 +79,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     try {
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ name, email, password }),
       });
@@ -89,20 +89,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
+        throw new Error(data.message || "Registration failed");
       }
 
       const userData = {
         ...data.user,
         created_at: new Date(data.user.created_at),
-        updated_at: new Date(data.user.updated_at)
+        updated_at: new Date(data.user.updated_at),
       };
 
       setUser(userData);
-      localStorage.setItem('user', JSON.stringify(userData));
-      localStorage.setItem('token', data.token);
+      localStorage.setItem("user", JSON.stringify(userData));
+      localStorage.setItem("token", data.token);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
+      setError(err instanceof Error ? err.message : "Registration failed");
       throw err;
     } finally {
       setLoading(false);
@@ -111,8 +111,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
   };
 
   const isAuthenticated = !!user;
@@ -137,7 +137,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
