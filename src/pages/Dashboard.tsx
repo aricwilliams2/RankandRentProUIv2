@@ -5,7 +5,6 @@ import {
   ButtonGroup,
   Card,
   CardContent,
-  Checkbox,
   Divider,
   Grid,
   Typography,
@@ -27,6 +26,8 @@ import {
   FormControl,
   InputLabel,
   useTheme,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import { TrendingUp, Users, Globe2, Phone, DollarSign, Plus, Calendar, Edit2, Trash2 } from "lucide-react";
 import type { Website, Task } from "../types";
@@ -64,18 +65,14 @@ const mockWebsites: Website[] = [
 ];
 
 export default function Dashboard() {
-  // const { tasks,  } = useTaskContext();
-  const { tasks: contextTasks, createTask, updateTask, deleteTask, refreshTasks, loading, error } = useTaskContext();
+  const { tasks, createTask, updateTask, deleteTask, refreshTasks, loading, error } = useTaskContext();
 
   const theme = useTheme();
-  const [tasks, setTasks] = React.useState<Task[]>([]);
-  useEffect(() => {
-    setTasks(contextTasks);
-  }, [contextTasks]);
   const [websites] = React.useState<Website[]>(mockWebsites);
   const [taskDialogOpen, setTaskDialogOpen] = React.useState(false);
   const [selectedTask, setSelectedTask] = React.useState<Task | null>(null);
   const [taskFilter, setTaskFilter] = React.useState("all");
+  const [submitting, setSubmitting] = React.useState(false);
   const [formData, setFormData] = React.useState({
     title: "",
     description: "",
@@ -85,6 +82,11 @@ export default function Dashboard() {
     assignee: "",
     dueDate: "",
   });
+
+  // Load tasks on component mount
+  useEffect(() => {
+    refreshTasks();
+  }, [refreshTasks]);
 
   const handleTaskDialogOpen = (task?: Task) => {
     if (task) {
@@ -116,27 +118,13 @@ export default function Dashboard() {
   const handleTaskDialogClose = () => {
     setTaskDialogOpen(false);
     setSelectedTask(null);
+    setSubmitting(false);
   };
 
-  const handleTaskSubmit = () => {
-    if (selectedTask) {
-      setTasks(
-        tasks.map((task) =>
-          task.id === selectedTask.id
-            ? {
-                ...task,
-                ...formData,
-                status: formData.status as "todo" | "in_progress" | "completed",
-                priority: formData.priority as "low" | "medium" | "high",
-                dueDate: new Date(formData.dueDate),
-                updatedAt: new Date(),
-              }
-            : task
-        )
-      );
-    } else {
-      const newTask: Task = {
-        id: String(Date.now()),
+  const handleTaskSubmit = async () => {
+    setSubmitting(true);
+    try {
+      const taskData = {
         title: formData.title,
         description: formData.description,
         websiteId: formData.websiteId,
@@ -144,17 +132,32 @@ export default function Dashboard() {
         priority: formData.priority as "low" | "medium" | "high",
         assignee: formData.assignee,
         dueDate: new Date(formData.dueDate),
-        createdAt: new Date(),
-        updatedAt: new Date(),
       };
 
-      setTasks([...tasks, newTask]);
+      if (selectedTask) {
+        await updateTask(selectedTask.id, taskData);
+      } else {
+        await createTask(taskData);
+      }
+      
+      handleTaskDialogClose();
+    } catch (err) {
+      console.error("Failed to save task:", err);
+      // Error is handled by the context
+    } finally {
+      setSubmitting(false);
     }
-    handleTaskDialogClose();
   };
 
-  const handleTaskDelete = (id: string) => {
-    setTasks(tasks.filter((task) => task.id !== id));
+  const handleTaskDelete = async (id: string) => {
+    if (window.confirm("Are you sure you want to delete this task?")) {
+      try {
+        await deleteTask(id);
+      } catch (err) {
+        console.error("Failed to delete task:", err);
+        // Error is handled by the context
+      }
+    }
   };
 
   const getStatusColor = (status: Task["status"]) => {
@@ -190,6 +193,12 @@ export default function Dashboard() {
 
   return (
     <Box>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+      
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
         <Typography variant="h4" fontWeight="bold">
           Dashboard Overview
@@ -248,71 +257,77 @@ export default function Dashboard() {
               <Typography variant="h6" fontWeight="medium" sx={{ mb: 3 }}>
                 Project Tasks
               </Typography>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Task</TableCell>
-                      <TableCell>Website</TableCell>
-                      <TableCell>Assignee</TableCell>
-                      <TableCell>Due Date</TableCell>
-                      <TableCell>Priority</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell align="right">Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {filteredTasks.map((task) => {
-                      const website = websites.find((w) => w.id === task.websiteId);
-                      return (
-                        <TableRow key={task.id}>
-                          <TableCell>
-                            <Box>
-                              <Typography variant="body2" fontWeight="medium">
-                                {task.title}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {task.description}
-                              </Typography>
-                            </Box>
-                          </TableCell>
-                          <TableCell>
-                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                              <Globe2 size={16} />
-                              <Typography variant="body2">{website?.domain || "Unassigned"}</Typography>
-                            </Box>
-                          </TableCell>
-                          <TableCell>
-                            <Typography variant="body2">{task.assignee}</Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                              <Calendar size={16} />
-                              <Typography variant="body2">{task.dueDate.toLocaleDateString()}</Typography>
-                            </Box>
-                          </TableCell>
-                          <TableCell>
-                            <Chip size="small" label={task.priority} color={getPriorityColor(task.priority)} />
-                          </TableCell>
-                          <TableCell>
-                            <Chip size="small" label={task.status} color={getStatusColor(task.status)} />
-                          </TableCell>
-                          <TableCell align="right">
-                            <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
-                              <IconButton size="small" onClick={() => handleTaskDialogOpen(task)}>
-                                <Edit2 size={16} />
-                              </IconButton>
-                              <IconButton size="small" color="error" onClick={() => handleTaskDelete(task.id)}>
-                                <Trash2 size={16} />
-                              </IconButton>
-                            </Box>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+              {loading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                  <CircularProgress />
+                </Box>
+              ) : (
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Task</TableCell>
+                        <TableCell>Website</TableCell>
+                        <TableCell>Assignee</TableCell>
+                        <TableCell>Due Date</TableCell>
+                        <TableCell>Priority</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell align="right">Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {filteredTasks.map((task) => {
+                        const website = websites.find((w) => w.id === task.websiteId);
+                        return (
+                          <TableRow key={task.id}>
+                            <TableCell>
+                              <Box>
+                                <Typography variant="body2" fontWeight="medium">
+                                  {task.title}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {task.description}
+                                </Typography>
+                              </Box>
+                            </TableCell>
+                            <TableCell>
+                              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                <Globe2 size={16} />
+                                <Typography variant="body2">{website?.domain || "Unassigned"}</Typography>
+                              </Box>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2">{task.assignee}</Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                <Calendar size={16} />
+                                <Typography variant="body2">{task.dueDate.toLocaleDateString()}</Typography>
+                              </Box>
+                            </TableCell>
+                            <TableCell>
+                              <Chip size="small" label={task.priority} color={getPriorityColor(task.priority)} />
+                            </TableCell>
+                            <TableCell>
+                              <Chip size="small" label={task.status} color={getStatusColor(task.status)} />
+                            </TableCell>
+                            <TableCell align="right">
+                              <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
+                                <IconButton size="small" onClick={() => handleTaskDialogOpen(task)}>
+                                  <Edit2 size={16} />
+                                </IconButton>
+                                <IconButton size="small" color="error" onClick={() => handleTaskDelete(task.id)}>
+                                  <Trash2 size={16} />
+                                </IconButton>
+                              </Box>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
             </CardContent>
           </Card>
         </Grid>
@@ -422,8 +437,19 @@ export default function Dashboard() {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleTaskDialogClose}>Cancel</Button>
-          <Button variant="contained" onClick={handleTaskSubmit}>
-            {selectedTask ? "Update" : "Add"}
+          <Button 
+            variant="contained" 
+            onClick={handleTaskSubmit}
+            disabled={submitting || !formData.title || !formData.dueDate}
+          >
+            {submitting ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CircularProgress size={20} />
+                <span>{selectedTask ? "Updating..." : "Creating..."}</span>
+              </Box>
+            ) : (
+              selectedTask ? "Update" : "Add"
+            )}
           </Button>
         </DialogActions>
       </Dialog>
