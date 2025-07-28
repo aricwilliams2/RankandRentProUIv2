@@ -26,14 +26,83 @@ import {
   FormControl,
   InputLabel,
   useTheme,
+  Alert,
+  CircularProgress,
+} from "@mui/material";
+import { Plus, Edit2, Trash2, Globe2, Calendar, TrendingUp } from "lucide-react";
 import { useClientContext } from "../contexts/ClientContext";
 import { useLeadContext } from "../contexts/LeadContext";
+import { useTaskContext } from "../contexts/TaskContext";
+import { useWebsiteContext } from "../contexts/WebsiteContext";
 
-
+interface Task {
+  id: string;
+  title: string;
+  description: string;
+  websiteId: string;
+  priority: "low" | "medium" | "high";
+  status: "todo" | "in_progress" | "completed";
+  assignee: string;
+  dueDate: Date;
+}
 
 export default function Dashboard() {
+  const theme = useTheme();
+  const { clients } = useClientContext();
+  const { leads } = useLeadContext();
+  const { tasks, loading, error, createTask, updateTask, deleteTask } = useTaskContext();
+  const { websites } = useWebsiteContext();
+  
+  const [taskDialogOpen, setTaskDialogOpen] = React.useState(false);
+  const [selectedTask, setSelectedTask] = React.useState<Task | null>(null);
+  const [submitting, setSubmitting] = React.useState(false);
+  const [taskFilter, setTaskFilter] = React.useState<"all" | "todo" | "in_progress" | "completed">("all");
+  const [formData, setFormData] = React.useState({
+    title: "",
+    description: "",
+    websiteId: "",
+    priority: "medium",
+    status: "todo",
+    assignee: "",
     dueDate: "",
   });
+
+  const calculateStats = React.useMemo(() => {
+    const totalWebsites = websites.length;
+    const totalClients = clients.length;
+    const totalLeads = leads.length;
+    const totalTasks = tasks.length;
+    const completedTasks = tasks.filter(task => task.status === "completed").length;
+
+    return [
+      { 
+        label: "Total Websites", 
+        value: totalWebsites.toString(), 
+        change: totalWebsites > 0 ? `+${Math.floor(totalWebsites * 0.1) || 1}` : "0", 
+        icon: TrendingUp,
+        isPositive: totalWebsites > 0
+      },
+      { 
+        label: "Total Clients", 
+        value: totalClients.toString(), 
+        change: totalClients > 0 ? `+${Math.floor(totalClients * 0.1) || 1}` : "0", 
+        icon: TrendingUp,
+        isPositive: totalClients > 0
+      },
+      { 
+        label: "Total Tasks", 
+        value: totalTasks.toString(), 
+        change: totalTasks > 0 ? `+${Math.floor(totalTasks * 0.1) || 1}` : "0", 
+        icon: TrendingUp,
+        isPositive: totalTasks > 0
+      },
+      { 
+        label: "Completed Tasks", 
+        value: completedTasks.toString(), 
+        change: completedTasks > 0 ? `+${Math.floor(completedTasks * 0.1) || 1}` : "0", 
+        icon: TrendingUp,
+        isPositive: completedTasks > 0
+      },
       { 
         label: "Total Leads", 
         value: totalLeads.toString(), 
@@ -42,7 +111,7 @@ export default function Dashboard() {
         isPositive: totalLeads > 0
       },
     ];
-  }, [websites, clients, leads]);
+  }, [websites, clients, leads, tasks]);
 
   const handleTaskDialogOpen = (task?: Task) => {
     if (task) {
