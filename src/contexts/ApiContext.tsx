@@ -179,7 +179,7 @@ export const ApiProvider: React.FC<{children: ReactNode}> = ({ children }) => {
 
   // Task methods
   const getTasks = useCallback(async (status?: string) => {
-    const result = await dashboardApi.getTasks(status as Task['status'] | undefined);
+    const result = await dashboardApi.getTasks(status as any);
     setTasks(result);
     return result;
   }, [dashboardApi]);
@@ -187,26 +187,34 @@ export const ApiProvider: React.FC<{children: ReactNode}> = ({ children }) => {
   const saveTask = useCallback(async (task: Partial<Task>) => {
     const result = await dashboardApi.saveTask(task);
     if (result) {
-      // Refresh all tasks after save to get latest data
-      await getTasks();
+      setTasks(prev => {
+        const existing = prev.findIndex(t => t.id === result.id);
+        if (existing >= 0) {
+          return [...prev.slice(0, existing), result, ...prev.slice(existing + 1)];
+        } else {
+          return [...prev, result];
+        }
+      });
     }
     return result;
-  }, [dashboardApi, getTasks]);
+  }, [dashboardApi]);
 
   const deleteTask = useCallback(async (id: string) => {
     const result = await dashboardApi.deleteTask(id);
     if (result) {
-      // Refresh all tasks after delete to get latest data
-      await getTasks();
+      setTasks(prev => prev.filter(t => t.id !== id));
     }
     return result;
-  }, [dashboardApi, getTasks]);
+  }, [dashboardApi]);
 
   // Initialize data
   React.useEffect(() => {
     const loadInitialData = async () => {
       try {
-        console.log('Loading initial data...');
+        // Load research data if needed
+        const researchResponse = await fetch('/api/research');
+        const researchData = await researchResponse.json();
+        setResearch(researchData);
         
         // Load websites
         getWebsites();
@@ -219,17 +227,14 @@ export const ApiProvider: React.FC<{children: ReactNode}> = ({ children }) => {
         setInvoices(invoicesResult);
         
         // Load tasks
-        console.log('Loading tasks from API...');
-        const tasksResult = await dashboardApi.getTasks();
-        console.log('Tasks loaded:', tasksResult);
-        setTasks(tasksResult);
+        getTasks();
       } catch (err) {
         console.error('Error loading initial data:', err);
       }
     };
     
     loadInitialData();
-  }, []);
+  }, [getWebsites, getClients, revenueApi, getTasks]);
 
   return (
     <ApiContext.Provider

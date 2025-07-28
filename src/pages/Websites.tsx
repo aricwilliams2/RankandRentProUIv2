@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useWebsiteContext } from '../contexts/WebsiteContext';
 import {
   Box,
   Button,
@@ -30,9 +29,6 @@ import {
   MenuItem,
   CircularProgress,
   Stack,
-  FormControl,
-  InputLabel,
-  Select,
 } from '@mui/material';
 import {
   Globe,
@@ -50,29 +46,79 @@ import {
   FileText,
   Send,
   Tag,
-  AlertCircle,
 } from 'lucide-react';
-import type { Website } from '../types';
+import type { Website, Lead } from '../types';
+
+// Mock data - replace with actual API calls
+const initialWebsites: Website[] = [
+  {
+    id: '1',
+    domain: 'acmeplumbing.com',
+    niche: 'Plumbing',
+    status: 'active',
+    monthlyRevenue: 2500,
+    phoneNumbers: [
+      {
+        id: '1',
+        number: '(555) 123-4567',
+        websiteId: '1',
+        provider: 'Twilio',
+        monthlyFee: 25,
+        callCount: 45,
+        status: 'active',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+    ],
+    leads: [
+      {
+        id: '1',
+        websiteId: '1',
+        name: 'John Smith',
+        email: 'john@example.com',
+        phone: '(555) 987-6543',
+        source: 'form',
+        status: 'new',
+        value: 250,
+        createdAt: new Date('2024-03-17T10:30:00'),
+        updatedAt: new Date('2024-03-17T10:30:00'),
+      },
+      {
+        id: '2',
+        websiteId: '1',
+        name: 'Sarah Johnson',
+        email: 'sarah@example.com',
+        phone: '(555) 456-7890',
+        source: 'call',
+        status: 'qualified',
+        value: 500,
+        createdAt: new Date('2024-03-16T15:45:00'),
+        updatedAt: new Date('2024-03-16T16:30:00'),
+      }
+    ],
+    seoMetrics: {
+      domainAuthority: 35,
+      backlinks: 150,
+      organicKeywords: 500,
+      organicTraffic: 2000,
+      topKeywords: ['emergency plumber', 'plumbing services'],
+      competitors: ['competitor1.com', 'competitor2.com'],
+      lastUpdated: new Date(),
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }
+];
 
 export default function Websites() {
-  const { 
-    websites, 
-    createWebsite, 
-    updateWebsite, 
-    deleteWebsite, 
-    loading, 
-    error 
-  } = useWebsiteContext();
-  
+  const [websites, setWebsites] = useState<Website[]>(initialWebsites);
   const [selectedWebsite, setSelectedWebsite] = useState<Website | null>(null);
   const [websiteDialogOpen, setWebsiteDialogOpen] = useState(false);
+  const [leadsDialogOpen, setLeadsDialogOpen] = useState(false);
   const [contentDialogOpen, setContentDialogOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     domain: '',
     niche: '',
-    status: 'active' as Website['status'],
-    monthly_revenue: 0,
   });
   const [contentKeywords, setContentKeywords] = useState('');
   const [additionalKeywords, setAdditionalKeywords] = useState('');
@@ -86,16 +132,12 @@ export default function Websites() {
       setFormData({
         domain: website.domain,
         niche: website.niche,
-        status: website.status,
-        monthly_revenue: website.monthly_revenue,
       });
     } else {
       setSelectedWebsite(null);
       setFormData({
         domain: '',
         niche: '',
-        status: 'active',
-        monthly_revenue: 0,
       });
     }
     setWebsiteDialogOpen(true);
@@ -104,7 +146,16 @@ export default function Websites() {
   const handleWebsiteDialogClose = () => {
     setWebsiteDialogOpen(false);
     setSelectedWebsite(null);
-    setSubmitting(false);
+  };
+
+  const handleLeadsDialogOpen = (website: Website) => {
+    setSelectedWebsite(website);
+    setLeadsDialogOpen(true);
+  };
+
+  const handleLeadsDialogClose = () => {
+    setLeadsDialogOpen(false);
+    setSelectedWebsite(null);
   };
 
   const handleContentDialogOpen = (website: Website) => {
@@ -121,36 +172,46 @@ export default function Websites() {
     setSelectedWebsite(null);
   };
 
-  const handleWebsiteSubmit = async () => {
-    try {
-      setSubmitting(true);
-      
-      if (selectedWebsite) {
-        // Update existing website
-        await updateWebsite(selectedWebsite.id, formData);
-      } else {
-        // Create new website
-        await createWebsite(formData);
-      }
-      
-      handleWebsiteDialogClose();
-    } catch (err) {
-      console.error("Failed to save website:", err);
-      // Error is handled by the context
-    } finally {
-      setSubmitting(false);
+  const handleWebsiteSubmit = () => {
+    if (selectedWebsite) {
+      // Update existing website
+      setWebsites(websites.map(website =>
+        website.id === selectedWebsite.id
+          ? {
+              ...website,
+              ...formData,
+              updatedAt: new Date(),
+            }
+          : website
+      ));
+    } else {
+      // Add new website
+      const newWebsite: Website = {
+        id: String(Date.now()),
+        ...formData,
+        status: 'active',
+        monthlyRevenue: 0,
+        phoneNumbers: [],
+        leads: [],
+        seoMetrics: {
+          domainAuthority: 0,
+          backlinks: 0,
+          organicKeywords: 0,
+          organicTraffic: 0,
+          topKeywords: [],
+          competitors: [],
+          lastUpdated: new Date(),
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      setWebsites([...websites, newWebsite]);
     }
+    handleWebsiteDialogClose();
   };
 
-  const handleWebsiteDelete = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this website?")) {
-      try {
-        await deleteWebsite(id);
-      } catch (err) {
-        console.error("Failed to delete website:", err);
-        // Error is handled by the context
-      }
-    }
+  const handleWebsiteDelete = (id: string) => {
+    setWebsites(websites.filter(website => website.id !== id));
   };
 
   const generateContent = async () => {
@@ -191,29 +252,31 @@ Contact us today to learn more about our professional ${contentKeywords} service
     }
   };
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+  const getLeadStatusColor = (status: Lead['status']) => {
+    switch (status) {
+      case 'new':
+        return 'info';
+      case 'contacted':
+        return 'warning';
+      case 'qualified':
+        return 'success';
+      case 'converted':
+        return 'primary';
+      default:
+        return 'default';
+    }
+  };
 
-  if (error) {
-    return (
-      <Box sx={{ mb: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-          <AlertCircle size={20} />
-          <Typography color="error" variant="h6">
-            Error Loading Websites
-          </Typography>
-        </Box>
-        <Typography color="error" variant="body2">
-          {error}
-        </Typography>
-      </Box>
-    );
-  }
+  const getLeadSourceIcon = (source: Lead['source']) => {
+    switch (source) {
+      case 'form':
+        return <MessageSquare size={16} />;
+      case 'call':
+        return <Phone size={16} />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <Box>
@@ -275,7 +338,7 @@ Contact us today to learn more about our professional ${contentKeywords} service
                           <Typography variant="body2" color="text.secondary">Monthly Revenue</Typography>
                           <DollarSign size={16} />
                         </Box>
-                        <Typography variant="h6">${website.monthly_revenue.toLocaleString()}</Typography>
+                        <Typography variant="h6">${website.monthlyRevenue.toLocaleString()}</Typography>
                       </CardContent>
                     </Card>
                   </Grid>
@@ -283,21 +346,21 @@ Contact us today to learn more about our professional ${contentKeywords} service
                     <Card variant="outlined">
                       <CardContent>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                          <Typography variant="body2" color="text.secondary">Domain Authority</Typography>
-                          <TrendingUp size={16} />
-                        </Box>
-                        <Typography variant="h6">{website.domain_authority}</Typography>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <Card variant="outlined">
-                      <CardContent>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                          <Typography variant="body2" color="text.secondary">Backlinks</Typography>
+                          <Typography variant="body2" color="text.secondary">Leads</Typography>
                           <Users size={16} />
                         </Box>
-                        <Typography variant="h6">{website.backlinks.toLocaleString()}</Typography>
+                        <Typography variant="h6">{website.leads.length}</Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                          <Typography variant="body2" color="text.secondary">Phone Numbers</Typography>
+                          <Phone size={16} />
+                        </Box>
+                        <Typography variant="h6">{website.phoneNumbers.length}</Typography>
                       </CardContent>
                     </Card>
                   </Grid>
@@ -308,13 +371,21 @@ Contact us today to learn more about our professional ${contentKeywords} service
                           <Typography variant="body2" color="text.secondary">Organic Traffic</Typography>
                           <TrendingUp size={16} />
                         </Box>
-                        <Typography variant="h6">{website.organic_traffic.toLocaleString()}</Typography>
+                        <Typography variant="h6">{website.seoMetrics.organicTraffic.toLocaleString()}</Typography>
                       </CardContent>
                     </Card>
                   </Grid>
                 </Grid>
 
                 <Box sx={{ display: 'flex', gap: 2 }}>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<Users size={18} />}
+                    onClick={() => handleLeadsDialogOpen(website)}
+                  >
+                    View Leads
+                  </Button>
                   <Button
                     variant="outlined"
                     size="small"
@@ -358,7 +429,6 @@ Contact us today to learn more about our professional ${contentKeywords} service
               value={formData.domain}
               onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
               placeholder="example.com"
-              required
             />
             <TextField
               label="Niche"
@@ -366,40 +436,97 @@ Contact us today to learn more about our professional ${contentKeywords} service
               value={formData.niche}
               onChange={(e) => setFormData({ ...formData, niche: e.target.value })}
               placeholder="e.g., Plumbing, Real Estate, etc."
-              required
-            />
-            <FormControl fullWidth>
-              <InputLabel>Status</InputLabel>
-              <Select
-                value={formData.status}
-                label="Status"
-                onChange={(e) => setFormData({ ...formData, status: e.target.value as Website['status'] })}
-              >
-                <MenuItem value="active">Active</MenuItem>
-                <MenuItem value="pending">Pending</MenuItem>
-                <MenuItem value="rented">Rented</MenuItem>
-              </Select>
-            </FormControl>
-            <TextField
-              label="Monthly Revenue"
-              type="number"
-              fullWidth
-              value={formData.monthly_revenue}
-              onChange={(e) => setFormData({ ...formData, monthly_revenue: parseFloat(e.target.value) || 0 })}
-              placeholder="2500"
-              InputProps={{ inputProps: { min: 0 } }}
             />
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleWebsiteDialogClose}>Cancel</Button>
-          <Button 
-            variant="contained" 
-            onClick={handleWebsiteSubmit}
-            disabled={submitting || !formData.domain || !formData.niche}
-          >
-            {submitting ? 'Saving...' : (selectedWebsite ? 'Update' : 'Add')}
+          <Button variant="contained" onClick={handleWebsiteSubmit}>
+            {selectedWebsite ? 'Update' : 'Add'}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Leads Dialog */}
+      <Dialog
+        open={leadsDialogOpen}
+        onClose={handleLeadsDialogClose}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Users size={20} />
+            <Typography variant="h6">Leads</Typography>
+          </Box>
+          <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>
+            {selectedWebsite?.domain}
+          </Typography>
+        </DialogTitle>
+        <DialogContent>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Contact</TableCell>
+                  <TableCell>Source</TableCell>
+                  <TableCell>Value</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Date</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {selectedWebsite?.leads
+                  .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+                  .map((lead) => (
+                    <TableRow key={lead.id}>
+                      <TableCell>{lead.name}</TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                          <Typography variant="body2">{lead.email}</Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {lead.phone}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Tooltip title={lead.source}>
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            {getLeadSourceIcon(lead.source)}
+                          </Box>
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <Typography>${lead.value}</Typography>
+                          {lead.value > 300 ? (
+                            <ArrowUpRight size={16} color="green" />
+                          ) : (
+                            <ArrowDownRight size={16} color="red" />
+                          )}
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          size="small"
+                          label={lead.status}
+                          color={getLeadStatusColor(lead.status)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {new Date(lead.createdAt).toLocaleDateString()}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleLeadsDialogClose}>Close</Button>
         </DialogActions>
       </Dialog>
 
@@ -456,8 +583,7 @@ Contact us today to learn more about our professional ${contentKeywords} service
                 <Typography variant="subtitle2" sx={{ width: '100%' }}>
                   Recommended Keywords:
                 </Typography>
-                {/* Mock keywords for content generation */}
-                {['emergency ' + selectedWebsite?.niche.toLowerCase(), selectedWebsite?.niche.toLowerCase() + ' services', 'professional ' + selectedWebsite?.niche.toLowerCase()].map((keyword, index) => (
+                {selectedWebsite?.seoMetrics.topKeywords.map((keyword, index) => (
                   <Chip
                     key={index}
                     label={keyword}

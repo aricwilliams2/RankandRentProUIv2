@@ -27,7 +27,6 @@ import {
   FormControl,
   InputLabel,
   useTheme,
-  CircularProgress,
 } from "@mui/material";
 import { TrendingUp, Users, Globe2, Phone, DollarSign, Plus, Calendar, Edit2, Trash2 } from "lucide-react";
 import type { Website, Task } from "../types";
@@ -40,6 +39,56 @@ const stats = [
   { label: "Phone Numbers", value: "12", change: "+3", icon: Phone },
 ];
 
+const mockTasks: Task[] = [
+  {
+    id: "1",
+    websiteId: "1",
+    title: "Optimize meta descriptions",
+    description: "Update meta descriptions for all service pages",
+    status: "in_progress",
+    priority: "high",
+    assignee: "John Doe",
+    dueDate: new Date("2024-03-25"),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "2",
+    websiteId: "1",
+    title: "Build local citations",
+    description: "Create business listings on top local directories",
+    status: "todo",
+    priority: "medium",
+    assignee: "Jane Smith",
+    dueDate: new Date("2024-03-28"),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+];
+
+const mockWebsites: Website[] = [
+  {
+    id: "1",
+    domain: "acmeplumbing.com",
+    niche: "Plumbing",
+    status: "active",
+    monthlyRevenue: 2500,
+    phoneNumbers: [],
+    leads: [],
+    seoMetrics: {
+      domainAuthority: 35,
+      backlinks: 150,
+      organicKeywords: 500,
+      organicTraffic: 2000,
+      topKeywords: ["plumbing", "emergency plumber"],
+      competitors: ["competitor1.com"],
+      lastUpdated: new Date(),
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+];
+
 export default function Dashboard() {
   const theme = useTheme();
   const [tasks, setTasks] = React.useState<Task[]>(mockTasks);
@@ -47,7 +96,6 @@ export default function Dashboard() {
   const [taskDialogOpen, setTaskDialogOpen] = React.useState(false);
   const [selectedTask, setSelectedTask] = React.useState<Task | null>(null);
   const [taskFilter, setTaskFilter] = React.useState("all");
-  const [loading, setLoading] = React.useState(false);
   const [formData, setFormData] = React.useState({
     title: "",
     description: "",
@@ -57,8 +105,6 @@ export default function Dashboard() {
     assignee: "",
     dueDate: "",
   });
-
-  
 
   const handleTaskDialogOpen = (task?: Task) => {
     if (task) {
@@ -70,7 +116,7 @@ export default function Dashboard() {
         priority: task.priority,
         status: task.status,
         assignee: task.assignee,
-        dueDate: task.dueDate.toISOString().split('T')[0],
+        dueDate: task.dueDate.toISOString().split("T")[0],
       });
     } else {
       setSelectedTask(null);
@@ -92,33 +138,35 @@ export default function Dashboard() {
     setSelectedTask(null);
   };
 
-  const handleTaskSubmit = async () => {
-    try {
-      setLoading(true);
-      const taskData = {
+  const handleTaskSubmit = () => {
+    if (selectedTask) {
+      setTasks(
+        tasks.map((task) =>
+          task.id === selectedTask.id
+            ? {
+                ...task,
+                ...formData,
+                dueDate: new Date(formData.dueDate),
+                updatedAt: new Date(),
+              }
+            : task
+        )
+      );
+    } else {
+      const newTask: Task = {
+        id: String(Date.now()),
         ...formData,
-        id: selectedTask?.id,
+        dueDate: new Date(formData.dueDate),
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
-      
-      console.log('Submitting task data:', taskData);
-      await saveTask(taskData);
-      handleTaskDialogClose();
-    } catch (error) {
-      console.error("Failed to save task:", error);
-    } finally {
-      setLoading(false);
+      setTasks([...tasks, newTask]);
     }
+    handleTaskDialogClose();
   };
 
-  const handleTaskDelete = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this task?")) {
-      try {
-        console.log('Deleting task:', id);
-        await deleteTask(id);
-      } catch (error) {
-        console.error("Failed to delete task:", error);
-      }
-    }
+  const handleTaskDelete = (id: string) => {
+    setTasks(tasks.filter((task) => task.id !== id));
   };
 
   const getStatusColor = (status: Task["status"]) => {
@@ -152,10 +200,6 @@ export default function Dashboard() {
     return task.status === taskFilter;
   });
 
-  console.log('Dashboard render - Tasks:', tasks);
-  console.log('Dashboard render - Filtered tasks:', filteredTasks);
-  console.log('Dashboard render - Current filter:', taskFilter);
-
   return (
     <Box>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
@@ -182,13 +226,6 @@ export default function Dashboard() {
           </Button>
         </Box>
       </Box>
-
-      {loading && (
-        <Box sx={{ textAlign: 'center' }}>
-          <CircularProgress />
-          <Typography sx={{ mt: 2 }}>Loading tasks from API...</Typography>
-        </Box>
-      )}
 
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {stats.map((stat) => {
@@ -238,7 +275,7 @@ export default function Dashboard() {
                   </TableHead>
                   <TableBody>
                     {filteredTasks.map((task) => {
-                      const website = websites.find(w => w.id === task.websiteId);
+                      const website = websites.find((w) => w.id === task.websiteId);
                       return (
                         <TableRow key={task.id}>
                           <TableCell>
@@ -285,18 +322,6 @@ export default function Dashboard() {
                         </TableRow>
                       );
                     })}
-                    {filteredTasks.length === 0 && !loading && (
-                      <TableRow>
-                        <TableCell colSpan={7} align="center">
-                          <Typography color="text.secondary">
-                            {taskFilter === "all" 
-                              ? "No tasks found. Create your first task!" 
-                              : `No ${taskFilter.replace('_', ' ')} tasks found.`
-                            }
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
-                    )}
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -409,12 +434,8 @@ export default function Dashboard() {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleTaskDialogClose}>Cancel</Button>
-          <Button
-            variant="contained"
-            onClick={handleTaskSubmit}
-            disabled={loading || !formData.title || !formData.website_id || !formData.due_date}
-          >
-            {loading ? 'Saving...' : (selectedTask ? "Update" : "Add")}
+          <Button variant="contained" onClick={handleTaskSubmit}>
+            {selectedTask ? "Update" : "Add"}
           </Button>
         </DialogActions>
       </Dialog>

@@ -104,11 +104,10 @@ export interface Website {
   domain: string;
   niche: string;
   status: "active" | "pending" | "rented";
-  monthly_revenue: number;
-  domain_authority: number;
-  backlinks: number;
-  organic_keywords: number;
-  organic_traffic: number;
+  monthlyRevenue: number;
+  phoneNumbers: PhoneNumber[];
+  leads: Lead[];
+  seoMetrics: SEOMetrics;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -137,16 +136,15 @@ export interface SEOMetrics {
 
 export interface Task {
   id: string;
-  website_id: string;
-  website_domain?: string;
+  websiteId: string;
   title: string;
   description: string;
   status: "todo" | "in_progress" | "completed";
   priority: "low" | "medium" | "high";
   assignee: string;
-  due_date: string;
-  created_at: string;
-  updated_at: string;
+  dueDate: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Invoice {
@@ -410,4 +408,4 @@ export interface GoogleRankCheck {
     SERP: SerpResult[];
   };
   message: string;
-}
+}</parameter>
