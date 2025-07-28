@@ -29,23 +29,17 @@ import {
   CircularProgress,
   Alert,
 } from "@mui/material";
-import { TrendingUp, Users, Globe2, Phone, DollarSign, Plus, Calendar, Edit2, Trash2 } from "lucide-react";
+import { TrendingUp, Users, Globe2, Plus, Calendar, Edit2, Trash2 } from "lucide-react";
 import type { Website, Task } from "../types";
 import { useTaskContext } from "../contexts/TaskContext";
-import { useApiContext } from "../contexts/ApiContext";
+import { useClientContext } from "../contexts/ClientContext";
 import { useLeadContext } from "../contexts/LeadContext";
 
 
 
 export default function Dashboard() {
   const { tasks, createTask, updateTask, deleteTask, refreshTasks, loading, error } = useTaskContext();
-  const { 
-    websites, 
-    clients, 
-    getWebsites, 
-    getClients, 
-    loading: apiLoading 
-  } = useApiContext();
+  const { clients } = useClientContext();
   const { leads } = useLeadContext();
 
   const theme = useTheme();
@@ -66,54 +60,22 @@ export default function Dashboard() {
   // Load tasks on component mount
   useEffect(() => {
     refreshTasks();
-    getWebsites();
-    getClients();
   }, []); // Remove refreshTasks from dependencies to prevent infinite loop
 
-  // Calculate dynamic stats from real data
+  // Calculate stats from available data
   const calculateStats = React.useMemo(() => {
-    // Total Revenue from websites monthly revenue
-    const totalRevenue = websites.reduce((sum, website) => sum + website.monthlyRevenue, 0);
-
-    // Active Websites
-    const activeWebsites = websites.filter(website => website.status === 'active').length;
-
     // Total Leads from LeadContext
     const totalLeads = leads.length;
 
     // Active Clients
     const activeClients = clients.length;
 
-    // Total Phone Numbers from all websites
-    const totalPhoneNumbers = websites.reduce((sum, website) => sum + (website.phoneNumbers?.length || 0), 0);
-
-    // Calculate changes (mock percentages since we don't have historical data)
-    // In a real app, you'd calculate these from historical data
-    const getRandomChange = () => {
-      const isPositive = Math.random() > 0.3; // 70% chance of positive change
-      const percentage = (Math.random() * 20 + 5).toFixed(1); // 5-25% change
-      return isPositive ? `+${percentage}%` : `-${percentage}%`;
-    };
 
     return [
       { 
-        label: "Total Revenue", 
-        value: `$${totalRevenue.toLocaleString()}`, 
-        change: getRandomChange(), 
-        icon: DollarSign,
-        isPositive: totalRevenue > 0
-      },
-      { 
-        label: "Active Websites", 
-        value: activeWebsites.toString(), 
-        change: activeWebsites > 0 ? `+${Math.floor(activeWebsites * 0.1) || 1}` : "0", 
-        icon: Globe2,
-        isPositive: activeWebsites > 0
-      },
-      { 
         label: "Total Leads", 
         value: totalLeads.toString(), 
-        change: totalLeads > 0 ? `+${Math.floor(totalLeads * 0.15) || 1}` : "0", 
+        change: totalLeads > 0 ? `+${Math.floor(totalLeads * 0.1) || 1}` : "0", 
         icon: TrendingUp,
         isPositive: totalLeads > 0
       },
@@ -123,13 +85,6 @@ export default function Dashboard() {
         change: activeClients > 0 ? `+${Math.floor(activeClients * 0.1) || 1}` : "0", 
         icon: Users,
         isPositive: activeClients > 0
-      },
-      { 
-        label: "Phone Numbers", 
-        value: totalPhoneNumbers.toString(), 
-        change: totalPhoneNumbers > 0 ? `+${Math.floor(totalPhoneNumbers * 0.2) || 1}` : "0", 
-        icon: Phone,
-        isPositive: totalPhoneNumbers > 0
       },
     ];
   }, [websites, clients, leads]);
