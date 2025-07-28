@@ -4,6 +4,21 @@ import { Task, TaskContextType } from "../types";
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+// Transform frontend camelCase to API snake_case
+const transformTaskForAPI = (task: Partial<Task>) => {
+  const apiTask: any = {};
+  
+  if (task.websiteId !== undefined) apiTask.website_id = task.websiteId;
+  if (task.title !== undefined) apiTask.title = task.title;
+  if (task.description !== undefined) apiTask.description = task.description;
+  if (task.status !== undefined) apiTask.status = task.status;
+  if (task.priority !== undefined) apiTask.priority = task.priority;
+  if (task.assignee !== undefined) apiTask.assignee = task.assignee;
+  if (task.dueDate !== undefined) apiTask.due_date = task.dueDate.toISOString().split('T')[0];
+  
+  return apiTask;
+};
+
 const fetchTasksAPI = async (): Promise<Task[]> => {
   const response = await fetch(`${API_BASE_URL}/tasks`);
   const json = await response.json();
@@ -22,10 +37,11 @@ const fetchTasksAPI = async (): Promise<Task[]> => {
 };
 
 const createTaskAPI = async (task: Partial<Task>): Promise<Task> => {
+  const apiTask = transformTaskForAPI(task);
   const response = await fetch(`${API_BASE_URL}/tasks`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(task),
+    body: JSON.stringify(apiTask),
   });
   const created = await response.json();
   return {
@@ -43,10 +59,11 @@ const createTaskAPI = async (task: Partial<Task>): Promise<Task> => {
 };
 
 const updateTaskAPI = async (id: string, updates: Partial<Task>): Promise<Task> => {
+  const apiUpdates = transformTaskForAPI(updates);
   const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(updates),
+    body: JSON.stringify(apiUpdates),
   });
   const updated = await response.json();
   return {
