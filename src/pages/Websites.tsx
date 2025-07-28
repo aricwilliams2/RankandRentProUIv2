@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useEffect } from "react";
 import {
   Box,
   Button,
@@ -29,78 +30,19 @@ import {
   MenuItem,
   CircularProgress,
   Stack,
+  Alert,
 } from "@mui/material";
 import { Globe, Plus, Pencil, Trash2, ExternalLink, Users, Phone, TrendingUp, MessageSquare, DollarSign, ArrowUpRight, ArrowDownRight, FileText, Send, Tag } from "lucide-react";
 import type { Website, Lead } from "../types";
 import { useWebsiteContext } from "../contexts/WebsiteContext";
 
-// Mock data - replace with actual API calls
-const initialWebsites: Website[] = [
-  {
-    id: "1",
-    domain: "acmeplumbing.com",
-    niche: "Plumbing",
-    status: "active",
-    monthlyRevenue: 2500,
-    phoneNumbers: [
-      {
-        id: "1",
-        number: "(555) 123-4567",
-        websiteId: "1",
-        provider: "Twilio",
-        monthlyFee: 25,
-        callCount: 45,
-        status: "active",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ],
-    leads: [
-      {
-        id: "1",
-        websiteId: "1",
-        name: "John Smith",
-        email: "john@example.com",
-        phone: "(555) 987-6543",
-        source: "form",
-        status: "new",
-        value: 250,
-        createdAt: new Date("2024-03-17T10:30:00"),
-        updatedAt: new Date("2024-03-17T10:30:00"),
-      },
-      {
-        id: "2",
-        websiteId: "1",
-        name: "Sarah Johnson",
-        email: "sarah@example.com",
-        phone: "(555) 456-7890",
-        source: "call",
-        status: "qualified",
-        value: 500,
-        createdAt: new Date("2024-03-16T15:45:00"),
-        updatedAt: new Date("2024-03-16T16:30:00"),
-      },
-    ],
-    seoMetrics: {
-      domainAuthority: 35,
-      backlinks: 150,
-      organicKeywords: 500,
-      organicTraffic: 2000,
-      topKeywords: ["emergency plumber", "plumbing services"],
-      competitors: ["competitor1.com", "competitor2.com"],
-      lastUpdated: new Date(),
-    },
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
-
 export default function Websites() {
-  const [websites, setWebsites] = useState<Website[]>(initialWebsites);
+  const { websites, createWebsite, updateWebsite, deleteWebsite, refreshWebsites, loading, error } = useWebsiteContext();
   const [selectedWebsite, setSelectedWebsite] = useState<Website | null>(null);
   const [websiteDialogOpen, setWebsiteDialogOpen] = useState(false);
   const [leadsDialogOpen, setLeadsDialogOpen] = useState(false);
   const [contentDialogOpen, setContentDialogOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     domain: "",
     niche: "",
@@ -111,7 +53,10 @@ export default function Websites() {
   const [isGeneratingContent, setIsGeneratingContent] = useState(false);
   const [generatedContent, setGeneratedContent] = useState("");
 
-  const { websites, createWebsite, updateWebsite, deleteWebsite, refreshWebsites, loading, error } = useWebsiteContext();
+  // Load websites on component mount
+  useEffect(() => {
+    refreshWebsites();
+  }, [refreshWebsites]);
 
   const handleWebsiteDialogOpen = (website?: Website) => {
     if (website) {
@@ -133,6 +78,7 @@ export default function Websites() {
   const handleWebsiteDialogClose = () => {
     setWebsiteDialogOpen(false);
     setSelectedWebsite(null);
+    setSubmitting(false);
   };
 
   const handleLeadsDialogOpen = (website: Website) => {
@@ -159,48 +105,40 @@ export default function Websites() {
     setSelectedWebsite(null);
   };
 
-  const handleWebsiteSubmit = () => {
-    if (selectedWebsite) {
-      // Update existing website
-      setWebsites(
-        websites.map((website) =>
-          website.id === selectedWebsite.id
-            ? {
-                ...website,
-                ...formData,
-                updatedAt: new Date(),
-              }
-            : website
-        )
-      );
-    } else {
-      // Add new website
-      const newWebsite: Website = {
-        id: String(Date.now()),
-        ...formData,
-        status: "active",
-        monthlyRevenue: 0,
-        phoneNumbers: [],
-        leads: [],
-        seoMetrics: {
-          domainAuthority: 0,
-          backlinks: 0,
-          organicKeywords: 0,
-          organicTraffic: 0,
-          topKeywords: [],
-          competitors: [],
-          lastUpdated: new Date(),
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
+  const handleWebsiteSubmit = async () => {
+    setSubmitting(true);
+    try {
+      const websiteData = {
+        domain: formData.domain,
+        niche: formData.niche,
+        status: "active" as const,
       };
-      setWebsites([...websites, newWebsite]);
+
+      if (selectedWebsite) {
+        // Update existing website
+        await updateWebsite(selectedWebsite.id, websiteData);
+      } else {
+        // Add new website
+        await createWebsite(websiteData);
+      }
+      handleWebsiteDialogClose();
+    } catch (err) {
+      console.error("Failed to save website:", err);
+      // Error is handled by the context
+    } finally {
+      setSubmitting(false);
     }
-    handleWebsiteDialogClose();
   };
 
-  const handleWebsiteDelete = (id: string) => {
-    setWebsites(websites.filter((website) => website.id !== id));
+  const handleWebsiteDelete = async (id: string) => {
+    if (window.confirm("Are you sure you want to delete this website?")) {
+      try {
+        await deleteWebsite(id);
+      } catch (err) {
+        console.error("Failed to delete website:", err);
+        // Error is handled by the context
+      }
+    }
   };
 
   const generateContent = async () => {
@@ -269,6 +207,12 @@ Contact us today to learn more about our professional ${contentKeywords} service
 
   return (
     <Box>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
         <Typography variant="h4" fontWeight="bold">
           Websites
@@ -278,103 +222,109 @@ Contact us today to learn more about our professional ${contentKeywords} service
         </Button>
       </Box>
 
-      <Grid container spacing={3}>
-        {websites.map((website) => (
-          <Grid item xs={12} key={website.id}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 3 }}>
-                  <Box>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-                      <Globe size={20} />
-                      <Typography variant="h6">{website.domain}</Typography>
-                      <Chip size="small" label={website.status} color={website.status === "active" ? "success" : "default"} />
+      {loading && websites.length === 0 ? (
+        <Box sx={{ display: "flex", justifyContent: "center", my: 8 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <Grid container spacing={3}>
+          {websites.map((website) => (
+            <Grid item xs={12} key={website.id}>
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 3 }}>
+                    <Box>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                        <Globe size={20} />
+                        <Typography variant="h6">{website.domain}</Typography>
+                        <Chip size="small" label={website.status} color={website.status === "active" ? "success" : "default"} />
+                      </Box>
+                      <Typography variant="body2" color="text.secondary">
+                        Niche: {website.niche}
+                      </Typography>
                     </Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Niche: {website.niche}
-                    </Typography>
+                    <Box sx={{ display: "flex", gap: 1 }}>
+                      <IconButton size="small" onClick={() => handleWebsiteDialogOpen(website)}>
+                        <Pencil size={18} />
+                      </IconButton>
+                      <IconButton size="small" color="error" onClick={() => handleWebsiteDelete(website.id)}>
+                        <Trash2 size={18} />
+                      </IconButton>
+                    </Box>
                   </Box>
-                  <Box sx={{ display: "flex", gap: 1 }}>
-                    <IconButton size="small" onClick={() => handleWebsiteDialogOpen(website)}>
-                      <Pencil size={18} />
-                    </IconButton>
-                    <IconButton size="small" color="error" onClick={() => handleWebsiteDelete(website.id)}>
-                      <Trash2 size={18} />
-                    </IconButton>
+
+                  <Grid container spacing={2} sx={{ mb: 3 }}>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <Card variant="outlined">
+                        <CardContent>
+                          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                            <Typography variant="body2" color="text.secondary">
+                              Monthly Revenue
+                            </Typography>
+                            <DollarSign size={16} />
+                          </Box>
+                          <Typography variant="h6">${(website.monthlyRevenue || 0).toLocaleString()}</Typography>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <Card variant="outlined">
+                        <CardContent>
+                          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                            <Typography variant="body2" color="text.secondary">
+                              Leads
+                            </Typography>
+                            <Users size={16} />
+                          </Box>
+                          <Typography variant="h6">{website.leads?.length || 0}</Typography>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <Card variant="outlined">
+                        <CardContent>
+                          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                            <Typography variant="body2" color="text.secondary">
+                              Phone Numbers
+                            </Typography>
+                            <Phone size={16} />
+                          </Box>
+                          <Typography variant="h6">{website.phoneNumbers?.length || 0}</Typography>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <Card variant="outlined">
+                        <CardContent>
+                          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                            <Typography variant="body2" color="text.secondary">
+                              Organic Traffic
+                            </Typography>
+                            <TrendingUp size={16} />
+                          </Box>
+                          <Typography variant="h6">{website.seoMetrics?.organicTraffic?.toLocaleString() || 0}</Typography>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  </Grid>
+
+                  <Box sx={{ display: "flex", gap: 2 }}>
+                    <Button variant="outlined" size="small" startIcon={<Users size={18} />} onClick={() => handleLeadsDialogOpen(website)}>
+                      View Leads
+                    </Button>
+                    <Button variant="outlined" size="small" startIcon={<ExternalLink size={18} />} href={`https://${website.domain}`} target="_blank" rel="noopener noreferrer">
+                      Visit Website
+                    </Button>
+                    <Button variant="outlined" size="small" startIcon={<FileText size={18} />} onClick={() => handleContentDialogOpen(website)}>
+                      Write Content
+                    </Button>
                   </Box>
-                </Box>
-
-                <Grid container spacing={2} sx={{ mb: 3 }}>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <Card variant="outlined">
-                      <CardContent>
-                        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                          <Typography variant="body2" color="text.secondary">
-                            Monthly Revenue
-                          </Typography>
-                          <DollarSign size={16} />
-                        </Box>
-                        <Typography variant="h6">${website.monthlyRevenue.toLocaleString()}</Typography>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <Card variant="outlined">
-                      <CardContent>
-                        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                          <Typography variant="body2" color="text.secondary">
-                            Leads
-                          </Typography>
-                          <Users size={16} />
-                        </Box>
-                        <Typography variant="h6">{website.leads.length}</Typography>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <Card variant="outlined">
-                      <CardContent>
-                        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                          <Typography variant="body2" color="text.secondary">
-                            Phone Numbers
-                          </Typography>
-                          <Phone size={16} />
-                        </Box>
-                        <Typography variant="h6">{website.phoneNumbers.length}</Typography>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <Card variant="outlined">
-                      <CardContent>
-                        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                          <Typography variant="body2" color="text.secondary">
-                            Organic Traffic
-                          </Typography>
-                          <TrendingUp size={16} />
-                        </Box>
-                        <Typography variant="h6">{website.seoMetrics.organicTraffic.toLocaleString()}</Typography>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                </Grid>
-
-                <Box sx={{ display: "flex", gap: 2 }}>
-                  <Button variant="outlined" size="small" startIcon={<Users size={18} />} onClick={() => handleLeadsDialogOpen(website)}>
-                    View Leads
-                  </Button>
-                  <Button variant="outlined" size="small" startIcon={<ExternalLink size={18} />} href={`https://${website.domain}`} target="_blank" rel="noopener noreferrer">
-                    Visit Website
-                  </Button>
-                  <Button variant="outlined" size="small" startIcon={<FileText size={18} />} onClick={() => handleContentDialogOpen(website)}>
-                    Write Content
-                  </Button>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      )}
 
       {/* Website Dialog */}
       <Dialog open={websiteDialogOpen} onClose={handleWebsiteDialogClose} maxWidth="sm" fullWidth>
@@ -387,8 +337,17 @@ Contact us today to learn more about our professional ${contentKeywords} service
         </DialogContent>
         <DialogActions>
           <Button onClick={handleWebsiteDialogClose}>Cancel</Button>
-          <Button variant="contained" onClick={handleWebsiteSubmit}>
-            {selectedWebsite ? "Update" : "Add"}
+          <Button variant="contained" onClick={handleWebsiteSubmit} disabled={submitting || !formData.domain || !formData.niche}>
+            {submitting ? (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <CircularProgress size={20} />
+                <span>{selectedWebsite ? "Updating..." : "Creating..."}</span>
+              </Box>
+            ) : selectedWebsite ? (
+              "Update"
+            ) : (
+              "Add"
+            )}
           </Button>
         </DialogActions>
       </Dialog>
@@ -405,56 +364,64 @@ Contact us today to learn more about our professional ${contentKeywords} service
           </Typography>
         </DialogTitle>
         <DialogContent>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Contact</TableCell>
-                  <TableCell>Source</TableCell>
-                  <TableCell>Value</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Date</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {selectedWebsite?.leads
-                  .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-                  .map((lead) => (
-                    <TableRow key={lead.id}>
-                      <TableCell>{lead.name}</TableCell>
-                      <TableCell>
-                        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-                          <Typography variant="body2">{lead.email}</Typography>
+          {selectedWebsite?.leads && selectedWebsite.leads.length > 0 ? (
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Name</TableCell>
+                    <TableCell>Contact</TableCell>
+                    <TableCell>Source</TableCell>
+                    <TableCell>Value</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Date</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {selectedWebsite?.leads
+                    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+                    .map((lead) => (
+                      <TableRow key={lead.id}>
+                        <TableCell>{lead.name}</TableCell>
+                        <TableCell>
+                          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                            <Typography variant="body2">{lead.email}</Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {lead.phone}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Tooltip title={lead.source}>
+                            <Box sx={{ display: "flex", alignItems: "center" }}>{getLeadSourceIcon(lead.source)}</Box>
+                          </Tooltip>
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                            <Typography>${lead.value}</Typography>
+                            {lead.value > 300 ? <ArrowUpRight size={16} color="green" /> : <ArrowDownRight size={16} color="red" />}
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Chip size="small" label={lead.status} color={getLeadStatusColor(lead.status)} />
+                        </TableCell>
+                        <TableCell>
                           <Typography variant="body2" color="text.secondary">
-                            {lead.phone}
+                            {new Date(lead.createdAt).toLocaleDateString()}
                           </Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Tooltip title={lead.source}>
-                          <Box sx={{ display: "flex", alignItems: "center" }}>{getLeadSourceIcon(lead.source)}</Box>
-                        </Tooltip>
-                      </TableCell>
-                      <TableCell>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                          <Typography>${lead.value}</Typography>
-                          {lead.value > 300 ? <ArrowUpRight size={16} color="green" /> : <ArrowDownRight size={16} color="red" />}
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Chip size="small" label={lead.status} color={getLeadStatusColor(lead.status)} />
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" color="text.secondary">
-                          {new Date(lead.createdAt).toLocaleDateString()}
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : (
+            <Box sx={{ textAlign: "center", py: 4 }}>
+              <Typography variant="body1" color="text.secondary">
+                No leads found for this website
+              </Typography>
+            </Box>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleLeadsDialogClose}>Close</Button>
@@ -487,7 +454,7 @@ Contact us today to learn more about our professional ${contentKeywords} service
                 <Typography variant="subtitle2" sx={{ width: "100%" }}>
                   Recommended Keywords:
                 </Typography>
-                {selectedWebsite?.seoMetrics.topKeywords.map((keyword, index) => (
+                {selectedWebsite?.seoMetrics?.topKeywords?.map((keyword, index) => (
                   <Chip
                     key={index}
                     label={keyword}
@@ -500,7 +467,7 @@ Contact us today to learn more about our professional ${contentKeywords} service
                     }}
                     sx={{ cursor: "pointer" }}
                   />
-                ))}
+                )) || []}
               </Box>
             </Box>
           ) : (
