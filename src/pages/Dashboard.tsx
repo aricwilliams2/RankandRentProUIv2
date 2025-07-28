@@ -86,7 +86,7 @@ export default function Dashboard() {
   // Load tasks on component mount
   useEffect(() => {
     refreshTasks();
-  }, [refreshTasks]);
+  }, []); // Remove refreshTasks from dependencies to prevent infinite loop
 
   const handleTaskDialogOpen = (task?: Task) => {
     if (task) {

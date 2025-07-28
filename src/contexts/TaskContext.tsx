@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext } from "react";
+import React, { createContext, useState, useEffect, useContext, useCallback } from "react";
 import { Task, TaskContextType } from "../types";
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
@@ -74,7 +74,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const refreshTasks = async () => {
+  const refreshTasks = useCallback(async () => {
     try {
       setError(null);
       const data = await fetchTasksAPI();
@@ -82,7 +82,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load tasks");
     }
-  };
+  }, []);
 
   useEffect(() => {
     const loadTasks = async () => {
@@ -100,7 +100,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loadTasks();
   }, []);
 
-  const createTask = async (task: Partial<Task>) => {
+  const createTask = useCallback(async (task: Partial<Task>) => {
     try {
       setError(null);
       const newTask = await createTaskAPI(task);
@@ -110,9 +110,9 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setError(err instanceof Error ? err.message : "Failed to create task");
       throw err;
     }
-  };
+  }, []);
 
-  const updateTask = async (id: string, updates: Partial<Task>) => {
+  const updateTask = useCallback(async (id: string, updates: Partial<Task>) => {
     try {
       setError(null);
       const updated = await updateTaskAPI(id, updates);
@@ -122,9 +122,9 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setError(err instanceof Error ? err.message : "Failed to update task");
       throw err;
     }
-  };
+  }, []);
 
-  const deleteTask = async (id: string) => {
+  const deleteTask = useCallback(async (id: string) => {
     try {
       setError(null);
       await deleteTaskAPI(id);
@@ -133,7 +133,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setError(err instanceof Error ? err.message : "Failed to delete task");
       throw err;
     }
-  };
+  }, []);
 
   return <TaskContext.Provider value={{ tasks, createTask, updateTask, deleteTask, refreshTasks, loading, error }}>{children}</TaskContext.Provider>;
 };
