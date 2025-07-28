@@ -11,13 +11,7 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
-  IconButton,
-  Dialog,
-  DialogTitle,
+  const { clients } = useClientContext();
   DialogContent,
   DialogActions,
   TextField,
@@ -26,83 +20,14 @@ import {
   FormControl,
   InputLabel,
   useTheme,
-  Alert,
-  CircularProgress,
-} from "@mui/material";
-import { Plus, Edit2, Trash2, Globe2, Calendar, TrendingUp } from "lucide-react";
 import { useClientContext } from "../contexts/ClientContext";
 import { useLeadContext } from "../contexts/LeadContext";
-import { useTaskContext } from "../contexts/TaskContext";
-import { useWebsiteContext } from "../contexts/WebsiteContext";
 
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  websiteId: string;
-  priority: "low" | "medium" | "high";
-  status: "todo" | "in_progress" | "completed";
-  assignee: string;
-  dueDate: Date;
-}
+import { TrendingUp, Users, Globe2, Plus, Calendar, Edit2, Trash2 } from "lucide-react";
 
 export default function Dashboard() {
-  const theme = useTheme();
-  const { clients } = useClientContext();
-  const { leads } = useLeadContext();
-  const { tasks, loading, error, createTask, updateTask, deleteTask } = useTaskContext();
-  const { websites } = useWebsiteContext();
-  
-  const [taskDialogOpen, setTaskDialogOpen] = React.useState(false);
-  const [selectedTask, setSelectedTask] = React.useState<Task | null>(null);
-  const [submitting, setSubmitting] = React.useState(false);
-  const [taskFilter, setTaskFilter] = React.useState<"all" | "todo" | "in_progress" | "completed">("all");
-  const [formData, setFormData] = React.useState({
-    title: "",
-    description: "",
-    websiteId: "",
-    priority: "medium",
-    status: "todo",
-    assignee: "",
     dueDate: "",
   });
-
-  const calculateStats = React.useMemo(() => {
-    const totalWebsites = websites.length;
-    const totalClients = clients.length;
-    const totalLeads = leads.length;
-    const totalTasks = tasks.length;
-    const completedTasks = tasks.filter(task => task.status === "completed").length;
-
-    return [
-      { 
-        label: "Total Websites", 
-        value: totalWebsites.toString(), 
-        change: totalWebsites > 0 ? `+${Math.floor(totalWebsites * 0.1) || 1}` : "0", 
-        icon: TrendingUp,
-        isPositive: totalWebsites > 0
-      },
-      { 
-        label: "Total Clients", 
-        value: totalClients.toString(), 
-        change: totalClients > 0 ? `+${Math.floor(totalClients * 0.1) || 1}` : "0", 
-        icon: TrendingUp,
-        isPositive: totalClients > 0
-      },
-      { 
-        label: "Total Tasks", 
-        value: totalTasks.toString(), 
-        change: totalTasks > 0 ? `+${Math.floor(totalTasks * 0.1) || 1}` : "0", 
-        icon: TrendingUp,
-        isPositive: totalTasks > 0
-      },
-      { 
-        label: "Completed Tasks", 
-        value: completedTasks.toString(), 
-        change: completedTasks > 0 ? `+${Math.floor(completedTasks * 0.1) || 1}` : "0", 
-        icon: TrendingUp,
-        isPositive: completedTasks > 0
-      },
       { 
         label: "Total Leads", 
         value: totalLeads.toString(), 
@@ -111,7 +36,7 @@ export default function Dashboard() {
         isPositive: totalLeads > 0
       },
     ];
-  }, [websites, clients, leads, tasks]);
+  }, [websites, clients, leads]);
 
   const handleTaskDialogOpen = (task?: Task) => {
     if (task) {
@@ -219,11 +144,9 @@ export default function Dashboard() {
   return (
     <Box>
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
         </Alert>
       )}
-      
+  // Calculate stats from available data
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
         <Typography variant="h4" fontWeight="bold">
           Dashboard Overview
@@ -379,48 +302,18 @@ export default function Dashboard() {
                 >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                     <Box
-                      sx={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: "50%",
-                        bgcolor: "success.main",
-                      }}
                     />
                     <Typography variant="body2" fontWeight="medium">
                       New lead captured
                     </Typography>
                   </Box>
                   <Typography variant="caption" color="text.secondary">
-                    2 minutes ago
-                  </Typography>
-                </Box>
-                <Divider />
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    p: 1,
                   }}
                 >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                    <Box
-                      sx={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: "50%",
-                        bgcolor: "primary.main",
-                      }}
-                    />
-                    <Typography variant="body2" fontWeight="medium">
-                      Website ranking improved
-                    </Typography>
-                  </Box>
-                  <Typography variant="caption" color="text.secondary">
                     1 hour ago
                   </Typography>
                 </Box>
-              </Box>
+        change: totalLeads > 0 ? `+${Math.floor(totalLeads * 0.1) || 1}` : "0", 
             </CardContent>
           </Card>
         </Grid>
@@ -431,16 +324,11 @@ export default function Dashboard() {
         <DialogTitle>{selectedTask ? "Edit Task" : "Add New Task"}</DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2, display: "flex", flexDirection: "column", gap: 2 }}>
-            <TextField label="Title" fullWidth value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
-            <TextField label="Description" fullWidth multiline rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
-            <FormControl fullWidth>
-              <InputLabel>Website</InputLabel>
-              <Select value={formData.websiteId} label="Website" onChange={(e) => setFormData({ ...formData, websiteId: e.target.value })}>
-                {websites.map((website) => (
-                  <MenuItem key={website.id} value={website.id}>
                     {website.domain}
                   </MenuItem>
-                ))}
+                <MenuItem value="1">Website 1</MenuItem>
+                <MenuItem value="2">Website 2</MenuItem>
+                <MenuItem value="3">Website 3</MenuItem>
               </Select>
             </FormControl>
             <TextField label="Assignee" fullWidth value={formData.assignee} onChange={(e) => setFormData({ ...formData, assignee: e.target.value })} />
