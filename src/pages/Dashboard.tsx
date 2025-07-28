@@ -11,11 +11,7 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
-  TableRow,
-  TableContainer,
-  Dialog,
-  DialogTitle,
+  const { clients } = useClientContext();
   DialogContent,
   DialogActions,
   TextField,
@@ -24,44 +20,16 @@ import {
   FormControl,
   InputLabel,
   useTheme,
-  Alert,
-  CircularProgress,
-  Chip,
-  IconButton,
-} from "@mui/material";
 import { useClientContext } from "../contexts/ClientContext";
 import { useLeadContext } from "../contexts/LeadContext";
 
 import { TrendingUp, Users, Globe2, Plus, Calendar, Edit2, Trash2 } from "lucide-react";
 
 export default function Dashboard() {
-  const { clients } = useClientContext();
-  const { leads } = useLeadContext();
-  const theme = useTheme();
-  const [taskDialogOpen, setTaskDialogOpen] = React.useState(false);
-  const [selectedTask, setSelectedTask] = React.useState(null);
-  const [submitting, setSubmitting] = React.useState(false);
-  const [taskFilter, setTaskFilter] = React.useState("all");
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState(null);
-  const [tasks, setTasks] = React.useState([]);
-  const [websites, setWebsites] = React.useState([]);
-  const [formData, setFormData] = React.useState({
-    title: "",
-    description: "",
-    websiteId: "",
-    priority: "medium",
-    status: "todo",
-    assignee: "",
     dueDate: "",
   });
-
-  const totalLeads = leads?.length || 0;
-
-  const calculateStats = React.useMemo(() => {
-    return [
       { 
-        label: "Total Leads", 
+import { TrendingUp, Users, Globe2, Plus, Calendar, Edit2, Trash2 } from "lucide-react";
         value: totalLeads.toString(), 
         change: totalLeads > 0 ? `+${Math.floor(totalLeads * 0.1) || 1}` : "0", 
         icon: TrendingUp,
@@ -70,19 +38,7 @@ export default function Dashboard() {
     ];
   }, [websites, clients, leads]);
 
-  const createTask = async (taskData) => {
-    // Implementation
-  };
-
-  const updateTask = async (id, taskData) => {
-    // Implementation
-  };
-
-  const deleteTask = async (id) => {
-    // Implementation
-  };
-
-  const handleTaskDialogOpen = (task) => {
+  const handleTaskDialogOpen = (task?: Task) => {
     if (task) {
       setSelectedTask(task);
       setFormData({
@@ -110,77 +66,32 @@ export default function Dashboard() {
   };
 
   const handleTaskDialogClose = () => {
-    setTaskDialogOpen(false);
-    setSelectedTask(null);
     setSubmitting(false);
   };
-
+  // Calculate stats from available data
   const handleTaskSubmit = async () => {
-    setSubmitting(true);
-    try {
-      const taskData = {
-        title: formData.title,
-        description: formData.description,
-        websiteId: formData.websiteId,
-        status: formData.status,
-        priority: formData.priority,
+        status: formData.status as "todo" | "in_progress" | "completed",
+        priority: formData.priority as "low" | "medium" | "high",
         assignee: formData.assignee,
         dueDate: new Date(formData.dueDate),
       };
 
-      if (selectedTask) {
-        await updateTask(selectedTask.id, taskData);
-      } else {
-        await createTask(taskData);
-      }
-      
-      handleTaskDialogClose();
-    } catch (err) {
-      console.error("Failed to save task:", err);
-      // Error is handled by the context
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const handleTaskDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this task?")) {
-      try {
-        await deleteTask(id);
-      } catch (err) {
-        console.error("Failed to delete task:", err);
-        // Error is handled by the context
-      }
-    }
-  };
-
-  const getStatusColor = (status) => {
+import { useClientContext } from "../contexts/ClientContext";
     switch (status) {
       case "completed":
-        return "success";
+        change: totalLeads > 0 ? `+${Math.floor(totalLeads * 0.1) || 1}` : "0", 
       case "in_progress":
         return "warning";
       case "todo":
-        return "info";
-      default:
-        return "default";
-    }
-  };
-
-  const getPriorityColor = (priority) => {
+  const { clients } = useClientContext();
     switch (priority) {
       case "high":
         return "error";
       case "medium":
         return "warning";
       case "low":
-        return "success";
-      default:
-        return "default";
-    }
-  };
-
-  const filteredTasks = tasks.filter((task) => {
     if (taskFilter === "all") return true;
     return task.status === taskFilter;
   });
@@ -188,11 +99,9 @@ export default function Dashboard() {
   return (
     <Box>
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
         </Alert>
       )}
-
+  // Calculate stats from available data
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
         <Typography variant="h4" fontWeight="bold">
           Dashboard Overview
@@ -348,22 +257,18 @@ export default function Dashboard() {
                 >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                     <Box
-                      sx={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: "50%",
-                        backgroundColor: "success.main",
-                      }}
                     />
                     <Typography variant="body2" fontWeight="medium">
                       New lead captured
                     </Typography>
                   </Box>
                   <Typography variant="caption" color="text.secondary">
+                  }}
+                >
                     1 hour ago
                   </Typography>
                 </Box>
-              </Box>
+        change: totalLeads > 0 ? `+${Math.floor(totalLeads * 0.1) || 1}` : "0", 
             </CardContent>
           </Card>
         </Grid>
@@ -374,16 +279,8 @@ export default function Dashboard() {
         <DialogTitle>{selectedTask ? "Edit Task" : "Add New Task"}</DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2, display: "flex", flexDirection: "column", gap: 2 }}>
-            <TextField label="Title" fullWidth value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
-            <TextField label="Description" fullWidth multiline rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
-            <FormControl fullWidth>
-              <InputLabel>Website</InputLabel>
-              <Select value={formData.websiteId} label="Website" onChange={(e) => setFormData({ ...formData, websiteId: e.target.value })}>
-                {websites.map((website) => (
-                  <MenuItem key={website.id} value={website.id}>
                     {website.domain}
                   </MenuItem>
-                ))}
                 <MenuItem value="1">Website 1</MenuItem>
                 <MenuItem value="2">Website 2</MenuItem>
                 <MenuItem value="3">Website 3</MenuItem>
