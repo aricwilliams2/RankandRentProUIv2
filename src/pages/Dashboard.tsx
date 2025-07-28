@@ -33,6 +33,7 @@ import { TrendingUp, Users, Globe2, Phone, DollarSign, Plus, Calendar, Edit2, Tr
 import type { Website, Task } from "../types";
 import { useTaskContext } from "../contexts/TaskContext";
 import { useApiContext } from "../contexts/ApiContext";
+import { useLeadContext } from "../contexts/LeadContext";
 
 
 
@@ -41,12 +42,11 @@ export default function Dashboard() {
   const { 
     websites, 
     clients, 
-    invoices, 
     getWebsites, 
     getClients, 
-    getInvoices,
     loading: apiLoading 
   } = useApiContext();
+  const { leads } = useLeadContext();
 
   const theme = useTheme();
   const [taskDialogOpen, setTaskDialogOpen] = React.useState(false);
@@ -68,21 +68,18 @@ export default function Dashboard() {
     refreshTasks();
     getWebsites();
     getClients();
-    getInvoices();
   }, []); // Remove refreshTasks from dependencies to prevent infinite loop
 
   // Calculate dynamic stats from real data
   const calculateStats = React.useMemo(() => {
-    // Total Revenue from paid invoices
-    const totalRevenue = invoices
-      .filter(invoice => invoice.status === 'paid')
-      .reduce((sum, invoice) => sum + invoice.amount, 0);
+    // Total Revenue from websites monthly revenue
+    const totalRevenue = websites.reduce((sum, website) => sum + website.monthlyRevenue, 0);
 
     // Active Websites
     const activeWebsites = websites.filter(website => website.status === 'active').length;
 
-    // Total Leads from all websites
-    const totalLeads = websites.reduce((sum, website) => sum + (website.leads?.length || 0), 0);
+    // Total Leads from LeadContext
+    const totalLeads = leads.length;
 
     // Active Clients
     const activeClients = clients.length;
@@ -135,7 +132,8 @@ export default function Dashboard() {
         isPositive: totalPhoneNumbers > 0
       },
     ];
-  }, [websites, clients, invoices]);
+  }, [websites, clients, leads]);
+
   const handleTaskDialogOpen = (task?: Task) => {
     if (task) {
       setSelectedTask(task);
@@ -281,8 +279,8 @@ export default function Dashboard() {
                 <CardContent>
                   <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
                     <Icon size={24} color={theme.palette.primary.main} />
-                    <Typography 
-                      color={stat.isPositive ? "success.main" : "error.main"} 
+                    <Typography
+                      color={stat.isPositive ? "success.main" : "error.main"}
                       variant="body2"
                     >
                       {stat.change}
