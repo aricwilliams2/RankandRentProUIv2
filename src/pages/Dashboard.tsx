@@ -11,7 +11,11 @@ import {
   Table,
   TableBody,
   TableCell,
-  const { clients } = useClientContext();
+  TableContainer,
+  TableHead,
+  TableRow,
+  Dialog,
+  DialogTitle,
   DialogContent,
   DialogActions,
   TextField,
@@ -20,16 +24,44 @@ import {
   FormControl,
   InputLabel,
   useTheme,
+  Alert,
+  CircularProgress,
+  Chip,
+  IconButton
+} from "@mui/material";
 import { useClientContext } from "../contexts/ClientContext";
 import { useLeadContext } from "../contexts/LeadContext";
 
 import { TrendingUp, Users, Globe2, Plus, Calendar, Edit2, Trash2 } from "lucide-react";
 
 export default function Dashboard() {
+  const { clients } = useClientContext();
+  const { leads } = useLeadContext();
+  const theme = useTheme();
+  const [taskDialogOpen, setTaskDialogOpen] = React.useState(false);
+  const [selectedTask, setSelectedTask] = React.useState(null);
+  const [submitting, setSubmitting] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState("");
+  const [taskFilter, setTaskFilter] = React.useState("all");
+  const [websites, setWebsites] = React.useState([]);
+  const [tasks, setTasks] = React.useState([]);
+  const [formData, setFormData] = React.useState({
+    title: "",
+    description: "",
+    websiteId: "",
+    priority: "medium",
+    status: "todo",
+    assignee: "",
     dueDate: "",
   });
+
+  const totalLeads = leads?.length || 0;
+
+  const calculateStats = React.useMemo(() => {
+    return [
       { 
-import { TrendingUp, Users, Globe2, Plus, Calendar, Edit2, Trash2 } from "lucide-react";
+        label: "Total Leads",
         value: totalLeads.toString(), 
         change: totalLeads > 0 ? `+${Math.floor(totalLeads * 0.1) || 1}` : "0", 
         icon: TrendingUp,
@@ -38,7 +70,7 @@ import { TrendingUp, Users, Globe2, Plus, Calendar, Edit2, Trash2 } from "lucide
     ];
   }, [websites, clients, leads]);
 
-  const handleTaskDialogOpen = (task?: Task) => {
+  const handleTaskDialogOpen = (task) => {
     if (task) {
       setSelectedTask(task);
       setFormData({
@@ -66,32 +98,60 @@ import { TrendingUp, Users, Globe2, Plus, Calendar, Edit2, Trash2 } from "lucide
   };
 
   const handleTaskDialogClose = () => {
+    setTaskDialogOpen(false);
     setSubmitting(false);
   };
-  // Calculate stats from available data
+
   const handleTaskSubmit = async () => {
-        status: formData.status as "todo" | "in_progress" | "completed",
-        priority: formData.priority as "low" | "medium" | "high",
+    setSubmitting(true);
+    try {
+      const taskData = {
+        title: formData.title,
+        description: formData.description,
+        websiteId: formData.websiteId,
+        status: formData.status,
+        priority: formData.priority,
         assignee: formData.assignee,
         dueDate: new Date(formData.dueDate),
       };
-
+      // Add task submission logic here
     } finally {
       setSubmitting(false);
-import { useClientContext } from "../contexts/ClientContext";
+      handleTaskDialogClose();
+    }
+  };
+
+  const handleTaskDelete = (taskId) => {
+    // Add task deletion logic here
+  };
+
+  const getStatusColor = (status) => {
     switch (status) {
       case "completed":
-        change: totalLeads > 0 ? `+${Math.floor(totalLeads * 0.1) || 1}` : "0", 
+        return "success";
       case "in_progress":
         return "warning";
       case "todo":
-  const { clients } = useClientContext();
+        return "default";
+      default:
+        return "default";
+    }
+  };
+
+  const getPriorityColor = (priority) => {
     switch (priority) {
       case "high":
         return "error";
       case "medium":
         return "warning";
       case "low":
+        return "success";
+      default:
+        return "default";
+    }
+  };
+
+  const filteredTasks = tasks.filter((task) => {
     if (taskFilter === "all") return true;
     return task.status === taskFilter;
   });
@@ -99,9 +159,11 @@ import { useClientContext } from "../contexts/ClientContext";
   return (
     <Box>
       {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
         </Alert>
       )}
-  // Calculate stats from available data
+
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
         <Typography variant="h4" fontWeight="bold">
           Dashboard Overview
@@ -257,18 +319,22 @@ import { useClientContext } from "../contexts/ClientContext";
                 >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                     <Box
+                      sx={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: "50%",
+                        backgroundColor: "success.main",
+                      }}
                     />
                     <Typography variant="body2" fontWeight="medium">
                       New lead captured
                     </Typography>
                   </Box>
                   <Typography variant="caption" color="text.secondary">
-                  }}
-                >
                     1 hour ago
                   </Typography>
                 </Box>
-        change: totalLeads > 0 ? `+${Math.floor(totalLeads * 0.1) || 1}` : "0", 
+              </Box>
             </CardContent>
           </Card>
         </Grid>
@@ -279,8 +345,16 @@ import { useClientContext } from "../contexts/ClientContext";
         <DialogTitle>{selectedTask ? "Edit Task" : "Add New Task"}</DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2, display: "flex", flexDirection: "column", gap: 2 }}>
+            <TextField label="Title" fullWidth value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
+            <TextField label="Description" fullWidth multiline rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+            <FormControl fullWidth>
+              <InputLabel>Website</InputLabel>
+              <Select value={formData.websiteId} label="Website" onChange={(e) => setFormData({ ...formData, websiteId: e.target.value })}>
+                {websites.map((website) => (
+                  <MenuItem key={website.id} value={website.id}>
                     {website.domain}
                   </MenuItem>
+                ))}
                 <MenuItem value="1">Website 1</MenuItem>
                 <MenuItem value="2">Website 2</MenuItem>
                 <MenuItem value="3">Website 3</MenuItem>
