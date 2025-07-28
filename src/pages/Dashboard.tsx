@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Box,
   Button,
@@ -30,6 +30,7 @@ import {
 } from "@mui/material";
 import { TrendingUp, Users, Globe2, Phone, DollarSign, Plus, Calendar, Edit2, Trash2 } from "lucide-react";
 import type { Website, Task } from "../types";
+import { useTaskContext } from "../contexts/TaskContext";
 
 const stats = [
   { label: "Total Revenue", value: "$24,500", change: "+12.5%", icon: DollarSign },
@@ -37,33 +38,6 @@ const stats = [
   { label: "Total Leads", value: "234", change: "+22%", icon: TrendingUp },
   { label: "Active Clients", value: "8", change: "+1", icon: Users },
   { label: "Phone Numbers", value: "12", change: "+3", icon: Phone },
-];
-
-const mockTasks: Task[] = [
-  {
-    id: "1",
-    websiteId: "1",
-    title: "Optimize meta descriptions",
-    description: "Update meta descriptions for all service pages",
-    status: "in_progress",
-    priority: "high",
-    assignee: "John Doe",
-    dueDate: new Date("2024-03-25"),
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "2",
-    websiteId: "1",
-    title: "Build local citations",
-    description: "Create business listings on top local directories",
-    status: "todo",
-    priority: "medium",
-    assignee: "Jane Smith",
-    dueDate: new Date("2024-03-28"),
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
 ];
 
 const mockWebsites: Website[] = [
@@ -90,8 +64,14 @@ const mockWebsites: Website[] = [
 ];
 
 export default function Dashboard() {
+  // const { tasks,  } = useTaskContext();
+  const { tasks: contextTasks, createTask, updateTask, deleteTask, refreshTasks, loading, error } = useTaskContext();
+
   const theme = useTheme();
-  const [tasks, setTasks] = React.useState<Task[]>(mockTasks);
+  const [tasks, setTasks] = React.useState<Task[]>([]);
+  useEffect(() => {
+    setTasks(contextTasks);
+  }, [contextTasks]);
   const [websites] = React.useState<Website[]>(mockWebsites);
   const [taskDialogOpen, setTaskDialogOpen] = React.useState(false);
   const [selectedTask, setSelectedTask] = React.useState<Task | null>(null);
@@ -146,6 +126,8 @@ export default function Dashboard() {
             ? {
                 ...task,
                 ...formData,
+                status: formData.status as "todo" | "in_progress" | "completed",
+                priority: formData.priority as "low" | "medium" | "high",
                 dueDate: new Date(formData.dueDate),
                 updatedAt: new Date(),
               }
@@ -155,11 +137,17 @@ export default function Dashboard() {
     } else {
       const newTask: Task = {
         id: String(Date.now()),
-        ...formData,
+        title: formData.title,
+        description: formData.description,
+        websiteId: formData.websiteId,
+        status: formData.status as "todo" | "in_progress" | "completed",
+        priority: formData.priority as "low" | "medium" | "high",
+        assignee: formData.assignee,
         dueDate: new Date(formData.dueDate),
         createdAt: new Date(),
         updatedAt: new Date(),
       };
+
       setTasks([...tasks, newTask]);
     }
     handleTaskDialogClose();

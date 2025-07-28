@@ -8,7 +8,7 @@ const initialFilters: Filters = {
 };
 
 // API Configuration - Updated for local development
-const API_BASE_URL = "https://newrankandrentapi.onrender.com/api"
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Transform API lead data to frontend format
 const transformAPILeadToFrontend = (apiLead: any): Lead => {
@@ -100,8 +100,6 @@ const fetchLeadsAPI = async (): Promise<Lead[]> => {
     throw error;
   }
 };
-
-
 
 // API call to update lead
 const updateLeadAPI = async (lead: Lead, fieldsToUpdate?: string[]) => {

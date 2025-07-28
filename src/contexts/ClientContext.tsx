@@ -1,30 +1,15 @@
-import React, {
-  createContext,
-  useState,
-  useEffect,
-  useContext,
-  useMemo,
-} from "react";
-import {
-  Client,
-  ClientContextType,
-  SortField,
-  SortDirection,
-} from "../types";
+import React, { createContext, useState, useEffect, useContext, useMemo, useCallback } from "react";
+import { Client, ClientContextType, SortField, SortDirection } from "../types";
 
 const ClientContext = createContext<ClientContextType | undefined>(undefined);
-
-const API_BASE_URL = "https://newrankandrentapi.onrender.com/api";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const fetchClientsAPI = async (): Promise<Client[]> => {
   const response = await fetch(`${API_BASE_URL}/clients`);
   const json = await response.json();
   return json.data.map((client: any) => ({
     ...client,
-    contacted:
-      client.contacted === 1 ||
-      client.contacted === true ||
-      client.contacted === "1",
+    contacted: client.contacted === 1 || client.contacted === true || client.contacted === "1",
     createdAt: new Date(client.created_at),
     updatedAt: new Date(client.updated_at),
     websites: client.websites || [],
@@ -32,11 +17,7 @@ const fetchClientsAPI = async (): Promise<Client[]> => {
   }));
 };
 
-
-const updateClientAPI = async (
-  client: Client,
-  fieldsToUpdate?: string[]
-): Promise<Client> => {
+const updateClientAPI = async (client: Client, fieldsToUpdate?: string[]): Promise<Client> => {
   const data: any = {
     name: client.name,
     email: client.email,
@@ -49,7 +30,6 @@ const updateClientAPI = async (
     notes: client.notes || null,
   };
 
-  // ✅ FIXED HERE
   if (fieldsToUpdate && fieldsToUpdate.length > 0) {
     const filteredData: any = {};
     fieldsToUpdate.forEach((field) => {
@@ -57,7 +37,7 @@ const updateClientAPI = async (
         filteredData[field] = data[field];
       }
     });
-    Object.assign(data, filteredData); // Only apply filtered fields
+    Object.assign(data, filteredData);
   }
 
   const response = await fetch(`${API_BASE_URL}/clients/${client.id}`, {
@@ -77,9 +57,6 @@ const updateClientAPI = async (
     communicationHistory: updated.communicationHistory || [],
   };
 };
-
-
-
 
 const createClientAPI = async (clientData: Partial<Client>): Promise<Client> => {
   const data = {
@@ -113,16 +90,14 @@ const deleteClientAPI = async (id: string) => {
   await fetch(`${API_BASE_URL}/clients/${id}`, { method: "DELETE" });
 };
 
-export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [clients, setClients] = useState<Client[]>([]);
   const [sortField, setSortField] = useState<SortField | null>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const refreshClients = async () => {
+  const refreshClients = useCallback(async () => {
     try {
       setError(null);
       const data = await fetchClientsAPI();
@@ -131,13 +106,12 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({
       setError(err instanceof Error ? err.message : "Failed to load clients");
       throw err;
     }
-  };
+  }, []);
 
   useEffect(() => {
     const loadClients = async () => {
       try {
         setLoading(true);
-        setError(null);
         setError(null);
         const data = await fetchClientsAPI();
         setClients(data);
@@ -170,9 +144,7 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!client) throw new Error("Client not found");
 
       const updated = await updateClientAPI({ ...client, ...updates });
-      setClients((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, ...updated } : c))
-      );
+      setClients((prev) => prev.map((c) => (c.id === id ? { ...c, ...updated } : c)));
       return updated;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update client");
@@ -212,43 +184,38 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({
       sorted.sort((a, b) => {
         let valA: any = a[sortField as keyof Client];
         let valB: any = b[sortField as keyof Client];
-        
-        // Handle different data types
+
         if (valA === null || valA === undefined) valA = "";
         if (valB === null || valB === undefined) valB = "";
-        
-        // Convert to string for comparison
+
         valA = valA.toString().toLowerCase();
         valB = valB.toString().toLowerCase();
-        
-        return sortDirection === "asc"
-          ? valA.localeCompare(valB)
-          : valB.localeCompare(valA);
+
+        return sortDirection === "asc" ? valA.localeCompare(valB) : valB.localeCompare(valA);
       });
     }
     return sorted;
   }, [clients, sortField, sortDirection]);
 
-  return (
-    <ClientContext.Provider
-      value={{
-        clients: sortedClients,
-        createClient,
-        updateClient,
-        deleteClient,
-        toggleContactStatus,
-        refreshClients,
-        loading,
-        error,
-        sortField,
-        sortDirection,
-        setSortField,
-        setSortDirection,
-      }}
-    >
-      {children}
-    </ClientContext.Provider>
+  const value = useMemo(
+    () => ({
+      clients: sortedClients,
+      createClient,
+      updateClient,
+      deleteClient,
+      toggleContactStatus,
+      refreshClients,
+      loading,
+      error,
+      sortField,
+      sortDirection,
+      setSortField,
+      setSortDirection,
+    }),
+    [sortedClients, createClient, updateClient, deleteClient, toggleContactStatus, refreshClients, loading, error, sortField, sortDirection]
   );
+
+  return <ClientContext.Provider value={value}>{children}</ClientContext.Provider>;
 };
 
 export const useClientContext = () => {

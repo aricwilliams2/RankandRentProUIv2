@@ -147,6 +147,16 @@ export interface Task {
   updatedAt: Date;
 }
 
+export interface TaskContextType {
+  tasks: Task[];
+  loading: boolean;
+  error: string | null;
+  createTask: (task: Partial<Task>) => Promise<Task>;
+  updateTask: (id: string, updates: Partial<Task>) => Promise<Task>;
+  deleteTask: (id: string) => Promise<void>;
+  refreshTasks: () => Promise<void>;
+}
+
 export interface Invoice {
   id: string;
   clientId: string;
@@ -371,7 +381,7 @@ export interface KeywordIdea {
   id: string;
   keyword: string;
   country: string;
-  difficultyLabel: 'Easy' | 'Medium' | 'Hard' | 'Unknown';
+  difficultyLabel: "Easy" | "Medium" | "Hard" | "Unknown";
   volumeLabel: string;
   updatedAt: string;
 }
@@ -408,4 +418,4 @@ export interface GoogleRankCheck {
     SERP: SerpResult[];
   };
   message: string;
-}</parameter>
+}
