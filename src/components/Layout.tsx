@@ -8,12 +8,12 @@ const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   { icon: Users, label: "Leads", path: "/Leads" },
   { icon: Users, label: "Clients", path: "/clients" },
-  { icon: Globe, label: "Websites", path: "/websites" },
-  { icon: Phone, label: "Phone Numbers", path: "/phone-numbers" },
-  { icon: LineChart, label: "Analytics", path: "/analytics" },
-  { icon: Calculator, label: "Revenue", path: "/revenue" },
-  { icon: Search, label: "Research", path: "/research" },
-  { icon: Settings, label: "Settings", path: "/settings" },
+  // { icon: Globe, label: "Websites", path: "/websites" },
+  // { icon: Phone, label: "Phone Numbers", path: "/phone-numbers" },
+  // { icon: LineChart, label: "Analytics", path: "/analytics" },
+  // { icon: Calculator, label: "Revenue", path: "/revenue" },
+  // { icon: Search, label: "Research", path: "/research" },
+  // { icon: Settings, label: "Settings", path: "/settings" },
 ];
 
 const DRAWER_WIDTH = 240;
@@ -122,18 +122,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </IconButton>
             <img src={`https://www.rankandrenttool.com/Rank&.png`} alt="RankRent Pro" style={{ width: 70, objectFit: "contain" }} />
             <Box sx={{ flexGrow: 1 }} />
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant="body2" sx={{ display: { xs: 'none', sm: 'block' } }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Typography variant="body2" sx={{ display: { xs: "none", sm: "block" } }}>
                 {user?.name}
               </Typography>
-              <IconButton
-                size="small"
-                onClick={handleProfileMenuOpen}
-                sx={{ p: 0 }}
-              >
-                <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
-                  {user?.name?.charAt(0).toUpperCase()}
-                </Avatar>
+              <IconButton size="small" onClick={handleProfileMenuOpen} sx={{ p: 0 }}>
+                <Avatar sx={{ width: 32, height: 32, bgcolor: "primary.main" }}>{user?.name?.charAt(0).toUpperCase()}</Avatar>
               </IconButton>
             </Box>
           </Toolbar>
@@ -207,31 +201,31 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         PaperProps={{
           elevation: 0,
           sx: {
-            overflow: 'visible',
-            filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
+            overflow: "visible",
+            filter: "drop-shadow(0px 2px 8px rgba(0,0,0,0.32))",
             mt: 1.5,
-            '& .MuiAvatar-root': {
+            "& .MuiAvatar-root": {
               width: 32,
               height: 32,
               ml: -0.5,
               mr: 1,
             },
-            '&:before': {
+            "&:before": {
               content: '""',
-              display: 'block',
-              position: 'absolute',
+              display: "block",
+              position: "absolute",
               top: 0,
               right: 14,
               width: 10,
               height: 10,
-              bgcolor: 'background.paper',
-              transform: 'translateY(-50%) rotate(45deg)',
+              bgcolor: "background.paper",
+              transform: "translateY(-50%) rotate(45deg)",
               zIndex: 0,
             },
           },
         }}
-        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        transformOrigin={{ horizontal: "right", vertical: "top" }}
+        anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
       >
         <MenuItem onClick={handleProfileMenuClose}>
           <ListItemIcon>
