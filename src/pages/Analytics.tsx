@@ -163,6 +163,11 @@ export default function Analytics() {
     theme.palette.error.main,
   ];
 
+  const handleKeywordClick = (keyword: string, traffic: number) => {
+    // Open SERP results in a new tab
+    const url = `/serp-results?keyword=${encodeURIComponent(keyword)}&website=${encodeURIComponent(domain)}&traffic=${traffic}`;
+    window.open(url, '_blank');
+  };
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
@@ -392,13 +397,25 @@ export default function Analytics() {
                       <TableCell>Keyword</TableCell>
                       <TableCell align="center">Position</TableCell>
                       <TableCell align="right">Traffic</TableCell>
+                      <TableCell align="center">Analysis</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {trafficData.top_keywords.map((keyword, index) => (
                       <TableRow key={index}>
                         <TableCell>
-                          <Typography variant="body2" fontWeight="medium">
+                          <Typography 
+                            variant="body2" 
+                            fontWeight="medium"
+                            sx={{ 
+                              cursor: 'pointer',
+                              color: theme.palette.primary.main,
+                              '&:hover': {
+                                textDecoration: 'underline'
+                              }
+                            }}
+                            onClick={() => handleKeywordClick(keyword.keyword, keyword.traffic)}
+                          >
                             {keyword.keyword}
                           </Typography>
                         </TableCell>
@@ -417,6 +434,16 @@ export default function Analytics() {
                           <Typography variant="body2">
                             {keyword.traffic.toLocaleString()}
                           </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<Target size={16} />}
+                            onClick={() => handleKeywordClick(keyword.keyword, keyword.traffic)}
+                          >
+                            Check SERP
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}

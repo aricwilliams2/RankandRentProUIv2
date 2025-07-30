@@ -17,6 +17,7 @@ import { TaskProvider } from "./contexts/TaskContext";
 import { LeadProvider } from "./contexts/LeadContext";
 import { WebsiteProvider } from "./contexts/WebsiteContext";
 import { Box, CircularProgress } from "@mui/material";
+import SerpResults from "./pages/SerpResults";
 
 const AppContent = () => {
   const { isAuthenticated, loading } = useAuth();
@@ -59,6 +60,7 @@ const AppContent = () => {
                     <Route path="/revenue" element={<Revenue />} />
                     <Route path="/research" element={<Research />} />
                     <Route path="/settings" element={<Settings />} />
+                    <Route path="/serp-results" element={<SerpResults />} />
                   </Routes>
                 </Layout>
               </Router>
