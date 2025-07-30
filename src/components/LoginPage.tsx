@@ -125,7 +125,7 @@ export default function LoginPage() {
           <CardContent sx={{ p: 0 }}>
             {/* Header */}
             <Box sx={{ textAlign: 'center', p: 4, pb: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 0 }}>
                 <img 
                   src="https://www.rankandrenttool.com/Rank&.png" 
                   alt="RankRent Pro" 
