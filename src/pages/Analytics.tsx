@@ -194,6 +194,9 @@ export default function Analytics() {
       
       navigate(`/analytics?domain=${encodeURIComponent(cleanDomain)}`);
       // Update the current domain and fetch data
+    }
+  };
+
   // Show website input if no domain is provided
   // Show website input if no domain is provided
   if (!domain) {
@@ -273,7 +276,7 @@ export default function Analytics() {
                 </Typography>
               </Box>
             </Box>
-
+          </CardContent>
         </Card>
       </Box>
     );
