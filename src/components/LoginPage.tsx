@@ -129,7 +129,7 @@ export default function LoginPage() {
                 <img 
                   src="https://www.rankandrenttool.com/Rank&.png" 
                   alt="RankRent Pro" 
-                  style={{ height: 60, objectFit: 'contain' }}
+                  style={{ height: 120, objectFit: 'contain' }}
                 />
               </Box>
               <Typography variant="h4" fontWeight="bold" color="primary" gutterBottom>
