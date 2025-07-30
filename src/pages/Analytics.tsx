@@ -169,39 +169,14 @@ export default function Analytics() {
   ];
 
   const handleKeywordClick = (keyword: string, traffic: number) => {
-    // Show SERP results on the same page
-    setCurrentKeyword(keyword);
-    setCurrentTraffic(traffic);
-    fetchSerpData(keyword, traffic);
-  };
-
-  const fetchSerpData = async (keyword: string, traffic: number) => {
-    if (!domain) return;
-
-    try {
-      // Clean up the URL for the API call
-      let cleanUrl = domain;
-      if (!domain.startsWith('http')) {
-        cleanUrl = `https://${domain}`;
+    // Navigate to SERP results page
+    navigate('/serp-results', {
+      state: {
+        keyword: keyword,
+        website: domain,
+        traffic: traffic
       }
-
-      const response = await fetch(
-        `${API_BASE_URL}/google-rank-check?keyword=${encodeURIComponent(keyword)}&url=${encodeURIComponent(cleanUrl)}&country=us&id=google-serp`,
-        {
-          method: 'POST',
-        }
-      );
-      
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      setSerpData(data);
-      setShowSerpResults(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch SERP data');
-    }
+    });
   };
 
   const handleWebsiteSubmit = () => {
@@ -218,13 +193,8 @@ export default function Analytics() {
       }
       
       navigate(`/analytics?domain=${encodeURIComponent(cleanDomain)}`);
-      window.location.reload(); // Reload to trigger useEffect with new domain
-    }
-  };
-
-  const handleBackToAnalytics = () => {
-    setShowSerpResults(false);
-    setSerpData(null);
+      // Update the current domain and fetch data
+  // Show website input if no domain is provided
   // Show website input if no domain is provided
   if (!domain) {
     return (
@@ -266,7 +236,7 @@ export default function Analytics() {
                   }
                 }}
               />
-              
+
               <Button
                 variant="contained"
                 size="large"
@@ -283,7 +253,7 @@ export default function Analytics() {
                 Analyze Website
               </Button>
             </Box>
-            
+
             <Box sx={{ mt: 4, p: 3, bgcolor: 'grey.50', borderRadius: 2 }}>
               <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
                 What you'll get:
@@ -303,281 +273,13 @@ export default function Analytics() {
                 </Typography>
               </Box>
             </Box>
-          </CardContent>
+
         </Card>
       </Box>
     );
   }
 
-  // Show SERP results if user clicked on a keyword
-  if (showSerpResults && serpData) {
-    const targetSite = domain.replace(/^https?:\/\//, '').replace('www.', '');
-    const targetResult = serpData.data.SERP.find((result: any) => 
-      result.link.includes(targetSite)
-    );
 
-    const getRankColor = (rank: number) => {
-      if (rank <= 3) return theme.palette.success.main;
-      if (rank <= 10) return theme.palette.warning.main;
-      return theme.palette.error.main;
-    };
-
-    const getAuthorityColor = (authority: number) => {
-      if (authority >= 80) return theme.palette.success.main;
-      if (authority >= 60) return theme.palette.warning.main;
-      if (authority >= 40) return theme.palette.info.main;
-      return theme.palette.error.main;
-    };
-
-    return (
-      <Box>
-        {/* SERP Results Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
-          <Button
-            startIcon={<ArrowLeft size={20} />}
-            onClick={handleBackToAnalytics}
-          >
-            Back to Analytics
-          </Button>
-          <Box>
-            <Typography variant="h4" fontWeight="bold">
-              SERP Analysis Results
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
-              <Search size={20} />
-              <Typography variant="h6" color="primary">
-                "{currentKeyword}"
-              </Typography>
-              <Chip label={`${currentTraffic} monthly searches`} size="small" color="info" />
-            </Box>
-          </Box>
-        </Box>
-
-        {/* SERP Summary Cards */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                  <Target size={24} />
-                  <Typography color="text.secondary" variant="body2">
-                    Your Rank
-                  </Typography>
-                </Box>
-                <Typography variant="h4" fontWeight="bold" sx={{ color: getRankColor(serpData.data.rank) }}>
-                  #{serpData.data.rank}
-                </Typography>
-                <Typography color="text.secondary" variant="body2">
-                  Google Position
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                  <TrendingUp size={24} color={theme.palette.info.main} />
-                  <Typography color="text.secondary" variant="body2">
-                    Traffic Potential
-                  </Typography>
-                </Box>
-                <Typography variant="h4" fontWeight="bold">
-                  {currentTraffic}
-                </Typography>
-                <Typography color="text.secondary" variant="body2">
-                  Monthly Searches
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                  <Globe size={24} color={theme.palette.success.main} />
-                  <Typography color="text.secondary" variant="body2">
-                    Domain Authority
-                  </Typography>
-                </Box>
-                <Typography variant="h4" fontWeight="bold" sx={{ color: getAuthorityColor(targetResult?.['domain authority'] || 0) }}>
-                  {targetResult?.['domain authority'] || 'N/A'}
-                </Typography>
-                <Typography color="text.secondary" variant="body2">
-                  Your Site DA
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                  <Activity size={24} color={theme.palette.warning.main} />
-                  <Typography color="text.secondary" variant="body2">
-                    Page Authority
-                  </Typography>
-                </Box>
-                <Typography variant="h4" fontWeight="bold" sx={{ color: getAuthorityColor(targetResult?.['page authority'] || 0) }}>
-                  {targetResult?.['page authority'] || 'N/A'}
-                </Typography>
-                <Typography color="text.secondary" variant="body2">
-                  Your Page PA
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-    setCurrentKeyword('');
-        {/* Ranking Message */}
-        <Card sx={{ mb: 4 }}>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-              <Search size={24} />
-              <Typography variant="h6" fontWeight="medium">
-                Ranking Analysis
-              </Typography>
-            </Box>
-            <Typography variant="body1" sx={{ mb: 2 }}>
-              <strong>Website:</strong> {domain}
-            </Typography>
-            <Alert 
-              severity={serpData.data.rank <= 10 ? 'success' : serpData.data.rank <= 20 ? 'warning' : 'error'}
-              sx={{ mb: 2 }}
-            >
-              {serpData.data.message}
-            </Alert>
-            <Typography variant="body2" color="text.secondary">
-              Analysis shows your website's position among the top 99 Google search results for this keyword.
-            </Typography>
-          </CardContent>
-        </Card>
-    setCurrentTraffic(0);
-        {/* SERP Results Table */}
-        <Card>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-              <Target size={24} />
-              <Typography variant="h6" fontWeight="medium">
-                Complete SERP Results
-              </Typography>
-              <Chip label={`${serpData.data.SERP.length} results`} size="small" />
-            </Box>
-            
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Rank</TableCell>
-                    <TableCell>Title & Description</TableCell>
-                    <TableCell>Domain</TableCell>
-                    <TableCell align="center">DA</TableCell>
-                    <TableCell align="center">PA</TableCell>
-                    <TableCell align="center">Visit</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {serpData.data.SERP.map((result: any) => {
-                    const isTargetSite = result.link.includes(targetSite);
-                    const resultDomain = result.link.replace(/^https?:\/\//, '').replace('www.', '').split('/')[0];
-                    
-                    return (
-                      <TableRow 
-                        key={result.rank}
-                        sx={{
-                          backgroundColor: isTargetSite ? theme.palette.primary.light + '20' : 'transparent',
-                          border: isTargetSite ? `2px solid ${theme.palette.primary.main}` : 'none',
-                        }}
-                      >
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Chip
-                              label={`#${result.rank}`}
-                              size="small"
-                              sx={{
-                                backgroundColor: getRankColor(result.rank),
-                                color: 'white',
-                                fontWeight: 'bold',
-                              }}
-                            />
-                            {isTargetSite && (
-                              <Chip label="YOUR SITE" size="small" color="primary" variant="outlined" />
-                            )}
-                          </Box>
-                        </TableCell>
-                        
-                        <TableCell sx={{ maxWidth: 400 }}>
-                          <Typography variant="subtitle2" fontWeight="medium" sx={{ mb: 0.5 }}>
-                            {result.title}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary" sx={{
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
-                          }}>
-                            {result.description}
-                          </Typography>
-                        </TableCell>
-                        
-                        <TableCell>
-                          <Typography variant="body2" sx={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {resultDomain}
-                          </Typography>
-                        </TableCell>
-                        
-                        <TableCell align="center">
-                          <Chip
-                            label={result['domain authority']}
-                            size="small"
-                            sx={{
-                              backgroundColor: getAuthorityColor(result['domain authority']),
-                              color: 'white',
-                              fontWeight: 'bold',
-                            }}
-                          />
-                        </TableCell>
-                        
-                        <TableCell align="center">
-                          <Chip
-                            label={result['page authority']}
-                            size="small"
-                            sx={{
-                              backgroundColor: getAuthorityColor(result['page authority']),
-                              color: 'white',
-                              fontWeight: 'bold',
-                            }}
-                          />
-                        </TableCell>
-                        
-                        <TableCell align="center">
-                          <Button
-                            size="small"
-                            startIcon={<ExternalLink size={16} />}
-                            href={result.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            variant="outlined"
-                          >
-                            Visit
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </CardContent>
-        </Card>
-      </Box>
-    );
-  }
-  };
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
@@ -597,13 +299,6 @@ export default function Analytics() {
   if (error) {
     return (
       <Box>
-        <Button
-          startIcon={<ArrowLeft size={20} />}
-          onClick={() => navigate(-1)}
-          sx={{ mb: 2 }}
-        >
-          Back
-        </Button>
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
         </Alert>
@@ -617,13 +312,6 @@ export default function Analytics() {
   if (!trafficData) {
     return (
       <Box>
-        <Button
-          startIcon={<ArrowLeft size={20} />}
-          onClick={() => navigate(-1)}
-          sx={{ mb: 2 }}
-        >
-          Back
-        </Button>
         <Alert severity="info">
           No traffic data available for this domain.
         </Alert>
@@ -638,28 +326,20 @@ export default function Analytics() {
   return (
     <Box>
       {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
-        <Button
-          startIcon={<ArrowLeft size={20} />}
-          onClick={() => navigate(-1)}
-        >
-          Back
-        </Button>
-        <Box>
-          <Typography variant="h4" fontWeight="bold">
-            Website Analytics
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" fontWeight="bold">
+          Website Analytics
+        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+          <Globe size={20} />
+          <Typography variant="h6" color="primary">
+            {trafficData.url}
           </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
-            <Globe size={20} />
-            <Typography variant="h6" color="primary">
-              {trafficData.url}
-            </Typography>
-            <Chip 
-              label={trafficData.status} 
-              color="success" 
-              size="small" 
-            />
-          </Box>
+          <Chip 
+            label={trafficData.status} 
+            color="success" 
+            size="small" 
+          />
         </Box>
       </Box>
 
