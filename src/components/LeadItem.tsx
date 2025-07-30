@@ -72,8 +72,7 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
       
       navigate('/analytics', {
         state: {
-          domain: domain,
-          keywords: [lead.name.toLowerCase(), `${lead.name.toLowerCase()} services`] // Generate keywords from lead name
+          domain: domain
         }
       });
     }

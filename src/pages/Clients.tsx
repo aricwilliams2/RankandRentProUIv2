@@ -155,8 +155,7 @@ export default function Clients() {
       
       navigate('/analytics', {
         state: {
-          domain: domain,
-          keywords: [client.name.toLowerCase(), `${client.name.toLowerCase()} services`] // Generate keywords from client name
+          domain: domain
         }
       });
     }
