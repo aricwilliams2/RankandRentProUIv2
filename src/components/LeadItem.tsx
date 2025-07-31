@@ -6,6 +6,7 @@ import { Lead, CallLog } from "../types";
 import { useLeadContext } from "../contexts/LeadContext";
 import { useClientContext } from "../contexts/ClientContext";
 import LeadFormDialog from "./LeadFormDialog";
+import { useAuth } from "../contexts/AuthContext";
 
 interface LeadItemProps {
   lead: Lead;
@@ -27,6 +28,7 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
   const [callNotes, setCallNotes] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [convertingToClient, setConvertingToClient] = useState(false);
+  const { user } = useAuth();
 
   const handleCallLogClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -63,48 +65,52 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
       // Extract domain from website URL
       let domain = lead.website;
       try {
-        const url = new URL(lead.website.startsWith('http') ? lead.website : `https://${lead.website}`);
-        domain = url.hostname.replace('www.', '');
+        const url = new URL(lead.website.startsWith("http") ? lead.website : `https://${lead.website}`);
+        domain = url.hostname.replace("www.", "");
       } catch {
         // If URL parsing fails, use the website string as is
-        domain = lead.website.replace(/^https?:\/\//, '').replace('www.', '').split('/')[0];
+        domain = lead.website
+          .replace(/^https?:\/\//, "")
+          .replace("www.", "")
+          .split("/")[0];
       }
-      
-      navigate('/analytics', {
+
+      navigate("/analytics", {
         state: {
-          domain: domain
-        }
+          domain: domain,
+        },
       });
     }
   };
 
   const handleConvertToClient = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     if (window.confirm(`Convert "${lead.name}" to a client?`)) {
       setConvertingToClient(true);
       try {
         // Map lead data to client format
         const clientData = {
+          id: user?.id,
           name: lead.name,
-          email: lead.email || '',
+          email: lead.email || "",
           phone: lead.phone,
-          city: lead.city === 'Unknown' ? null : (lead.city || null),
+          city: lead.city === "Unknown" ? null : lead.city || null,
           reviews: lead.reviews || 0,
           website: lead.website || null,
           contacted: lead.contacted,
           follow_up_at: lead.follow_up_at || null,
           notes: lead.notes || null,
         };
-        
+
         await createClient(clientData);
         alert(`Successfully converted "${lead.name}" to a client!`);
-        
+
         // Refresh clients data in the background
         // This ensures the clients tab shows updated data when navigated to
         setTimeout(() => {
           // Try to refresh if user switches to clients tab
-          const event = new CustomEvent('refreshClients');
+          const event = new CustomEvent("refreshClients");
           window.dispatchEvent(event);
         }, 500);
       } catch (error) {
@@ -222,7 +228,7 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
   const latestNote = sortedLogs.length > 0 ? sortedLogs[0].notes : "";
 
   // Check if lead has a valid phone number
-  const hasPhoneNumber = lead.phone && lead.phone.trim() !== '' && lead.phone !== 'tel:';
+  const hasPhoneNumber = lead.phone && lead.phone.trim() !== "" && lead.phone !== "tel:";
 
   // Mobile card layout
   const MobileCard = () => (
@@ -256,8 +262,7 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
           <button onClick={handleConvertToClient} disabled={convertingToClient} className="p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors disabled:opacity-50" title="Convert to Client">
             <UserPlus className="w-3 h-3" />
           </button>
-        
-          
+
           <button onClick={handleEditClick} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit Lead">
             <Pencil className="w-3 h-3" />
           </button>
@@ -470,8 +475,7 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
             <button onClick={handleConvertToClient} disabled={convertingToClient} className="p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors disabled:opacity-50" title="Convert to Client">
               <UserPlus className="w-4 h-4" />
             </button>
-          
-          
+
             <button onClick={handleEditClick} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit Lead">
               <Pencil className="w-4 h-4" />
             </button>

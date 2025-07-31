@@ -46,7 +46,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     logout();
     handleProfileMenuClose();
   };
-
   const drawerContent = (
     <Box>
       <img src={`https://www.rankandrenttool.com/Rank&.png`} alt="RankRent Pro" style={{ width: 250, objectFit: "contain" }} />
@@ -86,11 +85,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </ListItem>
           );
         })}
+        <MenuItem onClick={handleLogout}>
+          <ListItemIcon sx={{ pl: 1 }}>
+            <LogOut size={20} />
+          </ListItemIcon>
+          <ListItemText sx={{ pl: 1.6 }}>Logout</ListItemText> {/* ← padding-left of 1 (8px) */}
+        </MenuItem>
+
         <Typography
           variant="subtitle2"
           fontWeight="bold"
           sx={{
             display: "flex",
+            paddingTop: "30px",
             alignItems: "center",
             justifyContent: "center",
             height: "100%", // ensures vertical alignment within parent

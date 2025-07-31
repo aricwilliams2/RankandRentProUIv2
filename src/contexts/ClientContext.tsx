@@ -1,20 +1,21 @@
 import React, { createContext, useState, useEffect, useContext, useMemo, useCallback } from "react";
 import { Client, ClientContextType, SortField, SortDirection } from "../types";
+import { useAuth } from "./AuthContext";
 
 const ClientContext = createContext<ClientContextType | undefined>(undefined);
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Helper function to get auth headers
 const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
-  const user = localStorage.getItem('user');
+  const token = localStorage.getItem("token");
+  const user = localStorage.getItem("user");
   const userId = user ? JSON.parse(user).id : null;
-  
+
   return {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-    ...(token && { 'Authorization': `Bearer ${token}` }),
-    ...(userId && { 'X-User-ID': userId }),
+    "Content-Type": "application/json",
+    Accept: "application/json",
+    ...(token && { Authorization: `Bearer ${token}` }),
+    ...(userId && { "X-User-ID": userId }),
   };
 };
 
@@ -74,6 +75,7 @@ const updateClientAPI = async (client: Client, fieldsToUpdate?: string[]): Promi
 
 const createClientAPI = async (clientData: Partial<Client>): Promise<Client> => {
   const data = {
+    id: clientData.id,
     name: clientData.name,
     email: clientData.email,
     phone: clientData.phone,
@@ -101,7 +103,7 @@ const createClientAPI = async (clientData: Partial<Client>): Promise<Client> => 
 };
 
 const deleteClientAPI = async (id: string) => {
-  await fetch(`${API_BASE_URL}/clients/${id}`, { 
+  await fetch(`${API_BASE_URL}/clients/${id}`, {
     method: "DELETE",
     headers: getAuthHeaders(),
   });

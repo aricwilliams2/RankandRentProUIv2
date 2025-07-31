@@ -4,24 +4,20 @@ import { Plus, Pencil, Trash2, Globe, Mail, Phone, History, MessageCircle, Phone
 import { useNavigate } from "react-router-dom";
 import { useClientContext } from "../contexts/ClientContext";
 import type { Client } from "../types";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function Clients() {
-  const { 
-    clients, 
-    createClient, 
-    updateClient, 
-    deleteClient, 
-    refreshClients,
-    loading, 
-    error 
-  } = useClientContext();
-  
+  const { clients, createClient, updateClient, deleteClient, refreshClients, loading, error } = useClientContext();
+
   const [open, setOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
+
   const [formData, setFormData] = useState({
+    id: user?.id,
     name: "",
     email: "",
     phone: "",
@@ -43,15 +39,15 @@ export default function Clients() {
       refreshClients();
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('refreshClients', handleCustomRefresh);
-    
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("refreshClients", handleCustomRefresh);
+
     // Also refresh when component mounts
     refreshClients();
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('refreshClients', handleCustomRefresh);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("refreshClients", handleCustomRefresh);
     };
   }, [refreshClients]);
 
@@ -59,6 +55,8 @@ export default function Clients() {
     if (client) {
       setSelectedClient(client);
       setFormData({
+        id: user?.id,
+
         name: client.name,
         email: client.email,
         phone: client.phone,
@@ -70,6 +68,7 @@ export default function Clients() {
     } else {
       setSelectedClient(null);
       setFormData({
+        id: user?.id,
         name: "",
         email: "",
         phone: "",
@@ -112,7 +111,7 @@ export default function Clients() {
   const handleSubmit = async () => {
     try {
       setSubmitting(true);
-      
+
       if (selectedClient) {
         // Update existing client
         await updateClient(selectedClient.id, formData);
@@ -120,7 +119,7 @@ export default function Clients() {
         // Create new client
         await createClient(formData);
       }
-      
+
       handleClose();
     } catch (err) {
       console.error("Failed to save client:", err);
@@ -146,25 +145,27 @@ export default function Clients() {
       // Extract domain from website URL
       let domain = client.website;
       try {
-        const url = new URL(client.website.startsWith('http') ? client.website : `https://${client.website}`);
-        domain = url.hostname.replace('www.', '');
+        const url = new URL(client.website.startsWith("http") ? client.website : `https://${client.website}`);
+        domain = url.hostname.replace("www.", "");
       } catch {
         // If URL parsing fails, use the website string as is
-        domain = client.website.replace(/^https?:\/\//, '').replace('www.', '').split('/')[0];
+        domain = client.website
+          .replace(/^https?:\/\//, "")
+          .replace("www.", "")
+          .split("/")[0];
       }
-      
-      navigate('/analytics', {
+
+      navigate("/analytics", {
         state: {
-          domain: domain
-        }
+          domain: domain,
+        },
       });
     }
   };
-  
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
         <Typography>Loading clients...</Typography>
       </Box>
     );
@@ -179,7 +180,7 @@ export default function Clients() {
           </Typography>
         </Box>
       )}
-      
+
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
         <Typography variant="h4" fontWeight="bold">
           Clients
@@ -229,14 +230,7 @@ export default function Clients() {
                 <TableCell>
                   {client?.website ? (
                     <Tooltip title={client.website}>
-                      <IconButton
-                        size="small"
-                        color="primary"
-                        component="a"
-                        href={client.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
+                      <IconButton size="small" color="primary" component="a" href={client.website} target="_blank" rel="noopener noreferrer">
                         <Globe size={18} />
                       </IconButton>
                     </Tooltip>
@@ -248,26 +242,16 @@ export default function Clients() {
                 </TableCell>
                 <TableCell>${client.websites.reduce((sum, website) => sum + website.monthlyRevenue, 0).toLocaleString()}</TableCell>
                 <TableCell>
-                  <Typography variant="body2">
-                    {client.reviews || 0} reviews
-                  </Typography>
+                  <Typography variant="body2">{client.reviews || 0} reviews</Typography>
                 </TableCell>
                 <TableCell>
-                  <Chip
-                    size="small"
-                    label={client.contacted ? "Contacted" : "New"}
-                    color={client.contacted ? "success" : "default"}
-                  />
+                  <Chip size="small" label={client.contacted ? "Contacted" : "New"} color={client.contacted ? "success" : "default"} />
                 </TableCell>
                 <TableCell align="right">
                   <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
                     {client.website && (
                       <Tooltip title="View Analytics">
-                        <IconButton 
-                          size="small" 
-                          color="info"
-                          onClick={() => handleViewAnalytics(client)}
-                        >
+                        <IconButton size="small" color="info" onClick={() => handleViewAnalytics(client)}>
                           <BarChart3 size={18} />
                         </IconButton>
                       </Tooltip>
@@ -290,72 +274,22 @@ export default function Clients() {
         <DialogTitle>{selectedClient ? "Edit Client" : "Add New Client"}</DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2, display: "flex", flexDirection: "column", gap: 2 }}>
-            <TextField
-              label="Name *"
-              fullWidth
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-            />
-            <TextField
-              label="Email *"
-              type="email"
-              fullWidth
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              required
-            />
-            <TextField
-              label="Phone *"
-              fullWidth
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              required
-            />
-            <TextField
-              label="City"
-              fullWidth
-              value={formData.city}
-              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-            />
-            <TextField
-              label="Website"
-              type="url"
-              fullWidth
-              value={formData.website}
-              onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-              placeholder="https://example.com"
-            />
-            <TextField
-              label="Reviews Count"
-              type="number"
-              fullWidth
-              value={formData.reviews}
-              onChange={(e) => setFormData({ ...formData, reviews: parseInt(e.target.value) || 0 })}
-              inputProps={{ min: 0 }}
-            />
-            <TextField
-              label="Notes"
-              multiline
-              rows={3}
-              fullWidth
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-            />
+            <TextField label="Name *" fullWidth value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
+            <TextField label="Email *" type="email" fullWidth value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} required />
+            <TextField label="Phone *" fullWidth value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} required />
+            <TextField label="City" fullWidth value={formData.city} onChange={(e) => setFormData({ ...formData, city: e.target.value })} />
+            <TextField label="Website" type="url" fullWidth value={formData.website} onChange={(e) => setFormData({ ...formData, website: e.target.value })} placeholder="https://example.com" />
+            <TextField label="Reviews Count" type="number" fullWidth value={formData.reviews} onChange={(e) => setFormData({ ...formData, reviews: parseInt(e.target.value) || 0 })} inputProps={{ min: 0 }} />
+            <TextField label="Notes" multiline rows={3} fullWidth value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} />
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>
-          <Button
-            variant="contained"
-            onClick={handleSubmit}
-            disabled={submitting || !formData.name || !formData.email || !formData.phone}
-          >
+          <Button variant="contained" onClick={handleSubmit} disabled={submitting || !formData.name || !formData.email || !formData.phone}>
             {selectedClient ? "Update" : "Add"}
           </Button>
         </DialogActions>
       </Dialog>
-
     </Box>
   );
 }

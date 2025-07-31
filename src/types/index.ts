@@ -9,7 +9,7 @@ export interface CallLog {
 }
 
 export interface Lead {
-  id: string;
+  id: any;
   name: string;
   email?: string;
   phone: string;
@@ -85,7 +85,7 @@ export interface ClientContextType {
 
 // Core Types for other parts of the app
 export interface Client {
-  id: string;
+  id: any;
   name: string;
   email: string;
   phone: string;

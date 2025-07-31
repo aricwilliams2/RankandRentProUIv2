@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useContext, useMemo } from "react";
 import { Lead, LeadContextType, Filters, AreaData, SortField, SortDirection, CallLog } from "../types";
+import { useAuth } from "./AuthContext";
 
 const LeadContext = createContext<LeadContextType | undefined>(undefined);
 
@@ -12,15 +13,15 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Helper function to get auth headers
 const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
-  const user = localStorage.getItem('user');
+  const token = localStorage.getItem("token");
+  const user = localStorage.getItem("user");
   const userId = user ? JSON.parse(user).id : null;
-  
+
   return {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-    ...(token && { 'Authorization': `Bearer ${token}` }),
-    ...(userId && { 'X-User-ID': userId }),
+    "Content-Type": "application/json",
+    Accept: "application/json",
+    ...(token && { Authorization: `Bearer ${token}` }),
+    ...(userId && { "X-User-ID": userId }),
   };
 };
 
@@ -148,6 +149,7 @@ const createLeadAPI = async (leadData: Partial<Lead>) => {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify({
+        id: leadData.id,
         name: leadData.name,
         email: leadData.email,
         phone: leadData.phone || "",

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { X, Save, AlertCircle } from "lucide-react";
 import { useLeadContext } from "../contexts/LeadContext";
 import { Lead } from "../types";
+import { useAuth } from "../contexts/AuthContext";
 
 interface LeadFormDialogProps {
   open: boolean;
@@ -14,45 +15,49 @@ const LeadFormDialog: React.FC<LeadFormDialogProps> = ({ open, onClose, onSucces
   const { createLead, updateLead } = useLeadContext();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+  const { user } = useAuth();
+
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    company: '',
-    website: '',
-    city: '',
-    status: 'New' as Lead['status'],
+    id: user?.id,
+    name: "",
+    email: "",
+    phone: "",
+    company: "",
+    website: "",
+    city: "",
+    status: "New" as Lead["status"],
     reviews: 0,
-    notes: '',
+    notes: "",
   });
 
   // Populate form when editing
   useEffect(() => {
     if (lead) {
       setFormData({
+        id: user?.id,
         name: lead.name,
-        email: lead.email || '',
+        email: lead.email || "",
         phone: lead.phone,
-        company: lead.company || '',
+        company: lead.company || "",
         website: lead.website,
-        city: lead.city === 'Unknown' ? '' : (lead.city || ''),
-        status: lead.status || 'New',
+        city: lead.city === "Unknown" ? "" : lead.city || "",
+        status: lead.status || "New",
         reviews: lead.reviews,
-        notes: lead.notes || '',
+        notes: lead.notes || "",
       });
     } else {
       // Reset form for new lead
       setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        company: '',
-        website: '',
-        city: '',
-        status: 'New',
+        id: user?.id,
+        name: "",
+        email: "",
+        phone: "",
+        company: "",
+        website: "",
+        city: "",
+        status: "New",
         reviews: 0,
-        notes: '',
+        notes: "",
       });
     }
     setError(null);
@@ -60,9 +65,9 @@ const LeadFormDialog: React.FC<LeadFormDialogProps> = ({ open, onClose, onSucces
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: name === 'reviews' ? parseInt(value) || 0 : value
+      [name]: name === "reviews" ? parseInt(value) || 0 : value,
     }));
   };
 
@@ -87,7 +92,7 @@ const LeadFormDialog: React.FC<LeadFormDialogProps> = ({ open, onClose, onSucces
       }
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save lead');
+      setError(err instanceof Error ? err.message : "Failed to save lead");
     } finally {
       setLoading(false);
     }
@@ -99,13 +104,8 @@ const LeadFormDialog: React.FC<LeadFormDialogProps> = ({ open, onClose, onSucces
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center p-6 border-b">
-          <h2 className="text-xl font-semibold text-gray-800">
-            {lead ? 'Edit Lead' : 'Add New Lead'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
+          <h2 className="text-xl font-semibold text-gray-800">{lead ? "Edit Lead" : "Add New Lead"}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -120,101 +120,38 @@ const LeadFormDialog: React.FC<LeadFormDialogProps> = ({ open, onClose, onSucces
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Business Name *
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="e.g., Green City Hauling"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Business Name *</label>
+              <input type="text" name="name" value={formData.name} onChange={handleInputChange} required className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Green City Hauling" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Company
-              </label>
-              <input
-                type="text"
-                name="company"
-                value={formData.company}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="e.g., Green City Hauling LLC"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
+              <input type="text" name="company" value={formData.company} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Green City Hauling LLC" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Phone *
-              </label>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="+19105551234"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
+              <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} required className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="+19105551234" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="hello@greencityhaul.com"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input type="email" name="email" value={formData.email} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="hello@greencityhaul.com" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Website
-              </label>
-              <input
-                type="url"
-                name="website"
-                value={formData.website}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="https://greencityhaul.com"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
+              <input type="url" name="website" value={formData.website} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="https://greencityhaul.com" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                City
-              </label>
-              <input
-                type="text"
-                name="city"
-                value={formData.city}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="e.g., Greensboro, Miami, Orlando"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+              <input type="text" name="city" value={formData.city} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Greensboro, Miami, Orlando" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Status
-              </label>
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select name="status" value={formData.status} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 <option value="New">New</option>
                 <option value="Contacted">Contacted</option>
                 <option value="Qualified">Qualified</option>
@@ -224,51 +161,23 @@ const LeadFormDialog: React.FC<LeadFormDialogProps> = ({ open, onClose, onSucces
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Reviews Count
-              </label>
-              <input
-                type="number"
-                name="reviews"
-                value={formData.reviews}
-                onChange={handleInputChange}
-                min="0"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="112"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Reviews Count</label>
+              <input type="number" name="reviews" value={formData.reviews} onChange={handleInputChange} min="0" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="112" />
             </div>
           </div>
 
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Notes
-            </label>
-            <textarea
-              name="notes"
-              value={formData.notes}
-              onChange={handleInputChange}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-              placeholder="Found them on Google Maps; 4.8★ rating, looks promising"
-            />
+            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <textarea name="notes" value={formData.notes} onChange={handleInputChange} rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none" placeholder="Found them on Google Maps; 4.8★ rating, looks promising" />
           </div>
 
           <div className="flex gap-3 justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-              disabled={loading}
-            >
+            <button type="button" onClick={onClose} className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors" disabled={loading}>
               Cancel
             </button>
-            <button
-              type="submit"
-              disabled={loading || !formData.name || !formData.phone}
-              className="flex items-center gap-2 px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
+            <button type="submit" disabled={loading || !formData.name || !formData.phone} className="flex items-center gap-2 px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed">
               <Save className="w-4 h-4" />
-              {loading ? 'Saving...' : (lead ? 'Update Lead' : 'Create Lead')}
+              {loading ? "Saving..." : lead ? "Update Lead" : "Create Lead"}
             </button>
           </div>
         </form>
