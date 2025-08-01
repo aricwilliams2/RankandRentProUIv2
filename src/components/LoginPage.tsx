@@ -81,15 +81,17 @@ export default function LoginPage() {
         await login(formData.email, formData.password);
       } else {
         // 1. Register the user
-        const newUser = await register(formData.name, formData.email, formData.password); // should return user object with `id`
 
         // 2. Create Stripe Checkout Session
-        const stripeRes = await fetch("https://www.rankandrenttool.com/stripe/create-checkout-session", {
+        const stripeRes = await fetch("https://newrankandrentapi.onrender.com/stripe/create-checkout-session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: newUser.id }),
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            password: formData.password, // still hashed later
+          }),
         });
-
         const stripeData = await stripeRes.json();
 
         // 3. Redirect to Stripe
