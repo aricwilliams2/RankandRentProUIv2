@@ -1,19 +1,8 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  TextField,
-  Typography,
-  Alert,
-  CircularProgress,
-  Tab,
-  Tabs,
-  Container,
-} from '@mui/material';
-import { Lock, User, Mail, Eye, EyeOff } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState } from "react";
+import { Box, Button, Card, CardContent, TextField, Typography, Alert, CircularProgress, Tab, Tabs, Container } from "@mui/material";
+import { Lock, User, Mail, Eye, EyeOff } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import { loadStripe } from "@stripe/stripe-js";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -22,21 +11,13 @@ interface TabPanelProps {
 }
 
 function TabPanel(props: TabPanelProps) {
+  const stripePromise = loadStripe("pk_test_1234");
+
   const { children, value, index, ...other } = props;
 
   return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`auth-tabpanel-${index}`}
-      aria-labelledby={`auth-tab-${index}`}
-      {...other}
-    >
-      {value === index && (
-        <Box sx={{ p: 3 }}>
-          {children}
-        </Box>
-      )}
+    <div role="tabpanel" hidden={value !== index} id={`auth-tabpanel-${index}`} aria-labelledby={`auth-tab-${index}`} {...other}>
+      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
     </div>
   );
 }
@@ -46,25 +27,25 @@ export default function LoginPage() {
   const [tabValue, setTabValue] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
+    name: "",
+    email: "",
+    password: "",
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
     setFormErrors({});
-    setFormData({ name: '', email: '', password: '' });
+    setFormData({ name: "", email: "", password: "" });
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    
+    setFormData((prev) => ({ ...prev, [name]: value }));
+
     // Clear error for this field when user starts typing
     if (formErrors[name]) {
-      setFormErrors(prev => ({ ...prev, [name]: '' }));
+      setFormErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
@@ -72,19 +53,19 @@ export default function LoginPage() {
     const errors: Record<string, string> = {};
 
     if (!formData.email) {
-      errors.email = 'Email is required';
+      errors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      errors.email = 'Email is invalid';
+      errors.email = "Email is invalid";
     }
 
     if (!formData.password) {
-      errors.password = 'Password is required';
+      errors.password = "Password is required";
     } else if (formData.password.length < 6) {
-      errors.password = 'Password must be at least 6 characters';
+      errors.password = "Password must be at least 6 characters";
     }
 
     if (tabValue === 1 && !formData.name) {
-      errors.name = 'Name is required';
+      errors.name = "Name is required";
     }
 
     setFormErrors(errors);
@@ -93,44 +74,52 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
+
+    if (!validateForm()) return;
 
     try {
       if (tabValue === 0) {
+        // Login
         await login(formData.email, formData.password);
       } else {
-        await register(formData.name, formData.email, formData.password);
+        // 1. Register the user
+        const newUser = await register(formData.name, formData.email, formData.password); // should return user object with `id`
+
+        // 2. Create Stripe Checkout Session
+        const stripeRes = await fetch("https://www.rankandrenttool.com/stripe/create-checkout-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: newUser.id }),
+        });
+
+        const stripeData = await stripeRes.json();
+
+        // 3. Redirect to Stripe
+        window.location.href = stripeData.url;
       }
     } catch (err) {
-      // Error is handled by the auth context
+      // Error is handled by context
     }
   };
 
   return (
     <Box
       sx={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
         p: 2,
       }}
     >
       <Container maxWidth="sm">
-        <Card sx={{ borderRadius: 3, boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
+        <Card sx={{ borderRadius: 3, boxShadow: "0 20px 40px rgba(0,0,0,0.1)" }}>
           <CardContent sx={{ p: 0 }}>
             {/* Header */}
-            <Box sx={{ textAlign: 'center', p: 4, pb: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
-                <img 
-                  src="https://www.rankandrenttool.com/Rank&.png" 
-                  alt="RankRent Pro" 
-                  style={{ width: 150, objectFit: 'contain' }}
-                />
+            <Box sx={{ textAlign: "center", p: 4, pb: 2 }}>
+              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", mb: 2 }}>
+                <img src="https://www.rankandrenttool.com/Rank&.png" alt="RankRent Pro" style={{ width: 150, objectFit: "contain" }} />
               </Box>
               <Typography variant="h4" fontWeight="bold" color="primary" gutterBottom>
                 Welcome to RankRent Pro
@@ -141,29 +130,21 @@ export default function LoginPage() {
             </Box>
 
             {/* Tabs */}
-            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-              <Tabs 
-                value={tabValue} 
-                onChange={handleTabChange} 
+            <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+              <Tabs
+                value={tabValue}
+                onChange={handleTabChange}
                 centered
                 sx={{
-                  '& .MuiTab-root': {
-                    textTransform: 'none',
-                    fontSize: '1rem',
+                  "& .MuiTab-root": {
+                    textTransform: "none",
+                    fontSize: "1rem",
                     fontWeight: 600,
-                  }
+                  },
                 }}
               >
-                <Tab 
-                  label="Sign In" 
-                  icon={<Lock size={20} />} 
-                  iconPosition="start"
-                />
-                <Tab 
-                  label="Sign Up" 
-                  icon={<User size={20} />} 
-                  iconPosition="start"
-                />
+                <Tab label="Sign In" icon={<Lock size={20} />} iconPosition="start" />
+                <Tab label="Sign Up" icon={<User size={20} />} iconPosition="start" />
               </Tabs>
             </Box>
 
@@ -179,7 +160,7 @@ export default function LoginPage() {
             {/* Login Form */}
             <TabPanel value={tabValue} index={0}>
               <form onSubmit={handleSubmit}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                   <TextField
                     label="Email Address"
                     name="email"
@@ -190,32 +171,29 @@ export default function LoginPage() {
                     helperText={formErrors.email}
                     fullWidth
                     InputProps={{
-                      startAdornment: <Mail size={20} style={{ marginRight: 8, color: '#666' }} />,
+                      startAdornment: <Mail size={20} style={{ marginRight: 8, color: "#666" }} />,
                     }}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                    sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
                   />
-                  
+
                   <TextField
                     label="Password"
                     name="password"
-                    type={showPassword ? 'text' : 'password'}
+                    type={showPassword ? "text" : "password"}
                     value={formData.password}
                     onChange={handleInputChange}
                     error={!!formErrors.password}
                     helperText={formErrors.password}
                     fullWidth
                     InputProps={{
-                      startAdornment: <Lock size={20} style={{ marginRight: 8, color: '#666' }} />,
+                      startAdornment: <Lock size={20} style={{ marginRight: 8, color: "#666" }} />,
                       endAdornment: (
-                        <Button
-                          onClick={() => setShowPassword(!showPassword)}
-                          sx={{ minWidth: 'auto', p: 1 }}
-                        >
+                        <Button onClick={() => setShowPassword(!showPassword)} sx={{ minWidth: "auto", p: 1 }}>
                           {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                         </Button>
                       ),
                     }}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                    sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
                   />
 
                   <Button
@@ -227,8 +205,8 @@ export default function LoginPage() {
                       mt: 2,
                       py: 1.5,
                       borderRadius: 2,
-                      textTransform: 'none',
-                      fontSize: '1.1rem',
+                      textTransform: "none",
+                      fontSize: "1.1rem",
                       fontWeight: 600,
                     }}
                   >
@@ -238,7 +216,7 @@ export default function LoginPage() {
                         Signing In...
                       </>
                     ) : (
-                      'Sign In'
+                      "Sign In"
                     )}
                   </Button>
                 </Box>
@@ -248,7 +226,7 @@ export default function LoginPage() {
             {/* Register Form */}
             <TabPanel value={tabValue} index={1}>
               <form onSubmit={handleSubmit}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                   <TextField
                     label="Full Name"
                     name="name"
@@ -259,9 +237,9 @@ export default function LoginPage() {
                     helperText={formErrors.name}
                     fullWidth
                     InputProps={{
-                      startAdornment: <User size={20} style={{ marginRight: 8, color: '#666' }} />,
+                      startAdornment: <User size={20} style={{ marginRight: 8, color: "#666" }} />,
                     }}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                    sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
                   />
 
                   <TextField
@@ -274,32 +252,29 @@ export default function LoginPage() {
                     helperText={formErrors.email}
                     fullWidth
                     InputProps={{
-                      startAdornment: <Mail size={20} style={{ marginRight: 8, color: '#666' }} />,
+                      startAdornment: <Mail size={20} style={{ marginRight: 8, color: "#666" }} />,
                     }}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                    sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
                   />
-                  
+
                   <TextField
                     label="Password"
                     name="password"
-                    type={showPassword ? 'text' : 'password'}
+                    type={showPassword ? "text" : "password"}
                     value={formData.password}
                     onChange={handleInputChange}
                     error={!!formErrors.password}
-                    helperText={formErrors.password || 'Minimum 6 characters'}
+                    helperText={formErrors.password || "Minimum 6 characters"}
                     fullWidth
                     InputProps={{
-                      startAdornment: <Lock size={20} style={{ marginRight: 8, color: '#666' }} />,
+                      startAdornment: <Lock size={20} style={{ marginRight: 8, color: "#666" }} />,
                       endAdornment: (
-                        <Button
-                          onClick={() => setShowPassword(!showPassword)}
-                          sx={{ minWidth: 'auto', p: 1 }}
-                        >
+                        <Button onClick={() => setShowPassword(!showPassword)} sx={{ minWidth: "auto", p: 1 }}>
                           {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                         </Button>
                       ),
                     }}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                    sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
                   />
 
                   <Button
@@ -311,8 +286,8 @@ export default function LoginPage() {
                       mt: 2,
                       py: 1.5,
                       borderRadius: 2,
-                      textTransform: 'none',
-                      fontSize: '1.1rem',
+                      textTransform: "none",
+                      fontSize: "1.1rem",
                       fontWeight: 600,
                     }}
                   >
@@ -322,7 +297,7 @@ export default function LoginPage() {
                         Creating Account...
                       </>
                     ) : (
-                      'Create Account'
+                      "Create Account"
                     )}
                   </Button>
                 </Box>
@@ -331,7 +306,7 @@ export default function LoginPage() {
           </CardContent>
         </Card>
 
-        <Box sx={{ textAlign: 'center', mt: 3 }}>
+        <Box sx={{ textAlign: "center", mt: 3 }}>
           <Typography variant="body2" color="white" sx={{ opacity: 0.8 }}>
             © {new Date().getFullYear()} RankRent Pro. All rights reserved.
           </Typography>
