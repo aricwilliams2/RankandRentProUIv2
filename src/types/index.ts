@@ -249,6 +249,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  is_paid?: boolean;
   created_at: Date;
   updated_at: Date;
 }
@@ -258,7 +259,7 @@ export interface AuthContextType {
   loading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<User>;
   logout: () => void;
   isAuthenticated: boolean;
 }

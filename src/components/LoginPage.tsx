@@ -11,8 +11,6 @@ interface TabPanelProps {
 }
 
 function TabPanel(props: TabPanelProps) {
-  const stripePromise = loadStripe("pk_test_1234");
-
   const { children, value, index, ...other } = props;
 
   return (

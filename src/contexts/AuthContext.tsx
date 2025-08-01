@@ -73,7 +73,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const register = async (name: string, email: string, password: string) => {
+  const register = async (name: string, email: string, password: string): Promise<User> => {
     setLoading(true);
     setError(null);
 
@@ -94,6 +94,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       const userData = {
         ...data.user,
+        id: String(data.user.id),
         created_at: new Date(data.user.created_at),
         updated_at: new Date(data.user.updated_at),
       };
@@ -101,6 +102,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUser(userData);
       localStorage.setItem("user", JSON.stringify(userData));
       localStorage.setItem("token", data.token);
+      return userData;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
       throw err;

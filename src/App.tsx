@@ -26,14 +26,14 @@ const AppContent = () => {
     return (
       <Box
         sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100vh',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
         }}
       >
-        <CircularProgress size={60} sx={{ color: 'white' }} />
+        <CircularProgress size={60} sx={{ color: "white" }} />
       </Box>
     );
   }
@@ -61,6 +61,8 @@ const AppContent = () => {
                     <Route path="/research" element={<Research />} />
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/serp-results" element={<SerpResults />} />
+                    <Route path="/success" element={<SuccessPage />} />
+                    <Route path="/cancel" element={<CancelPage />} />
                   </Routes>
                 </Layout>
               </Router>
