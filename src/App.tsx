@@ -18,6 +18,8 @@ import { LeadProvider } from "./contexts/LeadContext";
 import { WebsiteProvider } from "./contexts/WebsiteContext";
 import { Box, CircularProgress } from "@mui/material";
 import SerpResults from "./pages/SerpResults";
+import SuccessPage from "./pages/SuccessPage";
+import CancelPage from "./pages/CancelPage";
 
 const AppContent = () => {
   const { isAuthenticated, loading } = useAuth();
