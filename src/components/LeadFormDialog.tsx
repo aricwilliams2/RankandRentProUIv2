@@ -15,10 +15,9 @@ const LeadFormDialog: React.FC<LeadFormDialogProps> = ({ open, onClose, onSucces
   const { createLead, updateLead } = useLeadContext();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
 
   const [formData, setFormData] = useState({
-    id: user?.id,
+    id: "",
     name: "",
     email: "",
     phone: "",
@@ -34,7 +33,7 @@ const LeadFormDialog: React.FC<LeadFormDialogProps> = ({ open, onClose, onSucces
   useEffect(() => {
     if (lead) {
       setFormData({
-        id: user?.id,
+        id: lead?.id,
         name: lead.name,
         email: lead.email || "",
         phone: lead.phone,
@@ -48,7 +47,7 @@ const LeadFormDialog: React.FC<LeadFormDialogProps> = ({ open, onClose, onSucces
     } else {
       // Reset form for new lead
       setFormData({
-        id: user?.id,
+        id: "",
         name: "",
         email: "",
         phone: "",

@@ -74,8 +74,10 @@ const updateClientAPI = async (client: Client, fieldsToUpdate?: string[]): Promi
 };
 
 const createClientAPI = async (clientData: Partial<Client>): Promise<Client> => {
+  const user = localStorage.getItem("user");
+  const userId = user ? JSON.parse(user).id : null;
   const data = {
-    id: clientData.id,
+    id: userId,
     name: clientData.name,
     email: clientData.email,
     phone: clientData.phone,

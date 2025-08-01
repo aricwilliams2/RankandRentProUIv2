@@ -6,30 +6,30 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Helper function to get auth headers
 const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
-  const user = localStorage.getItem('user');
+  const token = localStorage.getItem("token");
+  const user = localStorage.getItem("user");
   const userId = user ? JSON.parse(user).id : null;
-  
+
   return {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-    ...(token && { 'Authorization': `Bearer ${token}` }),
-    ...(userId && { 'X-User-ID': userId }),
+    "Content-Type": "application/json",
+    Accept: "application/json",
+    ...(token && { Authorization: `Bearer ${token}` }),
+    ...(userId && { "X-User-ID": userId }),
   };
 };
 
 // Transform frontend camelCase to API snake_case
 const transformTaskForAPI = (task: Partial<Task>) => {
   const apiTask: any = {};
-  
+
   if (task.websiteId !== undefined) apiTask.website_id = task.websiteId;
   if (task.title !== undefined) apiTask.title = task.title;
   if (task.description !== undefined) apiTask.description = task.description;
   if (task.status !== undefined) apiTask.status = task.status;
   if (task.priority !== undefined) apiTask.priority = task.priority;
   if (task.assignee !== undefined) apiTask.assignee = task.assignee;
-  if (task.dueDate !== undefined) apiTask.due_date = task.dueDate.toISOString().split('T')[0];
-  
+  if (task.dueDate !== undefined) apiTask.due_date = task.dueDate.toISOString().split("T")[0];
+
   return apiTask;
 };
 
@@ -62,7 +62,7 @@ const createTaskAPI = async (task: Partial<Task>): Promise<Task> => {
   const created = await response.json();
   return {
     id: String(created.id),
-    websiteId: String(created.website_id),
+    websiteId: String(1),
     title: created.title,
     description: created.description,
     status: created.status,

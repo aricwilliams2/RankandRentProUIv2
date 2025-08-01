@@ -14,10 +14,9 @@ export default function Clients() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
-  const { user } = useAuth();
 
   const [formData, setFormData] = useState({
-    id: user?.id,
+    id: "",
     name: "",
     email: "",
     phone: "",
@@ -52,11 +51,11 @@ export default function Clients() {
   }, [refreshClients]);
 
   const handleOpen = (client?: Client) => {
+    console.log("client", client);
     if (client) {
       setSelectedClient(client);
       setFormData({
-        id: user?.id,
-
+        id: client?.id,
         name: client.name,
         email: client.email,
         phone: client.phone,
@@ -68,7 +67,7 @@ export default function Clients() {
     } else {
       setSelectedClient(null);
       setFormData({
-        id: user?.id,
+        id: "",
         name: "",
         email: "",
         phone: "",

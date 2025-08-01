@@ -28,7 +28,6 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
   const [callNotes, setCallNotes] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [convertingToClient, setConvertingToClient] = useState(false);
-  const { user } = useAuth();
 
   const handleCallLogClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -91,7 +90,7 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
       try {
         // Map lead data to client format
         const clientData = {
-          id: user?.id,
+          id: lead?.id,
           name: lead.name,
           email: lead.email || "",
           phone: lead.phone,

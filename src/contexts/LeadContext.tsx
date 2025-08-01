@@ -14,14 +14,13 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 // Helper function to get auth headers
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
-  const user = localStorage.getItem("user");
-  const userId = user ? JSON.parse(user).id : null;
+  // const user = localStorage.getItem("user");
+  // const userId = user ? JSON.parse(user).id : null;
 
   return {
     "Content-Type": "application/json",
     Accept: "application/json",
     ...(token && { Authorization: `Bearer ${token}` }),
-    ...(userId && { "X-User-ID": userId }),
   };
 };
 
@@ -117,8 +116,6 @@ const fetchLeadsAPI = async (): Promise<Lead[]> => {
 const updateLeadAPI = async (lead: Lead, fieldsToUpdate?: string[]) => {
   try {
     const leadData = transformLeadForAPI(lead, fieldsToUpdate);
-    console.log(`Updating lead ${lead.id} with data:`, leadData);
-
     const response = await fetch(`${API_BASE_URL}/leads/${lead.id}`, {
       method: "PUT", // Laravel API uses PUT for updates
       headers: getAuthHeaders(),
