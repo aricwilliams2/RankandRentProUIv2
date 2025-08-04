@@ -201,16 +201,97 @@ export default function Clients() {
         </Box>
       )}
 
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
-        <Typography variant="h4" fontWeight="bold">
+      <Box sx={{
+        display: "flex",
+        flexDirection: { xs: "column", sm: "row" },
+        justifyContent: "space-between",
+        alignItems: { xs: "stretch", sm: "center" },
+        gap: { xs: 2, sm: 0 },
+        mb: 4
+      }}>
+        <Typography variant="h4" fontWeight="bold" sx={{ fontSize: { xs: "1.5rem", sm: "2rem" } }}>
           Clients
         </Typography>
-        <Button variant="contained" startIcon={<Plus size={20} />} onClick={() => handleOpen()}>
+        <Button
+          variant="contained"
+          startIcon={<Plus size={20} />}
+          onClick={() => handleOpen()}
+          sx={{ width: { xs: "100%", sm: "auto" } }}
+        >
           Add Client
         </Button>
       </Box>
 
-      <TableContainer component={Paper}>
+      {/* Mobile Card View */}
+      <Box sx={{ display: { xs: "block", md: "none" } }}>
+        {clients?.map((client) => (
+          <Card key={client.id} sx={{ mb: 2, p: 2 }}>
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 1 }}>
+              <Box>
+                <Typography variant="subtitle1" fontWeight="medium">
+                  {client.name}
+                </Typography>
+                {client.city && (
+                  <Typography variant="caption" color="text.secondary">
+                    {client.city}
+                  </Typography>
+                )}
+              </Box>
+              <Chip size="small" label={client.contacted ? "Contacted" : "New"} color={client.contacted ? "success" : "default"} />
+            </Box>
+
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mb: 2 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Mail size={14} />
+                <Typography variant="body2">{client.email}</Typography>
+                <IconButton size="small" onClick={() => handleCopyEmail(client.email)}>
+                  {copiedEmail === client.email ? <Check size={14} /> : <Copy size={14} />}
+                </IconButton>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Phone size={14} />
+                <Typography variant="body2">{client.phone}</Typography>
+                <IconButton size="small" onClick={() => handleCallPhone(client.phone)}>
+                  <PhoneCall size={14} />
+                </IconButton>
+              </Box>
+              {client.website && (
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Globe size={14} />
+                  <Typography variant="body2" sx={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {client.website}
+                  </Typography>
+                  <IconButton size="small" component="a" href={client.website} target="_blank" rel="noopener noreferrer">
+                    <Globe size={14} />
+                  </IconButton>
+                </Box>
+              )}
+            </Box>
+
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <Typography variant="caption" color="text.secondary">
+                {client.reviews || 0} reviews
+              </Typography>
+              <Box sx={{ display: "flex", gap: 1 }}>
+                {client.website && (
+                  <IconButton size="small" color="info" onClick={() => handleViewAnalytics(client)}>
+                    <BarChart3 size={16} />
+                  </IconButton>
+                )}
+                <IconButton size="small" onClick={() => handleOpen(client)}>
+                  <Pencil size={16} />
+                </IconButton>
+                <IconButton size="small" color="error" onClick={() => handleDelete(client.id)}>
+                  <Trash2 size={16} />
+                </IconButton>
+              </Box>
+            </Box>
+          </Card>
+        ))}
+      </Box>
+
+      {/* Desktop Table View */}
+      <TableContainer component={Paper} sx={{ display: { xs: "none", md: "block" } }}>
         <Table>
           <TableHead>
             <TableRow>
@@ -302,7 +383,7 @@ export default function Clients() {
         </Table>
       </TableContainer>
 
-      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth sx={{ '& .MuiDialog-paper': { width: { xs: '95%', sm: '600px' }, m: { xs: 2, sm: 'auto' } } }}>
         <DialogTitle>{selectedClient ? "Edit Client" : "Add New Client"}</DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2, display: "flex", flexDirection: "column", gap: 2 }}>

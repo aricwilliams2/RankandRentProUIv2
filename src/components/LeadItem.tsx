@@ -94,12 +94,12 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
           name: lead.name,
           email: lead.email || "",
           phone: lead.phone,
-          city: lead.city === "Unknown" ? null : lead.city || null,
+          city: lead.city === "Unknown" ? undefined : lead.city || undefined,
           reviews: lead.reviews || 0,
-          website: lead.website || null,
+          website: lead.website || undefined,
           contacted: lead.contacted,
-          follow_up_at: lead.follow_up_at || null,
-          notes: lead.notes || null,
+          follow_up_at: lead.follow_up_at || undefined,
+          notes: lead.notes || undefined,
         };
 
         await createClient(clientData);
@@ -125,6 +125,7 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
       addCallLog(lead.id, {
         outcome: callOutcome,
         notes: callNotes.trim(),
+        nextFollowUp: null,
       });
 
       setCallNotes("");
@@ -557,12 +558,10 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
     </>
   );
 
-  // Return mobile card for small screens, table row for larger screens
-  const isMobile = window.innerWidth < 640;
-
   return (
     <>
-      {isMobile ? <MobileCard /> : <TableRow />}
+      <MobileCard />
+      <TableRow />
 
       {/* Call Logging Dialog */}
       {showCallDialog && (

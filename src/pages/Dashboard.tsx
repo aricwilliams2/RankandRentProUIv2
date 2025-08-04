@@ -26,6 +26,7 @@ import {
   FormControl,
   InputLabel,
   useTheme,
+  useMediaQuery,
   CircularProgress,
   Alert,
 } from "@mui/material";
@@ -52,7 +53,7 @@ export default function Dashboard() {
   const [formData, setFormData] = React.useState({
     title: "",
     description: "",
-    websiteId: "" as string,
+    websiteId: "",
     priority: "medium",
     status: "todo",
     assignee: "",
@@ -243,12 +244,34 @@ export default function Dashboard() {
         </Alert>
       )}
 
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
-        <Typography variant="h4" fontWeight="bold">
+      <Box sx={{
+        display: "flex",
+        flexDirection: { xs: "column", sm: "row" },
+        justifyContent: "space-between",
+        alignItems: { xs: "stretch", sm: "center" },
+        gap: { xs: 2, sm: 0 },
+        mb: 4
+      }}>
+        <Typography variant="h4" fontWeight="bold" sx={{ fontSize: { xs: "1.5rem", sm: "2rem" } }}>
           Dashboard Overview
         </Typography>
-        <Box sx={{ display: "flex", gap: 2 }}>
-          <ButtonGroup variant="outlined" size="small">
+        <Box sx={{
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
+          gap: 2,
+          width: { xs: "100%", sm: "auto" }
+        }}>
+          <ButtonGroup
+            variant="outlined"
+            size="small"
+            orientation={useMediaQuery(theme.breakpoints.down('sm')) ? "vertical" : "horizontal"}
+            sx={{
+              width: { xs: "100%", sm: "auto" },
+              '& .MuiButtonGroup-grouped': {
+                width: { xs: "100%", sm: "auto" }
+              }
+            }}
+          >
             <Button onClick={() => setTaskFilter("all")} variant={taskFilter === "all" ? "contained" : "outlined"}>
               All
             </Button>
@@ -262,7 +285,12 @@ export default function Dashboard() {
               Completed
             </Button>
           </ButtonGroup>
-          <Button variant="contained" startIcon={<Plus size={20} />} onClick={() => handleTaskDialogOpen()}>
+          <Button
+            variant="contained"
+            startIcon={<Plus size={20} />}
+            onClick={() => handleTaskDialogOpen()}
+            sx={{ width: { xs: "100%", sm: "auto" } }}
+          >
             Add Task
           </Button>
         </Box>
@@ -306,71 +334,119 @@ export default function Dashboard() {
                   <CircularProgress />
                 </Box>
               ) : (
-                <TableContainer>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Task</TableCell>
-                        <TableCell>Website</TableCell>
-                        <TableCell>Assignee</TableCell>
-                        <TableCell>Due Date</TableCell>
-                        <TableCell>Priority</TableCell>
-                        <TableCell>Status</TableCell>
-                        <TableCell align="right">Actions</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {filteredTasks.map((task) => {
-                        const website = websites.find((w: any) => w.id === task.websiteId);
-                        return (
-                          <TableRow key={task.id}>
-                            <TableCell>
-                              <Box>
-                                <Typography variant="body2" fontWeight="medium">
-                                  {task.title}
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  {task.description}
-                                </Typography>
-                              </Box>
-                            </TableCell>
-                            <TableCell>
-                              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                <Globe2 size={16} />
-                                <Typography variant="body2">{website?.domain || "Unassigned"}</Typography>
-                              </Box>
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="body2">{task.assignee}</Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                <Calendar size={16} />
-                                <Typography variant="body2">{task.dueDate.toLocaleDateString()}</Typography>
-                              </Box>
-                            </TableCell>
-                            <TableCell>
-                              <Chip size="small" label={task.priority} color={getPriorityColor(task.priority)} />
-                            </TableCell>
-                            <TableCell>
-                              <Chip size="small" label={task.status} color={getStatusColor(task.status)} />
-                            </TableCell>
-                            <TableCell align="right">
-                              <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
-                                <IconButton size="small" onClick={() => handleTaskDialogOpen(task)}>
-                                  <Edit2 size={16} />
-                                </IconButton>
-                                <IconButton size="small" color="error" onClick={() => handleTaskDelete(task.id)}>
-                                  <Trash2 size={16} />
-                                </IconButton>
-                              </Box>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                <>
+                  {/* Mobile Card View */}
+                  <Box sx={{ display: { xs: "block", md: "none" } }}>
+                    {filteredTasks.map((task) => {
+                      const website = websites.find((w: any) => w.id === task.websiteId);
+                      return (
+                        <Card key={task.id} sx={{ mb: 2, p: 2 }}>
+                          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 1 }}>
+                            <Typography variant="subtitle1" fontWeight="medium">
+                              {task.title}
+                            </Typography>
+                            <Box sx={{ display: "flex", gap: 1 }}>
+                              <IconButton size="small" onClick={() => handleTaskDialogOpen(task)}>
+                                <Edit2 size={16} />
+                              </IconButton>
+                              <IconButton size="small" color="error" onClick={() => handleTaskDelete(task.id)}>
+                                <Trash2 size={16} />
+                              </IconButton>
+                            </Box>
+                          </Box>
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                            {task.description}
+                          </Typography>
+                          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 1 }}>
+                            <Chip size="small" label={task.priority} color={getPriorityColor(task.priority)} />
+                            <Chip size="small" label={task.status} color={getStatusColor(task.status)} />
+                          </Box>
+                          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                              <Globe2 size={14} />
+                              <Typography variant="caption">{website?.domain || "Unassigned"}</Typography>
+                            </Box>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                              <Users size={14} />
+                              <Typography variant="caption">{task.assignee}</Typography>
+                            </Box>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                              <Calendar size={14} />
+                              <Typography variant="caption">{task.dueDate.toLocaleDateString()}</Typography>
+                            </Box>
+                          </Box>
+                        </Card>
+                      );
+                    })}
+                  </Box>
+
+                  {/* Desktop Table View */}
+                  <TableContainer sx={{ display: { xs: "none", md: "block" } }}>
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Task</TableCell>
+                          <TableCell>Website</TableCell>
+                          <TableCell>Assignee</TableCell>
+                          <TableCell>Due Date</TableCell>
+                          <TableCell>Priority</TableCell>
+                          <TableCell>Status</TableCell>
+                          <TableCell align="right">Actions</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {filteredTasks.map((task) => {
+                          const website = websites.find((w: any) => w.id === task.websiteId);
+                          return (
+                            <TableRow key={task.id}>
+                              <TableCell>
+                                <Box>
+                                  <Typography variant="body2" fontWeight="medium">
+                                    {task.title}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {task.description}
+                                  </Typography>
+                                </Box>
+                              </TableCell>
+                              <TableCell>
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                  <Globe2 size={16} />
+                                  <Typography variant="body2">{website?.domain || "Unassigned"}</Typography>
+                                </Box>
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2">{task.assignee}</Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                  <Calendar size={16} />
+                                  <Typography variant="body2">{task.dueDate.toLocaleDateString()}</Typography>
+                                </Box>
+                              </TableCell>
+                              <TableCell>
+                                <Chip size="small" label={task.priority} color={getPriorityColor(task.priority)} />
+                              </TableCell>
+                              <TableCell>
+                                <Chip size="small" label={task.status} color={getStatusColor(task.status)} />
+                              </TableCell>
+                              <TableCell align="right">
+                                <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
+                                  <IconButton size="small" onClick={() => handleTaskDialogOpen(task)}>
+                                    <Edit2 size={16} />
+                                  </IconButton>
+                                  <IconButton size="small" color="error" onClick={() => handleTaskDelete(task.id)}>
+                                    <Trash2 size={16} />
+                                  </IconButton>
+                                </Box>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </>
               )}
             </CardContent>
           </Card>
@@ -380,7 +456,7 @@ export default function Dashboard() {
 
 
       {/* Task Dialog */}
-      <Dialog open={taskDialogOpen} onClose={handleTaskDialogClose} maxWidth="sm" fullWidth>
+      <Dialog open={taskDialogOpen} onClose={handleTaskDialogClose} maxWidth="sm" fullWidth sx={{ '& .MuiDialog-paper': { width: { xs: '95%', sm: '600px' }, m: { xs: 2, sm: 'auto' } } }}>
         <DialogTitle>{selectedTask ? "Edit Task" : "Add New Task"}</DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2, display: "flex", flexDirection: "column", gap: 2 }}>
@@ -388,7 +464,7 @@ export default function Dashboard() {
             <TextField label="Description" fullWidth multiline rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
             <FormControl fullWidth>
               <InputLabel>Website (Optional)</InputLabel>
-              <Select value={formData.websiteId ?? ""} label="Website (Optional)" onChange={(e) => setFormData({ ...formData, websiteId: e.target.value === "" ? undefined : e.target.value })}>
+              <Select value={formData.websiteId || ""} label="Website (Optional)" onChange={(e) => setFormData({ ...formData, websiteId: e.target.value })}>
                 <MenuItem value="">
                   <em>No website assigned</em>
                 </MenuItem>
