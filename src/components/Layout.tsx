@@ -9,7 +9,7 @@ const navItems = [
   { icon: Users, label: "Leads", path: "/Leads" },
   { icon: Users, label: "Clients", path: "/clients" },
   { icon: LineChart, label: "Analytics", path: "/analytics" },
-  { icon: Globe, label: "Websites", path: "/websites" },
+  // { icon: Globe, label: "Websites", path: "/websites" },
   // { icon: Phone, label: "Phone Numbers", path: "/phone-numbers" },
   // { icon: Calculator, label: "Revenue", path: "/revenue" },
   // { icon: Search, label: "Research", path: "/research" },

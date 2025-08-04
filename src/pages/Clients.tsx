@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Box, Button, Card, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography, Chip, Tooltip, List, ListItem, ListItemText, ListItemIcon, Divider } from "@mui/material";
-import { Plus, Pencil, Trash2, Globe, Mail, Phone, History, MessageCircle, PhoneCall, StickyNote, BarChart3 } from "lucide-react";
+import { Box, Button, Card, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography, Chip, Tooltip, List, ListItem, ListItemText, ListItemIcon, Divider, Snackbar } from "@mui/material";
+import { Plus, Pencil, Trash2, Globe, Mail, Phone, History, MessageCircle, PhoneCall, StickyNote, BarChart3, Copy, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useClientContext } from "../contexts/ClientContext";
 import type { Client } from "../types";
@@ -25,6 +25,10 @@ export default function Clients() {
     website: "",
     notes: "",
   });
+
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
 
   // Refresh clients data when component mounts or becomes visible
   useEffect(() => {
@@ -139,6 +143,23 @@ export default function Clients() {
     }
   };
 
+  const handleCopyEmail = async (email: string) => {
+    try {
+      await navigator.clipboard.writeText(email);
+      setSnackbarMessage("Email copied to clipboard!");
+      setSnackbarOpen(true);
+      setCopiedEmail(email);
+      setTimeout(() => setCopiedEmail(null), 2000);
+    } catch (err) {
+      setSnackbarMessage("Failed to copy email");
+      setSnackbarOpen(true);
+    }
+  };
+
+  const handleCallPhone = (phone: string) => {
+    window.open(`tel:${phone}`, '_self');
+  };
+
   const handleViewAnalytics = (client: Client) => {
     if (client.website) {
       // Extract domain from website URL
@@ -214,14 +235,22 @@ export default function Clients() {
                 </TableCell>
                 <TableCell>
                   <Box sx={{ display: "flex", gap: 2 }}>
-                    <Tooltip title={client.email}>
-                      <IconButton size="small" color="primary">
-                        <Mail size={18} />
+                    <Tooltip title={`Copy ${client.email} to clipboard`}>
+                      <IconButton
+                        size="small"
+                        color="primary"
+                        onClick={() => handleCopyEmail(client.email)}
+                      >
+                        {copiedEmail === client.email ? <Check size={18} /> : <Copy size={18} />}
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title={client.phone}>
-                      <IconButton size="small" color="primary">
-                        <Phone size={18} />
+                    <Tooltip title={`Call ${client.phone}`}>
+                      <IconButton
+                        size="small"
+                        color="primary"
+                        onClick={() => handleCallPhone(client.phone)}
+                      >
+                        <PhoneCall size={18} />
                       </IconButton>
                     </Tooltip>
                   </Box>
@@ -239,7 +268,11 @@ export default function Clients() {
                     </Typography>
                   )}
                 </TableCell>
-                <TableCell>${client.websites.reduce((sum, website) => sum + website.monthlyRevenue, 0).toLocaleString()}</TableCell>
+                <TableCell>
+                  <Typography variant="body2" color="text.secondary">
+                    N/A
+                  </Typography>
+                </TableCell>
                 <TableCell>
                   <Typography variant="body2">{client.reviews || 0} reviews</Typography>
                 </TableCell>
@@ -289,6 +322,13 @@ export default function Clients() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={() => setSnackbarOpen(false)}
+        message={snackbarMessage}
+      />
     </Box>
   );
 }

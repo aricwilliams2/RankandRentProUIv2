@@ -1,9 +1,9 @@
 import React from "react";
-import { CheckSquare } from "lucide-react";
+import { CheckSquare, Users } from "lucide-react";
 import { useLeadContext } from "../contexts/LeadContext";
 
 const FilterPanel: React.FC = () => {
-  const { filters, setFilters } = useLeadContext();
+  const { filters, setFilters, areas, currentArea, setCurrentArea } = useLeadContext();
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
@@ -12,6 +12,11 @@ const FilterPanel: React.FC = () => {
       ...prev,
       [name]: checked,
     }));
+  };
+
+  const handleShowAllLeads = () => {
+    // Set current area to empty to show all leads
+    setCurrentArea("");
   };
 
   return (
@@ -23,7 +28,7 @@ const FilterPanel: React.FC = () => {
         </div>
       </div>
 
-      <div className="mt-3">
+      <div className="mt-3 space-y-3">
         <label className="inline-flex items-center cursor-pointer">
           <input type="checkbox" name="showContactedOnly" checked={filters.showContactedOnly} onChange={handleFilterChange} className="sr-only peer" />
           <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -32,6 +37,16 @@ const FilterPanel: React.FC = () => {
             Show contacted leads only
           </span>
         </label>
+
+        <div className="pt-2 border-t border-gray-200">
+          <button
+            onClick={handleShowAllLeads}
+            className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 hover:border-blue-300 transition-colors"
+          >
+            <Users className="w-4 h-4 mr-1.5" />
+            Show All Leads
+          </button>
+        </div>
       </div>
     </div>
   );

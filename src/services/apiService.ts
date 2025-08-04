@@ -1,4 +1,4 @@
-import type { MarketResearch, CompetitorAnalysis, KeywordOpportunity } from '../types';
+import type { MarketResearch, CompetitorAnalysis, KeywordOpportunity, ActivityResponse } from '../types';
 
 // Define interfaces for API responses
 interface SerpResponse {
@@ -268,4 +268,18 @@ export const analyzeDomainStatistics = (data: CompetitorResponse) => {
       lost: stats.is_lost,
     }
   };
+};
+
+// Function to fetch recent activity
+export const fetchRecentActivity = async (limit: number = 10): Promise<ActivityResponse> => {
+  try {
+    const response = await fetch(`/api/dashboard/activity?limit=${limit}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching recent activity:', error);
+    throw error;
+  }
 };

@@ -40,7 +40,7 @@ const fetchTasksAPI = async (): Promise<Task[]> => {
   const json = await response.json();
   return json.data.map((task: any) => ({
     id: String(task.id),
-    websiteId: String(task.website_id),
+    websiteId: task.website_id ? String(task.website_id) : undefined,
     title: task.title,
     description: task.description,
     status: task.status,
@@ -62,7 +62,7 @@ const createTaskAPI = async (task: Partial<Task>): Promise<Task> => {
   const created = await response.json();
   return {
     id: String(created.id),
-    websiteId: String(1),
+    websiteId: created.website_id ? String(created.website_id) : undefined,
     title: created.title,
     description: created.description,
     status: created.status,
@@ -84,7 +84,7 @@ const updateTaskAPI = async (id: string, updates: Partial<Task>): Promise<Task> 
   const updated = await response.json();
   return {
     id: String(updated.id),
-    websiteId: String(updated.website_id),
+    websiteId: updated.website_id ? String(updated.website_id) : undefined,
     title: updated.title,
     description: updated.description,
     status: updated.status,

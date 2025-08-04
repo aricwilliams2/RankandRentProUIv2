@@ -90,8 +90,6 @@ const transformLeadForAPI = (lead: Lead, fieldsToUpdate?: string[]) => {
 // API call to fetch leads with pagination support
 const fetchLeadsAPI = async (): Promise<Lead[]> => {
   try {
-    console.log("Fetching all leads...");
-
     const response = await fetch(`${API_BASE_URL}/leads`, {
       method: "GET",
       headers: getAuthHeaders(),
@@ -104,7 +102,6 @@ const fetchLeadsAPI = async (): Promise<Lead[]> => {
     const apiResponse = await response.json();
     const allLeads = apiResponse.data.map(transformAPILeadToFrontend);
 
-    console.log(`Total leads fetched: ${allLeads.length}`);
     return allLeads;
   } catch (error) {
     console.error("Failed to fetch leads from API:", error);
@@ -129,7 +126,6 @@ const updateLeadAPI = async (lead: Lead, fieldsToUpdate?: string[]) => {
     }
 
     const updatedData = await response.json();
-    console.log("Update successful:", updatedData);
     return updatedData;
   } catch (error) {
     console.error("Failed to update lead via API:", error);
@@ -140,34 +136,45 @@ const updateLeadAPI = async (lead: Lead, fieldsToUpdate?: string[]) => {
 // API call to create a new lead
 const createLeadAPI = async (leadData: Partial<Lead>) => {
   try {
-    console.log("Creating new lead with data:", leadData);
+    // Get current user from localStorage
+    const user = localStorage.getItem("user");
+    const userId = user ? JSON.parse(user).id : null;
+
+    // Ensure all required fields are present
+    const requestBody = {
+      user_id: userId,
+      name: leadData.name || "",
+      email: leadData.email || "",
+      phone: leadData.phone || "",
+      company: leadData.company || "",
+      website: leadData.website || "",
+      city: leadData.city || null,
+      status: leadData.status || "New",
+      notes: leadData.notes || "",
+      reviews: leadData.reviews || 0,
+      contacted: leadData.contacted || false,
+    };
 
     const response = await fetch(`${API_BASE_URL}/leads`, {
       method: "POST",
       headers: getAuthHeaders(),
-      body: JSON.stringify({
-        id: leadData.id,
-        name: leadData.name,
-        email: leadData.email,
-        phone: leadData.phone || "",
-        company: leadData.company,
-        website: leadData.website || "",
-        city: leadData.city || null,
-        status: leadData.status || "New",
-        notes: leadData.notes,
-        reviews: leadData.reviews || 0,
-        contacted: leadData.contacted || false,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        errorData = { message: "Failed to parse error response" };
+      }
       console.error("API Error Response:", errorData);
-      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      console.error("Response status:", response.status);
+      console.error("Response statusText:", response.statusText);
+      throw new Error(`API Error: ${response.status} ${response.statusText} - ${JSON.stringify(errorData)}`);
     }
 
     const newLead = await response.json();
-    console.log("Create successful:", newLead);
     return transformAPILeadToFrontend(newLead);
   } catch (error) {
     console.error("Failed to create lead via API:", error);
@@ -178,8 +185,6 @@ const createLeadAPI = async (leadData: Partial<Lead>) => {
 // API call to delete a lead
 const deleteLeadAPI = async (leadId: string) => {
   try {
-    console.log(`Deleting lead ${leadId}...`);
-
     const response = await fetch(`${API_BASE_URL}/leads/${leadId}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
@@ -191,7 +196,6 @@ const deleteLeadAPI = async (leadId: string) => {
       throw new Error(`API Error: ${response.status} ${response.statusText}`);
     }
 
-    console.log(`Lead ${leadId} deleted successfully`);
     return true;
   } catch (error) {
     console.error("Failed to delete lead via API:", error);
@@ -240,10 +244,13 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Get leads for current area
   const leads = useMemo(() => {
-    if (!currentArea) return [];
+    if (!currentArea) {
+      // If no area is selected, show all leads
+      return allLeads;
+    }
     const area = areas.find((a) => a.id === currentArea);
     return area?.leads || [];
-  }, [areas, currentArea]);
+  }, [areas, currentArea, allLeads]);
 
   // Load leads from API on component mount
   useEffect(() => {
@@ -287,7 +294,7 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     loadLeads();
-  }, [currentArea]);
+  }, []); // Remove currentArea dependency to prevent infinite loop
 
   // Set current area and update localStorage
   const setCurrentArea = (areaId: string) => {
@@ -391,10 +398,10 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
         lead.callLogs?.map((log) =>
           log.id === callLogId
             ? {
-                ...log,
-                ...updateData,
-                nextFollowUp: updateData.outcome ? calculateNextFollowUp(updateData.outcome) : log.nextFollowUp,
-              }
+              ...log,
+              ...updateData,
+              nextFollowUp: updateData.outcome ? calculateNextFollowUp(updateData.outcome) : log.nextFollowUp,
+            }
             : log
         ) || [],
       notes: updateData.notes || lead.notes, // Update lead notes if provided
@@ -446,11 +453,43 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setError(null);
       const newLead = await createLeadAPI(leadData);
-      setAllLeads((prevLeads) => [...prevLeads, newLead]);
+      // Refresh all leads to get the updated list from server
+      await refreshLeads();
       return newLead;
     } catch (error) {
       setError(error instanceof Error ? error.message : "Failed to create lead");
       throw error;
+    }
+  };
+
+  // Refresh leads from API
+  const refreshLeads = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Load call logs from localStorage
+      const savedCallLogs = localStorage.getItem("callLogs");
+      const callLogsMap = savedCallLogs ? JSON.parse(savedCallLogs) : {};
+
+      const apiLeads = await fetchLeadsAPI();
+
+      // Merge with saved call logs
+      const leadsWithCallLogs = apiLeads.map((lead) => ({
+        ...lead,
+        callLogs:
+          callLogsMap[lead.id]?.map((log: any) => ({
+            ...log,
+            callDate: new Date(log.callDate),
+            nextFollowUp: log.nextFollowUp ? new Date(log.nextFollowUp) : undefined,
+          })) || [],
+      }));
+
+      setAllLeads(leadsWithCallLogs);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to refresh leads");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -571,7 +610,7 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <LeadContext.Provider
       value={{
         leads,
-        setLeads: () => {}, // Not used anymore, data comes from API
+        setLeads: () => { }, // Not used anymore, data comes from API
         lastCalledIndex,
         setLastCalledIndex,
         toggleContactStatus,
@@ -595,6 +634,7 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
         createLead,
         updateLead,
         deleteLead,
+        refreshLeads,
       }}
     >
       {children}

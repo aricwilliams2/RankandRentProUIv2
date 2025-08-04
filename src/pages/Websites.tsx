@@ -247,14 +247,11 @@ Contact us today to learn more about our professional ${contentKeywords} service
                       <IconButton size="small" onClick={() => handleWebsiteDialogOpen(website)}>
                         <Pencil size={18} />
                       </IconButton>
-                      <IconButton size="small" color="error" onClick={() => handleWebsiteDelete(website.id)}>
-                        <Trash2 size={18} />
-                      </IconButton>
                     </Box>
                   </Box>
 
                   <Grid container spacing={2} sx={{ mb: 3 }}>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid item xs={12} sm={6} md={4}>
                       <Card variant="outlined">
                         <CardContent>
                           <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
@@ -267,7 +264,7 @@ Contact us today to learn more about our professional ${contentKeywords} service
                         </CardContent>
                       </Card>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid item xs={12} sm={6} md={4}>
                       <Card variant="outlined">
                         <CardContent>
                           <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
@@ -280,7 +277,7 @@ Contact us today to learn more about our professional ${contentKeywords} service
                         </CardContent>
                       </Card>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid item xs={12} sm={6} md={4}>
                       <Card variant="outlined">
                         <CardContent>
                           <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
@@ -293,30 +290,11 @@ Contact us today to learn more about our professional ${contentKeywords} service
                         </CardContent>
                       </Card>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Card variant="outlined">
-                        <CardContent>
-                          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                            <Typography variant="body2" color="text.secondary">
-                              Organic Traffic
-                            </Typography>
-                            <TrendingUp size={16} />
-                          </Box>
-                          <Typography variant="h6">{website.seoMetrics?.organicTraffic?.toLocaleString() || 0}</Typography>
-                        </CardContent>
-                      </Card>
-                    </Grid>
                   </Grid>
 
                   <Box sx={{ display: "flex", gap: 2 }}>
-                    <Button variant="outlined" size="small" startIcon={<Users size={18} />} onClick={() => handleLeadsDialogOpen(website)}>
-                      View Leads
-                    </Button>
                     <Button variant="outlined" size="small" startIcon={<ExternalLink size={18} />} href={`https://${website.domain}`} target="_blank" rel="noopener noreferrer">
                       Visit Website
-                    </Button>
-                    <Button variant="outlined" size="small" startIcon={<FileText size={18} />} onClick={() => handleContentDialogOpen(website)}>
-                      Write Content
                     </Button>
                   </Box>
                 </CardContent>

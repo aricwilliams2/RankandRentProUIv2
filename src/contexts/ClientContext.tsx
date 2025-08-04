@@ -150,7 +150,8 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     try {
       setError(null);
       const newClient = await createClientAPI(data);
-      setClients((prev) => [...prev, newClient]);
+      // Refresh all clients to get the updated list from server
+      await refreshClients();
       return newClient;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create client");

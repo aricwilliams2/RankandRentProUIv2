@@ -66,7 +66,23 @@ const fetchWebsitesAPI = async (): Promise<Website[]> => {
   });
   const json = await response.json();
 
-  return json.data.map((site: any) => ({
+  // Handle different response structures
+  let sites: any[] = [];
+  if (Array.isArray(json)) {
+    // Direct array response
+    sites = json;
+  } else if (json.data && Array.isArray(json.data)) {
+    // Wrapped in data property
+    sites = json.data;
+  } else if (json.data && !Array.isArray(json.data)) {
+    // Single object in data property
+    sites = [json.data];
+  } else {
+    // Single object or other structure
+    sites = [json];
+  }
+
+  return sites.map((site: any) => ({
     id: String(site.id),
     domain: site.domain,
     niche: site.niche,
@@ -106,7 +122,11 @@ const createWebsiteAPI = async (website: Partial<Website>): Promise<Website> => 
     throw new Error(`Failed to create website: ${response.statusText}`);
   }
 
-  const site = await response.json();
+  const json = await response.json();
+
+  // Handle different response structures
+  const site = json.data || json;
+
   return {
     id: String(site.id),
     domain: site.domain,
@@ -135,7 +155,11 @@ const updateWebsiteAPI = async (id: string, updates: Partial<Website>): Promise<
     headers: getAuthHeaders(),
     body: JSON.stringify(transformWebsiteForAPI(updates)),
   });
-  const site = await response.json();
+  const json = await response.json();
+
+  // Handle different response structures
+  const site = json.data || json;
+
   return {
     id: String(site.id),
     domain: site.domain,

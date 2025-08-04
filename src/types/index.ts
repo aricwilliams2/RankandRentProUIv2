@@ -65,6 +65,7 @@ export interface LeadContextType {
   createLead: (leadData: Partial<Lead>) => Promise<Lead>;
   updateLead: (leadId: string, updateData: Partial<Lead>) => Promise<Lead | undefined>;
   deleteLead: (leadId: string) => Promise<boolean>;
+  refreshLeads: () => Promise<void>;
 }
 
 // Client Context Type
@@ -146,7 +147,7 @@ export interface SEOMetrics {
 
 export interface Task {
   id: string;
-  websiteId: string;
+  websiteId?: string; // Made optional
   title: string;
   description: string;
   status: "todo" | "in_progress" | "completed";
@@ -437,6 +438,25 @@ export interface SerpResult {
   description: string;
   "domain authority": number;
   "page authority": number;
+}
+
+export interface Activity {
+  id: number;
+  type: string;
+  title: string;
+  description: string;
+  website: string | null;
+  timestamp: string;
+  timeAgo: string;
+  icon: string;
+  color: string;
+  category: string;
+}
+
+export interface ActivityResponse {
+  success: boolean;
+  data: Activity[];
+  total: number;
 }
 
 export interface GoogleRankCheck {

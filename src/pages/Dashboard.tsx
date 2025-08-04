@@ -52,12 +52,14 @@ export default function Dashboard() {
   const [formData, setFormData] = React.useState({
     title: "",
     description: "",
-    websiteId: "",
+    websiteId: "" as string,
     priority: "medium",
     status: "todo",
     assignee: "",
     dueDate: "",
   });
+
+
 
   // Load tasks on component mount
   useEffect(() => {
@@ -136,7 +138,7 @@ export default function Dashboard() {
       setFormData({
         title: task.title,
         description: task.description,
-        websiteId: task.websiteId,
+        websiteId: task.websiteId || "",
         priority: task.priority,
         status: task.status,
         assignee: task.assignee,
@@ -169,7 +171,7 @@ export default function Dashboard() {
       const taskData = {
         title: formData.title,
         description: formData.description,
-        websiteId: formData.websiteId,
+        websiteId: formData.websiteId || undefined,
         status: formData.status as "todo" | "in_progress" | "completed",
         priority: formData.priority as "low" | "medium" | "high",
         assignee: formData.assignee,
@@ -375,70 +377,7 @@ export default function Dashboard() {
         </Grid>
       </Grid>
 
-      <Grid container spacing={3}>
-        <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" fontWeight="medium" sx={{ mb: 2 }}>
-                Recent Activity
-              </Typography>
-              <Box sx={{ "& > *:not(:last-child)": { mb: 2 } }}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    p: 1,
-                  }}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                    <Box
-                      sx={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: "50%",
-                        bgcolor: "success.main",
-                      }}
-                    />
-                    <Typography variant="body2" fontWeight="medium">
-                      New lead captured
-                    </Typography>
-                  </Box>
-                  <Typography variant="caption" color="text.secondary">
-                    2 minutes ago
-                  </Typography>
-                </Box>
-                <Divider />
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    p: 1,
-                  }}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                    <Box
-                      sx={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: "50%",
-                        bgcolor: "primary.main",
-                      }}
-                    />
-                    <Typography variant="body2" fontWeight="medium">
-                      Website ranking improved
-                    </Typography>
-                  </Box>
-                  <Typography variant="caption" color="text.secondary">
-                    1 hour ago
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+
 
       {/* Task Dialog */}
       <Dialog open={taskDialogOpen} onClose={handleTaskDialogClose} maxWidth="sm" fullWidth>
@@ -448,8 +387,11 @@ export default function Dashboard() {
             <TextField label="Title" fullWidth value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
             <TextField label="Description" fullWidth multiline rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
             <FormControl fullWidth>
-              <InputLabel>Website</InputLabel>
-              <Select value={formData.websiteId} label="Website" onChange={(e) => setFormData({ ...formData, websiteId: e.target.value })}>
+              <InputLabel>Website (Optional)</InputLabel>
+              <Select value={formData.websiteId ?? ""} label="Website (Optional)" onChange={(e) => setFormData({ ...formData, websiteId: e.target.value === "" ? undefined : e.target.value })}>
+                <MenuItem value="">
+                  <em>No website assigned</em>
+                </MenuItem>
                 {websites.map((website: any) => (
                   <MenuItem key={website.id} value={website.id}>
                     {website.domain}
@@ -476,6 +418,13 @@ export default function Dashboard() {
             </FormControl>
             <TextField label="Due Date" type="date" fullWidth value={formData.dueDate} onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })} InputLabelProps={{ shrink: true }} />
           </Box>
+          {(!formData.title || !formData.dueDate) && (
+            <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                Please fill in all required fields: Title and Due Date
+              </Typography>
+            </Box>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleTaskDialogClose}>Cancel</Button>
