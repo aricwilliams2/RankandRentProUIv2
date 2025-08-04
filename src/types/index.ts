@@ -112,6 +112,16 @@ export interface Website {
   updatedAt: Date;
 }
 
+export interface WebsiteContextType {
+  websites: Website[];
+  createWebsite: (website: Partial<Website>) => Promise<Website>;
+  updateWebsite: (id: string, updates: Partial<Website>) => Promise<Website>;
+  deleteWebsite: (id: string) => Promise<void>;
+  refreshWebsites: () => Promise<void>;
+  loading: boolean;
+  error: string | null;
+}
+
 export interface PhoneNumber {
   id: string;
   number: string;
