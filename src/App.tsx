@@ -1,4 +1,5 @@
 import { HashRouter as Router, Routes, Route } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Layout from "./components/Layout";
 import LoginPage from "./components/LoginPage";
 import Dashboard from "./pages/Dashboard";
@@ -20,6 +21,7 @@ import { Box, CircularProgress } from "@mui/material";
 import SerpResults from "./pages/SerpResults";
 import SuccessPage from "./pages/SuccessPage";
 import CancelPage from "./pages/CancelPage";
+import "./styles/twilio.css";
 
 const AppContent = () => {
   const { isAuthenticated, loading } = useAuth();
@@ -77,10 +79,21 @@ const AppContent = () => {
 };
 
 const App = () => {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: 1,
+        refetchOnWindowFocus: false,
+      },
+    },
+  });
+
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </QueryClientProvider>
   );
 };
 
