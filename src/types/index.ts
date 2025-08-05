@@ -468,3 +468,36 @@ export interface GoogleRankCheck {
   };
   message: string;
 }
+
+export interface ChecklistItem {
+  id: string;
+  title: string;
+  description?: string;
+  category: string;
+  isCompleted: boolean;
+  completedAt?: Date;
+  completedBy?: string;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  estimatedTime?: number; // in minutes
+  dependencies?: string[]; // IDs of items that must be completed first
+}
+
+export interface ClientChecklist {
+  id: string;
+  clientId: string;
+  items: ChecklistItem[];
+  totalItems: number;
+  completedItems: number;
+  progress: number; // percentage
+  lastUpdated: Date;
+  createdAt: Date;
+}
+
+export interface ChecklistCategory {
+  id: string;
+  name: string;
+  description: string;
+  color: string;
+  icon: string;
+  items: ChecklistItem[];
+}

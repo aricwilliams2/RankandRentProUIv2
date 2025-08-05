@@ -10,6 +10,7 @@ import Analytics from "./pages/Analytics";
 import Revenue from "./pages/Revenue";
 import Research from "./pages/Research";
 import Settings from "./pages/Settings";
+import ClientChecklistPage from "./pages/ClientChecklistPage";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ApiProvider } from "./contexts/ApiContext";
 import { ClientProvider } from "./contexts/ClientContext";
@@ -60,6 +61,7 @@ const AppContent = () => {
                     <Route path="/clients" element={<Clients />} />
                     <Route path="/websites" element={<Websites />} />
                     <Route path="/phone-numbers" element={<PhoneNumbers />} />
+                    <Route path="/checklists" element={<ClientChecklistPage />} />
                     <Route path="/analytics" element={<Analytics />} />
                     <Route path="/revenue" element={<Revenue />} />
                     <Route path="/research" element={<Research />} />

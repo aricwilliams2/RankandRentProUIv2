@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Box, Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, useTheme, useMediaQuery, AppBar, Toolbar, IconButton, Button, Avatar, Menu, MenuItem } from "@mui/material";
-import { LayoutDashboard, Users, Globe, Phone, LineChart, Calculator, Search, Settings, Menu as MenuIcon, X, LogOut, User } from "lucide-react";
+import { LayoutDashboard, Users, Globe, Phone, LineChart, Calculator, Search, Settings, Menu as MenuIcon, X, LogOut, User, CheckSquare } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   { icon: Users, label: "Leads", path: "/Leads" },
   { icon: Users, label: "Clients", path: "/clients" },
+  { icon: CheckSquare, label: "Checklists", path: "/checklists" },
   { icon: LineChart, label: "Analytics", path: "/analytics" },
   // { icon: Globe, label: "Websites", path: "/websites" },
   { icon: Phone, label: "Phone Numbers", path: "/phone-numbers" },
