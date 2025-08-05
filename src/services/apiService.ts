@@ -283,3 +283,128 @@ export const fetchRecentActivity = async (limit: number = 10): Promise<ActivityR
     throw error;
   }
 };
+
+// Call Log API Functions
+export const createCallLogAPI = async (leadId: string, callLogData: {
+  outcome: string;
+  notes: string;
+  nextFollowUp?: string;
+  duration?: number;
+}) => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/call-logs`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify({
+        lead_id: leadId,
+        outcome: callLogData.outcome,
+        notes: callLogData.notes,
+        next_follow_up: callLogData.nextFollowUp,
+        duration: callLogData.duration || 0,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("API Error Response:", errorData);
+      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    }
+
+    const newCallLog = await response.json();
+    return newCallLog;
+  } catch (error) {
+    console.error("Failed to create call log via API:", error);
+    throw error;
+  }
+};
+
+export const updateCallLogAPI = async (callLogId: string, updateData: {
+  outcome?: string;
+  notes?: string;
+  nextFollowUp?: string;
+}) => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/call-logs/${callLogId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify({
+        outcome: updateData.outcome,
+        notes: updateData.notes,
+        next_follow_up: updateData.nextFollowUp,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("API Error Response:", errorData);
+      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    }
+
+    const updatedCallLog = await response.json();
+    return updatedCallLog;
+  } catch (error) {
+    console.error("Failed to update call log via API:", error);
+    throw error;
+  }
+};
+
+export const fetchCallLogsAPI = async (leadId: string) => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/leads/${leadId}/call-logs`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("API Error Response:", errorData);
+      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    }
+
+    const callLogs = await response.json();
+    return callLogs;
+  } catch (error) {
+    console.error("Failed to fetch call logs via API:", error);
+    throw error;
+  }
+};
+
+export const deleteCallLogAPI = async (callLogId: string) => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/call-logs/${callLogId}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("API Error Response:", errorData);
+      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Failed to delete call log via API:", error);
+    throw error;
+  }
+};

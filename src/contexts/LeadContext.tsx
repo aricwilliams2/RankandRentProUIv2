@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext, useMemo } from "react";
 import { Lead, LeadContextType, Filters, AreaData, SortField, SortDirection, CallLog } from "../types";
 import { useAuth } from "./AuthContext";
+import { createCallLogAPI, updateCallLogAPI, fetchCallLogsAPI, deleteCallLogAPI } from "../services/apiService";
 
 const LeadContext = createContext<LeadContextType | undefined>(undefined);
 
@@ -100,9 +101,45 @@ const fetchLeadsAPI = async (): Promise<Lead[]> => {
     }
 
     const apiResponse = await response.json();
-    const allLeads = apiResponse.data.map(transformAPILeadToFrontend);
+    const leads = apiResponse.data || [];
 
-    return allLeads;
+    console.log("Fetched leads:", leads.length);
+
+    // Fetch call logs for each lead
+    const leadsWithCallLogs = await Promise.all(
+      leads.map(async (lead: any) => {
+        try {
+          console.log(`Fetching call logs for lead ${lead.id}...`);
+          const callLogsResponse = await fetchCallLogsAPI(lead.id);
+          console.log(`Call logs response for lead ${lead.id}:`, callLogsResponse);
+
+          // Handle the API response structure: { success: true, data: [...] }
+          const callLogs = callLogsResponse.success && callLogsResponse.data ? callLogsResponse.data : [];
+
+          const transformedLead = transformAPILeadToFrontend(lead);
+          transformedLead.callLogs = callLogs.map((log: any) => ({
+            id: log.id,
+            leadId: log.lead_id,
+            callDate: new Date(log.created_at),
+            outcome: log.outcome,
+            notes: log.notes,
+            nextFollowUp: log.next_follow_up,
+            duration: log.duration,
+          }));
+
+          console.log(`Transformed lead ${lead.id} with ${transformedLead.callLogs.length} call logs:`, transformedLead.callLogs);
+
+          return transformedLead;
+        } catch (error) {
+          console.error(`Failed to fetch call logs for lead ${lead.id}:`, error);
+          const transformedLead = transformAPILeadToFrontend(lead);
+          transformedLead.callLogs = [];
+          return transformedLead;
+        }
+      })
+    );
+
+    return leadsWithCallLogs;
   } catch (error) {
     console.error("Failed to fetch leads from API:", error);
     throw error;
@@ -259,22 +296,8 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(true);
         setError(null);
 
-        // Load call logs from localStorage (since they're managed locally)
-        const savedCallLogs = localStorage.getItem("callLogs");
-        const callLogsMap = savedCallLogs ? JSON.parse(savedCallLogs) : {};
-
         const apiLeads = await fetchLeadsAPI();
-
-        // Merge with saved call logs
-        const leadsWithCallLogs = apiLeads.map((lead) => ({
-          ...lead,
-          callLogs:
-            callLogsMap[lead.id]?.map((log: any) => ({
-              ...log,
-              callDate: new Date(log.callDate),
-              nextFollowUp: log.nextFollowUp ? new Date(log.nextFollowUp) : undefined,
-            })) || [],
-        }));
+        const leadsWithCallLogs = apiLeads;
 
         setAllLeads(leadsWithCallLogs);
 
@@ -317,17 +340,7 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [currentArea]);
 
-  // Save call logs to localStorage whenever they change
-  useEffect(() => {
-    const callLogsMap = allLeads.reduce((acc, lead) => {
-      if (lead.callLogs && lead.callLogs.length > 0) {
-        acc[lead.id] = lead.callLogs;
-      }
-      return acc;
-    }, {} as Record<string, CallLog[]>);
 
-    localStorage.setItem("callLogs", JSON.stringify(callLogsMap));
-  }, [allLeads]);
 
   // Save last called index to localStorage
   useEffect(() => {
@@ -344,8 +357,20 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const updatedLead = { ...lead, contacted: !lead.contacted };
 
     try {
-      // Update API first - only send the contacted field
-      await updateLeadAPI(updatedLead, ["contacted"]);
+      // Update API first - send the contacted field with proper boolean value
+      const response = await fetch(`${API_BASE_URL}/leads/${id}`, {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          contacted: updatedLead.contacted
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("API Error Response:", errorData);
+        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      }
 
       // Update local state on success
       setAllLeads((prevLeads) => prevLeads.map((lead) => (lead.id === id ? updatedLead : lead)));
@@ -360,24 +385,44 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const lead = allLeads.find((l) => l.id === leadId);
     if (!lead) return;
 
-    const newCallLog: CallLog = {
-      id: `call_${Date.now()}`,
-      leadId,
-      callDate: new Date(),
-      ...callLogData,
-      nextFollowUp: callLogData.nextFollowUp || calculateNextFollowUp(callLogData.outcome),
-    };
-
-    const updatedLead = {
-      ...lead,
-      callLogs: [...(lead.callLogs || []), newCallLog],
-      contacted: true, // Mark as contacted when a call is logged
-      notes: callLogData.notes, // Update notes from call log
-    };
-
     try {
-      // Update API first - send contacted status and notes
-      await updateLeadAPI(updatedLead, ["contacted", "notes"]);
+      // Create call log via API
+      const apiCallLog = await createCallLogAPI(leadId, {
+        outcome: callLogData.outcome,
+        notes: callLogData.notes,
+        nextFollowUp: callLogData.nextFollowUp || calculateNextFollowUp(callLogData.outcome),
+        duration: callLogData.duration || 0,
+      });
+
+      // Transform API response to frontend format
+      const newCallLog: CallLog = {
+        id: apiCallLog.id,
+        leadId,
+        callDate: new Date(apiCallLog.created_at),
+        outcome: apiCallLog.outcome,
+        notes: apiCallLog.notes,
+        nextFollowUp: apiCallLog.next_follow_up,
+        duration: apiCallLog.duration,
+      };
+
+      const updatedLead = {
+        ...lead,
+        callLogs: [...(lead.callLogs || []), newCallLog],
+        contacted: true, // Mark as contacted when a call is logged
+      };
+
+      // Update lead contacted status via API
+      const response = await fetch(`${API_BASE_URL}/leads/${leadId}`, {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          contacted: true
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update lead contacted status: ${response.status}`);
+      }
 
       // Update local state on success
       setAllLeads((prevLeads) => prevLeads.map((lead) => (lead.id === leadId ? updatedLead : lead)));
@@ -392,27 +437,32 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const lead = allLeads.find((l) => l.id === leadId);
     if (!lead) return;
 
-    const updatedLead = {
-      ...lead,
-      callLogs:
-        lead.callLogs?.map((log) =>
-          log.id === callLogId
-            ? {
-              ...log,
-              ...updateData,
-              nextFollowUp: updateData.outcome ? calculateNextFollowUp(updateData.outcome) : log.nextFollowUp,
-            }
-            : log
-        ) || [],
-      notes: updateData.notes || lead.notes, // Update lead notes if provided
-    };
-
     try {
-      // Update API first - send notes if they were updated
-      const fieldsToUpdate = updateData.notes ? ["notes"] : [];
-      if (fieldsToUpdate.length > 0) {
-        await updateLeadAPI(updatedLead, fieldsToUpdate);
-      }
+      // Update call log via API
+      const apiCallLog = await updateCallLogAPI(callLogId, {
+        outcome: updateData.outcome,
+        notes: updateData.notes,
+        nextFollowUp: updateData.outcome ? calculateNextFollowUp(updateData.outcome) : undefined,
+      });
+
+      // Transform API response to frontend format
+      const updatedCallLog: CallLog = {
+        id: apiCallLog.id,
+        leadId,
+        callDate: new Date(apiCallLog.created_at),
+        outcome: apiCallLog.outcome,
+        notes: apiCallLog.notes,
+        nextFollowUp: apiCallLog.next_follow_up,
+        duration: apiCallLog.duration,
+      };
+
+      const updatedLead = {
+        ...lead,
+        callLogs:
+          lead.callLogs?.map((log) =>
+            log.id === callLogId ? updatedCallLog : log
+          ) || [],
+      };
 
       // Update local state on success
       setAllLeads((prevLeads) => prevLeads.map((lead) => (lead.id === leadId ? updatedLead : lead)));

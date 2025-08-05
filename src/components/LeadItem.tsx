@@ -29,6 +29,8 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
   const [deleting, setDeleting] = useState(false);
   const [convertingToClient, setConvertingToClient] = useState(false);
 
+
+
   const handleCallLogClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setLastCalledIndex(index);
@@ -384,10 +386,17 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
     </div>
   );
 
-  // Desktop table row layout
-  const TableRow = () => (
+
+
+  return (
     <>
-      <tr ref={ref} className={`border-b transition-colors cursor-pointer hover:bg-blue-50 ${lead.contacted ? "bg-green-50/50" : "bg-white"} ${isFollowUpDue ? "border-l-4 border-orange-400" : ""} ${deleting ? "opacity-50" : ""}`} onClick={handleRowClick}>
+      {/* Mobile Card View */}
+      <div className="block sm:hidden">
+        <MobileCard />
+      </div>
+
+      {/* Desktop Table Row */}
+      <tr ref={ref} className={`hidden sm:table-row border-b transition-colors cursor-pointer hover:bg-blue-50 ${lead.contacted ? "bg-green-50/50" : "bg-white"} ${isFollowUpDue ? "border-l-4 border-orange-400" : ""} ${deleting ? "opacity-50" : ""}`} onClick={handleRowClick}>
         <td className="p-3 lg:p-4">
           <div className="flex items-start gap-2">
             <div className={`mt-1 flex-shrink-0 w-4 h-4 rounded-full border ${lead.contacted ? "bg-green-500 border-green-600" : "border-gray-300"} flex items-center justify-center`}>{lead.contacted && <Check className="w-3 h-3 text-white" />}</div>
@@ -488,7 +497,7 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
 
       {/* Call History Row */}
       {showCallHistory && lead.callLogs && lead.callLogs.length > 0 && (
-        <tr className="bg-gray-50">
+        <tr className="bg-gray-50 hidden sm:table-row">
           <td colSpan={7} className="p-3 lg:p-4">
             <div className="space-y-2">
               <div className="flex justify-between items-center">
@@ -555,13 +564,6 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
           </td>
         </tr>
       )}
-    </>
-  );
-
-  return (
-    <>
-      <MobileCard />
-      <TableRow />
 
       {/* Call Logging Dialog */}
       {showCallDialog && (
