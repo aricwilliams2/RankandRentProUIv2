@@ -46,6 +46,7 @@ import {
   Target,
   Activity,
   ExternalLink,
+  Map,
 } from 'lucide-react';
 
 interface TrafficData {
@@ -79,7 +80,7 @@ export default function Analytics() {
   const location = useLocation();
   const navigate = useNavigate();
   const theme = useTheme();
-  
+
   const [trafficData, setTrafficData] = useState<TrafficData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -91,6 +92,19 @@ export default function Analytics() {
 
   // Get domain from location state or URL params
   const domain = location.state?.domain || new URLSearchParams(location.search).get('domain');
+
+  // Function to open Google Maps search for GMB
+  const openGoogleMapsSearch = (domain: string) => {
+    // Strip https:// or http:// and .com, .net, etc.
+    const stripped = domain
+      .replace(/^https?:\/\//, '') // remove https://
+      .replace(/^www\./, '') // optional: remove www.
+      .split('.')[0]; // get just 'precisiongvl'
+
+    const searchTerm = stripped;
+    const mapsSearchUrl = `https://www.google.com/maps/search/${encodeURIComponent(searchTerm)}`;
+    window.open(mapsSearchUrl, '_blank');
+  };
 
   useEffect(() => {
     if (domain) {
@@ -108,7 +122,7 @@ export default function Analytics() {
 
     try {
       const response = await fetch(`${API_BASE_URL}/website-traffic?url=${encodeURIComponent(domain)}&mode=subdomains`);
-      
+
       if (!response.ok) {
         throw new Error(`API Error: ${response.status} ${response.statusText}`);
       }
@@ -127,13 +141,13 @@ export default function Analytics() {
 
     return trafficData.traffic_history.map(item => ({
       ...item,
-      month: new Date(item.date).toLocaleDateString('en-US', { 
-        month: 'short', 
-        year: '2-digit' 
+      month: new Date(item.date).toLocaleDateString('en-US', {
+        month: 'short',
+        year: '2-digit'
       }),
-      fullDate: new Date(item.date).toLocaleDateString('en-US', { 
-        month: 'long', 
-        year: 'numeric' 
+      fullDate: new Date(item.date).toLocaleDateString('en-US', {
+        month: 'long',
+        year: 'numeric'
       })
     }));
   };
@@ -191,7 +205,7 @@ export default function Analytics() {
           cleanDomain = cleanDomain.replace(/^https?:\/\//, '');
         }
       }
-      
+
       navigate(`/analytics?domain=${encodeURIComponent(cleanDomain)}`);
       // Update the current domain and fetch data
     }
@@ -205,7 +219,7 @@ export default function Analytics() {
         <Typography variant="h4" fontWeight="bold" sx={{ mb: 4 }}>
           Website Analytics
         </Typography>
-        
+
         <Card sx={{ maxWidth: 600, mx: 'auto', mt: 8 }}>
           <CardContent sx={{ p: 4 }}>
             <Box sx={{ textAlign: 'center', mb: 4 }}>
@@ -217,7 +231,7 @@ export default function Analytics() {
                 Enter a website URL or domain to get detailed traffic analytics and keyword rankings
               </Typography>
             </Box>
-            
+
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
               <TextField
                 fullWidth
@@ -333,16 +347,31 @@ export default function Analytics() {
         <Typography variant="h4" fontWeight="bold">
           Website Analytics
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1, flexWrap: 'wrap' }}>
           <Globe size={20} />
           <Typography variant="h6" color="primary">
             {trafficData.url}
           </Typography>
-          <Chip 
-            label={trafficData.status} 
-            color="success" 
-            size="small" 
+          <Chip
+            label={trafficData.status}
+            color="success"
+            size="small"
           />
+          {trafficData.url && (
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<Map size={16} />}
+              onClick={() => openGoogleMapsSearch(trafficData.url)}
+              sx={{
+                ml: 2,
+                textTransform: 'none',
+                fontSize: '0.875rem',
+              }}
+            >
+              Click to see Google GMB
+            </Button>
+          )}
         </Box>
       </Box>
 
@@ -440,24 +469,24 @@ export default function Analytics() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="month" 
+                    <XAxis
+                      dataKey="month"
                       tick={{ fontSize: 12 }}
                     />
-                    <YAxis 
+                    <YAxis
                       tick={{ fontSize: 12 }}
                       label={{ value: 'Organic Traffic', angle: -90, position: 'insideLeft' }}
                     />
-                    <Tooltip 
+                    <Tooltip
                       formatter={(value, name) => [value, 'Organic Traffic']}
                       labelFormatter={(label, payload) => {
                         const item = payload?.[0]?.payload;
                         return item ? item.fullDate : label;
                       }}
                     />
-                    <Line 
-                      type="monotone" 
-                      dataKey="organic" 
+                    <Line
+                      type="monotone"
+                      dataKey="organic"
                       stroke={theme.palette.primary.main}
                       strokeWidth={3}
                       dot={{ fill: theme.palette.primary.main, strokeWidth: 2, r: 6 }}
@@ -497,10 +526,10 @@ export default function Analytics() {
                     {trafficData.top_keywords.map((keyword, index) => (
                       <TableRow key={index}>
                         <TableCell>
-                          <Typography 
-                            variant="body2" 
+                          <Typography
+                            variant="body2"
                             fontWeight="medium"
-                            sx={{ 
+                            sx={{
                               cursor: 'pointer',
                               color: theme.palette.primary.main,
                               '&:hover': {
@@ -573,7 +602,7 @@ export default function Analytics() {
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip 
+                    <Tooltip
                       formatter={(value) => [`${value}%`, 'Share']}
                       labelFormatter={(label) => getCountryName(label)}
                     />

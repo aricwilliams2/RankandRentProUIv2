@@ -96,13 +96,13 @@ export default function Dashboard() {
     };
 
     return [
-      {
-        label: "Total Revenue",
-        value: `$${totalRevenue.toLocaleString()}`,
-        change: getRandomChange(),
-        icon: DollarSign,
-        isPositive: totalRevenue > 0,
-      },
+      // {
+      //   label: "Total Revenue",
+      //   value: `$${totalRevenue.toLocaleString()}`,
+      //   change: getRandomChange(),
+      //   icon: DollarSign,
+      //   isPositive: totalRevenue > 0,
+      // },
       {
         label: "Active Websites",
         value: activeWebsites.toString(),
@@ -124,13 +124,13 @@ export default function Dashboard() {
         icon: Users,
         isPositive: activeClients > 0,
       },
-      {
-        label: "Phone Numbers",
-        value: totalPhoneNumbers.toString(),
-        change: totalPhoneNumbers > 0 ? `+${Math.floor(totalPhoneNumbers * 0.2) || 1}` : "0",
-        icon: Phone,
-        isPositive: totalPhoneNumbers > 0,
-      },
+      // {
+      //   label: "Phone Numbers",
+      //   value: totalPhoneNumbers.toString(),
+      //   change: totalPhoneNumbers > 0 ? `+${Math.floor(totalPhoneNumbers * 0.2) || 1}` : "0",
+      //   icon: Phone,
+      //   isPositive: totalPhoneNumbers > 0,
+      // },
     ];
   }, [websites, clients, invoices]);
   const handleTaskDialogOpen = (task?: Task) => {

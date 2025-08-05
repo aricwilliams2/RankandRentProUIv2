@@ -1,6 +1,7 @@
 import React, { forwardRef, useState } from "react";
-import { ExternalLink, Phone, Check, MessageSquare, Calendar, X, ChevronDown, ChevronUp, Clock, AlertTriangle, Edit, Save, MoreHorizontal, Trash2, Pencil, MapPin, BarChart3, UserPlus } from "lucide-react";
+import { ExternalLink, Phone, Check, MessageSquare, Calendar, X, ChevronDown, ChevronUp, Clock, AlertTriangle, Edit, Save, MoreHorizontal, Trash2, Pencil, MapPin, BarChart3, UserPlus, Map } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Tooltip } from "@mui/material";
 import StarRating from "./StarRating";
 import { Lead, CallLog } from "../types";
 import { useLeadContext } from "../contexts/LeadContext";
@@ -29,7 +30,18 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
   const [deleting, setDeleting] = useState(false);
   const [convertingToClient, setConvertingToClient] = useState(false);
 
+  // Function to open Google Maps search for GMB
+  const openGoogleMapsSearch = (domain: string) => {
+    // Strip https:// or http:// and .com, .net, etc.
+    const stripped = domain
+      .replace(/^https?:\/\//, '') // remove https://
+      .replace(/^www\./, '') // optional: remove www.
+      .split('.')[0]; // get just 'precisiongvl'
 
+    const searchTerm = stripped;
+    const mapsSearchUrl = `https://www.google.com/maps/search/${encodeURIComponent(searchTerm)}`;
+    window.open(mapsSearchUrl, '_blank');
+  };
 
   const handleCallLogClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -257,20 +269,35 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
         </div>
         <div className="flex gap-1 ml-2">
           {lead.website && (
-            <button onClick={handleViewAnalytics} className="p-1 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors" title="View Analytics">
-              <BarChart3 className="w-3 h-3" />
-            </button>
+            <Tooltip title="View Analytics">
+              <button onClick={handleViewAnalytics} className="p-1 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors">
+                <BarChart3 className="w-3 h-3" />
+              </button>
+            </Tooltip>
           )}
-          <button onClick={handleConvertToClient} disabled={convertingToClient} className="p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors disabled:opacity-50" title="Convert to Client">
-            <UserPlus className="w-3 h-3" />
-          </button>
+          {lead.website && (
+            <Tooltip title="Click to see Google GMB">
+              <button onClick={() => openGoogleMapsSearch(lead.website)} className="p-1 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded transition-colors">
+                <Map className="w-3 h-3" />
+              </button>
+            </Tooltip>
+          )}
+          <Tooltip title="Convert to Client">
+            <button onClick={handleConvertToClient} disabled={convertingToClient} className="p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors disabled:opacity-50">
+              <UserPlus className="w-3 h-3" />
+            </button>
+          </Tooltip>
 
-          <button onClick={handleEditClick} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit Lead">
-            <Pencil className="w-3 h-3" />
-          </button>
-          <button onClick={handleDeleteClick} disabled={deleting} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50" title="Delete Lead">
-            <Trash2 className="w-3 h-3" />
-          </button>
+          <Tooltip title="Edit Lead">
+            <button onClick={handleEditClick} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
+              <Pencil className="w-3 h-3" />
+            </button>
+          </Tooltip>
+          <Tooltip title="Delete Lead">
+            <button onClick={handleDeleteClick} disabled={deleting} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50">
+              <Trash2 className="w-3 h-3" />
+            </button>
+          </Tooltip>
         </div>
       </div>
 
@@ -281,9 +308,11 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
               <Phone className="w-4 h-4 mr-2 flex-shrink-0" />
               <span className="border-b border-blue-300 hover:border-blue-600 truncate">{lead.phone.replace(/(\d{3})(\d{3})(\d{4})/, "($1) $2-$3")}</span>
             </a>
-            <button onClick={handleCallLogClick} className="ml-2 p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Log Call">
-              <Edit className="w-4 h-4" />
-            </button>
+            <Tooltip title="Log Call">
+              <button onClick={handleCallLogClick} className="ml-2 p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
+                <Edit className="w-4 h-4" />
+              </button>
+            </Tooltip>
           </div>
         )}
 
@@ -334,9 +363,11 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
                 <div className="flex justify-between items-start mb-1">
                   <div className="flex items-center gap-2">
                     <span className={`px-2 py-1 rounded text-xs font-medium ${getOutcomeColor(log.outcome)}`}>{getOutcomeLabel(log.outcome)}</span>
-                    <button onClick={() => handleEditLog(log)} className="text-gray-400 hover:text-blue-600 transition-colors" title="Edit this log">
-                      <Edit className="w-3 h-3" />
-                    </button>
+                    <Tooltip title="Edit this log">
+                      <button onClick={() => handleEditLog(log)} className="text-gray-400 hover:text-blue-600 transition-colors">
+                        <Edit className="w-3 h-3" />
+                      </button>
+                    </Tooltip>
                   </div>
                   <span className="text-gray-500">{new Date(log.callDate).toLocaleDateString()}</span>
                 </div>
@@ -477,20 +508,35 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
         <td className="p-3 lg:p-4">
           <div className="flex items-center gap-1">
             {lead.website && (
-              <button onClick={handleViewAnalytics} className="p-1 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors" title="View Analytics">
-                <BarChart3 className="w-4 h-4" />
-              </button>
+              <Tooltip title="View Analytics">
+                <button onClick={handleViewAnalytics} className="p-1 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors">
+                  <BarChart3 className="w-4 h-4" />
+                </button>
+              </Tooltip>
             )}
-            <button onClick={handleConvertToClient} disabled={convertingToClient} className="p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors disabled:opacity-50" title="Convert to Client">
-              <UserPlus className="w-4 h-4" />
-            </button>
+            {lead.website && (
+              <Tooltip title="Click to see Google GMB">
+                <button onClick={() => openGoogleMapsSearch(lead.website)} className="p-1 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded transition-colors">
+                  <Map className="w-4 h-4" />
+                </button>
+              </Tooltip>
+            )}
+            <Tooltip title="Convert to Client">
+              <button onClick={handleConvertToClient} disabled={convertingToClient} className="p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors disabled:opacity-50">
+                <UserPlus className="w-4 h-4" />
+              </button>
+            </Tooltip>
 
-            <button onClick={handleEditClick} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit Lead">
-              <Pencil className="w-4 h-4" />
-            </button>
-            <button onClick={handleDeleteClick} disabled={deleting} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50" title="Delete Lead">
-              <Trash2 className="w-4 h-4" />
-            </button>
+            <Tooltip title="Edit Lead">
+              <button onClick={handleEditClick} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
+                <Pencil className="w-4 h-4" />
+              </button>
+            </Tooltip>
+            <Tooltip title="Delete Lead">
+              <button onClick={handleDeleteClick} disabled={deleting} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50">
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </Tooltip>
           </div>
         </td>
       </tr>
@@ -521,9 +567,11 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
                     <div className="flex items-center gap-2 mb-1">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${getOutcomeColor(log.outcome)}`}>{getOutcomeLabel(log.outcome)}</span>
                       <span className="text-gray-500 text-xs">{new Date(log.callDate).toLocaleString()}</span>
-                      <button onClick={() => handleEditLog(log)} className="text-gray-400 hover:text-blue-600 transition-colors" title="Edit this log">
-                        <Edit className="w-4 h-4" />
-                      </button>
+                      <Tooltip title="Edit this log">
+                        <button onClick={() => handleEditLog(log)} className="text-gray-400 hover:text-blue-600 transition-colors">
+                          <Edit className="w-4 h-4" />
+                        </button>
+                      </Tooltip>
                     </div>
                     {editingLogId === log.id ? (
                       <div className="space-y-2 mt-2">

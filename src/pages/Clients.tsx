@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Box, Button, Card, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography, Chip, Tooltip, List, ListItem, ListItemText, ListItemIcon, Divider, Snackbar } from "@mui/material";
-import { Plus, Pencil, Trash2, Globe, Mail, Phone, History, MessageCircle, PhoneCall, StickyNote, BarChart3, Copy, Check } from "lucide-react";
+import { Plus, Pencil, Trash2, Globe, Mail, Phone, History, MessageCircle, PhoneCall, StickyNote, BarChart3, Copy, Check, Map } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useClientContext } from "../contexts/ClientContext";
 import type { Client } from "../types";
@@ -29,6 +29,19 @@ export default function Clients() {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
+
+  // Function to open Google Maps search for GMB
+  const openGoogleMapsSearch = (domain: string) => {
+    // Strip https:// or http:// and .com, .net, etc.
+    const stripped = domain
+      .replace(/^https?:\/\//, '') // remove https://
+      .replace(/^www\./, '') // optional: remove www.
+      .split('.')[0]; // get just 'precisiongvl'
+
+    const searchTerm = stripped;
+    const mapsSearchUrl = `https://www.google.com/maps/search/${encodeURIComponent(searchTerm)}`;
+    window.open(mapsSearchUrl, '_blank');
+  };
 
   // Refresh clients data when component mounts or becomes visible
   useEffect(() => {
@@ -278,6 +291,11 @@ export default function Clients() {
                     <BarChart3 size={16} />
                   </IconButton>
                 )}
+                {client.website && (
+                  <IconButton size="small" color="warning" onClick={() => openGoogleMapsSearch(client.website!)}>
+                    <Map size={16} />
+                  </IconButton>
+                )}
                 <IconButton size="small" onClick={() => handleOpen(client)}>
                   <Pencil size={16} />
                 </IconButton>
@@ -369,12 +387,23 @@ export default function Clients() {
                         </IconButton>
                       </Tooltip>
                     )}
-                    <IconButton size="small" onClick={() => handleOpen(client)}>
-                      <Pencil size={18} />
-                    </IconButton>
-                    <IconButton size="small" color="error" onClick={() => handleDelete(client.id)}>
-                      <Trash2 size={18} />
-                    </IconButton>
+                    {client.website && (
+                      <Tooltip title="Click to see Google GMB">
+                        <IconButton size="small" color="warning" onClick={() => openGoogleMapsSearch(client.website!)}>
+                          <Map size={18} />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                    <Tooltip title="Edit Client">
+                      <IconButton size="small" onClick={() => handleOpen(client)}>
+                        <Pencil size={18} />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Delete Client">
+                      <IconButton size="small" color="error" onClick={() => handleDelete(client.id)}>
+                        <Trash2 size={18} />
+                      </IconButton>
+                    </Tooltip>
                   </Box>
                 </TableCell>
               </TableRow>
