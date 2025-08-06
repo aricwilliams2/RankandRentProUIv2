@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Box, Button, Card, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography, Chip, Tooltip, List, ListItem, ListItemText, ListItemIcon, Divider, Snackbar } from "@mui/material";
-import { Plus, Pencil, Trash2, Globe, Mail, Phone, History, MessageCircle, PhoneCall, StickyNote, BarChart3, Copy, Check, Map } from "lucide-react";
+import { Plus, Pencil, Trash2, Globe, Mail, Phone, History, MessageCircle, PhoneCall, StickyNote, BarChart3, Copy, Check, Map, CheckSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useClientContext } from "../contexts/ClientContext";
 import type { Client } from "../types";
@@ -196,6 +196,14 @@ export default function Clients() {
     }
   };
 
+  const handleOpenChecklist = (client: Client) => {
+    navigate(`/client-checklist/${client.id}`, {
+      state: {
+        client: client,
+      },
+    });
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
@@ -286,6 +294,9 @@ export default function Clients() {
                 {client.reviews || 0} reviews
               </Typography>
               <Box sx={{ display: "flex", gap: 1 }}>
+                <IconButton size="small" color="primary" onClick={() => handleOpenChecklist(client)}>
+                  <CheckSquare size={16} />
+                </IconButton>
                 {client.website && (
                   <IconButton size="small" color="info" onClick={() => handleViewAnalytics(client)}>
                     <BarChart3 size={16} />
@@ -380,6 +391,11 @@ export default function Clients() {
                 </TableCell>
                 <TableCell align="right">
                   <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
+                    <Tooltip title="Client Checklist">
+                      <IconButton size="small" color="primary" onClick={() => handleOpenChecklist(client)}>
+                        <CheckSquare size={18} />
+                      </IconButton>
+                    </Tooltip>
                     {client.website && (
                       <Tooltip title="View Analytics">
                         <IconButton size="small" color="info" onClick={() => handleViewAnalytics(client)}>

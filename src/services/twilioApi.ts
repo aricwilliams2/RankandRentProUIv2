@@ -28,7 +28,7 @@ export const twilioApi = {
     areaCode?: string;
     websiteId?: string;
   }) => {
-    const response = await apiClient.post('/api/twilio/buy-number', data);
+    const response = await apiClient.post('/twilio/buy-number', data);
     return response.data;
   },
 
@@ -38,7 +38,7 @@ export const twilioApi = {
     country?: string;
     limit?: number;
   }) => {
-    const response = await apiClient.get('/api/twilio/available-numbers', { params });
+    const response = await apiClient.get('/twilio/available-numbers', { params });
     return response.data;
   },
 
@@ -49,7 +49,7 @@ export const twilioApi = {
     record?: boolean;
     websiteId?: string;
   }) => {
-    const response = await apiClient.post('/api/twilio/call', data);
+    const response = await apiClient.post('/twilio/call', data);
     return response.data;
   },
 
@@ -60,13 +60,13 @@ export const twilioApi = {
     status?: string;
     phoneNumberId?: string;
   } = {}) => {
-    const response = await apiClient.get('/api/twilio/call-logs', { params });
+    const response = await apiClient.get('/twilio/call-logs', { params });
     return response.data;
   },
 
   // Get specific call log
   getCallLog: async (callSid: string) => {
-    const response = await apiClient.get(`/api/twilio/call-logs/${callSid}`);
+    const response = await apiClient.get(`/twilio/call-logs/${callSid}`);
     return response.data;
   },
 
@@ -76,31 +76,31 @@ export const twilioApi = {
     limit?: number;
     callSid?: string;
   } = {}) => {
-    const response = await apiClient.get('/api/twilio/recordings', { params });
+    const response = await apiClient.get('/twilio/recordings', { params });
     return response.data;
   },
 
   // Get recordings for specific call
   getCallRecordings: async (callSid: string) => {
-    const response = await apiClient.get(`/api/twilio/recordings/${callSid}`);
+    const response = await apiClient.get(`/twilio/recordings/${callSid}`);
     return response.data;
   },
 
   // Delete recording
   deleteRecording: async (recordingSid: string) => {
-    const response = await apiClient.delete(`/api/twilio/recordings/${recordingSid}`);
+    const response = await apiClient.delete(`/twilio/recordings/${recordingSid}`);
     return response.data;
   },
 
   // Get phone numbers (existing functionality)
   getPhoneNumbers: async () => {
-    const response = await apiClient.get('/api/twilio/phone-numbers');
+    const response = await apiClient.get('/twilio/phone-numbers');
     return response.data;
   },
 
   // Delete phone number
   deletePhoneNumber: async (phoneNumberId: string) => {
-    const response = await apiClient.delete(`/api/twilio/phone-numbers/${phoneNumberId}`);
+    const response = await apiClient.delete(`/twilio/phone-numbers/${phoneNumberId}`);
     return response.data;
   },
 }; 

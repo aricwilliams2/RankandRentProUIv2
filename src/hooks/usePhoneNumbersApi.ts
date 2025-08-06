@@ -21,7 +21,7 @@ export const usePhoneNumbersApi = () => {
     setError(null);
     
     try {
-      const response = await fetch('/api/phone-numbers');
+      const response = await fetch('/phone-numbers');
       const data = await response.json();
       return data.map((number: any) => ({
         ...number,
@@ -44,7 +44,7 @@ export const usePhoneNumbersApi = () => {
     setError(null);
     
     try {
-      const response = await fetch('/api/phone-numbers', {
+      const response = await fetch('/phone-numbers', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -70,7 +70,7 @@ export const usePhoneNumbersApi = () => {
     setError(null);
     
     try {
-      await fetch(`/api/phone-numbers/${id}`, {
+      await fetch(`/phone-numbers/${id}`, {
         method: 'DELETE',
       });
       return true;
@@ -87,7 +87,7 @@ export const usePhoneNumbersApi = () => {
     setError(null);
     
     try {
-      const response = await fetch(`/api/phone-numbers/${phoneNumberId}/calls`);
+      const response = await fetch(`/phone-numbers/${phoneNumberId}/calls`);
       const data = await response.json();
       return data.map((call: any) => ({
         ...call,

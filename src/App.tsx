@@ -1,5 +1,7 @@
 import { HashRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider, createTheme } from "@mui/material/styles";
+import { CssBaseline } from "@mui/material";
 import Layout from "./components/Layout";
 import LoginPage from "./components/LoginPage";
 import Dashboard from "./pages/Dashboard";
@@ -11,6 +13,7 @@ import Revenue from "./pages/Revenue";
 import Research from "./pages/Research";
 import Settings from "./pages/Settings";
 import ClientChecklistPage from "./pages/ClientChecklistPage";
+import IndividualClientChecklistPage from "./pages/ClientChecklistPage";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ApiProvider } from "./contexts/ApiContext";
 import { ClientProvider } from "./contexts/ClientContext";
@@ -23,6 +26,18 @@ import SerpResults from "./pages/SerpResults";
 import SuccessPage from "./pages/SuccessPage";
 import CancelPage from "./pages/CancelPage";
 import "./styles/twilio.css";
+
+// Create a theme instance
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#1e40af',
+    },
+    secondary: {
+      main: '#f59e0b',
+    },
+  },
+});
 
 const AppContent = () => {
   const { isAuthenticated, loading } = useAuth();
@@ -62,6 +77,7 @@ const AppContent = () => {
                     <Route path="/websites" element={<Websites />} />
                     <Route path="/phone-numbers" element={<PhoneNumbers />} />
                     <Route path="/checklists" element={<ClientChecklistPage />} />
+                    <Route path="/client-checklist/:clientId" element={<IndividualClientChecklistPage />} />
                     <Route path="/analytics" element={<Analytics />} />
                     <Route path="/revenue" element={<Revenue />} />
                     <Route path="/research" element={<Research />} />
@@ -91,11 +107,14 @@ const App = () => {
   });
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </QueryClientProvider>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 };
 

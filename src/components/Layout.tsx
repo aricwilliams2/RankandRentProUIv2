@@ -8,7 +8,7 @@ const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   { icon: Users, label: "Leads", path: "/Leads" },
   { icon: Users, label: "Clients", path: "/clients" },
-  { icon: CheckSquare, label: "Checklists", path: "/checklists" },
+  // { icon: CheckSquare, label: "Checklists", path: "/checklists" },
   { icon: LineChart, label: "Analytics", path: "/analytics" },
   // { icon: Globe, label: "Websites", path: "/websites" },
   { icon: Phone, label: "Phone Numbers", path: "/phone-numbers" },

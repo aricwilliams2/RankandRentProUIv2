@@ -6,10 +6,10 @@ import { useRevenueApi } from '../hooks/useRevenueApi';
 import { useDashboardApi } from '../hooks/useDashboardApi';
 import { usePhoneNumbersApi } from '../hooks/usePhoneNumbersApi';
 import { useAnalyticsApi } from '../hooks/useAnalyticsApi';
-import type { 
-  MarketResearch, 
-  CompetitorInsights, 
-  SerpInsights, 
+import type {
+  MarketResearch,
+  CompetitorInsights,
+  SerpInsights,
   TrafficInsights,
   Website,
   Client,
@@ -30,20 +30,20 @@ interface ApiContextType {
   // Loading and error states
   loading: boolean;
   error: string | null;
-  
+
   // Data
   research: MarketResearch[];
   websites: Website[];
   clients: Client[];
   invoices: Invoice[];
   tasks: Task[];
-  
+
   // Research methods
   startNewResearch: (niche: string, location: string) => Promise<MarketResearch | null>;
   getCompetitorInsights: (domain: string) => Promise<CompetitorInsights | null>;
   getTrafficInsights: (domain: string) => Promise<TrafficInsights | null>;
   getSerpInsights: (keyword: string) => Promise<SerpInsights | null>;
-  
+
   // Website methods
   getWebsites: () => Promise<Website[]>;
   addWebsite: (website: Partial<Website>) => Promise<Website | null>;
@@ -52,40 +52,40 @@ interface ApiContextType {
   getLeadsForWebsite: (websiteId: string) => Promise<Lead[]>;
   getPhoneNumbersForWebsite: (websiteId: string) => Promise<PhoneNumber[]>;
   generateWebsiteContent: (websiteId: string, contentData: { title: string; primaryKeywords: string; secondaryKeywords: string }) => Promise<string>;
-  
+
   // Client methods
   getClients: () => Promise<Client[]>;
   getClient: (id: string) => Promise<Client | null>;
   addClient: (client: Partial<Client>) => Promise<Client | null>;
   updateClient: (id: string, client: Partial<Client>) => Promise<Client | null>;
   deleteClient: (id: string) => Promise<boolean>;
-  
+
   // Revenue methods
   getInvoices: () => Promise<Invoice[]>;
   createInvoice: (invoice: Partial<Invoice>) => Promise<Invoice | null>;
   updateInvoice: (id: string, invoice: Partial<Invoice>) => Promise<Invoice | null>;
   getPricingRules: (websiteId?: string) => Promise<PricingRule[]>;
   savePricingRule: (rule: Partial<PricingRule>) => Promise<PricingRule | null>;
-  
+
   // Dashboard methods
   getDashboardStats: () => Promise<any>;
   getRecentActivity: () => Promise<any[]>;
   getTasks: (status?: string) => Promise<Task[]>;
   saveTask: (task: Partial<Task>) => Promise<Task | null>;
   deleteTask: (id: string) => Promise<boolean>;
-  
+
   // Phone numbers methods
   getPhoneNumbers: () => Promise<PhoneNumber[]>;
   purchasePhoneNumber: (websiteId: string, provider: string) => Promise<PhoneNumber | null>;
   deletePhoneNumber: (id: string) => Promise<boolean>;
   getCallHistory: (phoneNumberId: string) => Promise<any[]>;
-  
+
   // Analytics methods
   getWebsiteAnalytics: (websiteId: string) => Promise<SEOMetrics | null>;
   getWebsiteBacklinks: (websiteId: string) => Promise<Backlink[]>;
   getKeywordRankings: (websiteId: string) => Promise<KeywordData[]>;
   refreshAnalytics: (websiteId: string) => Promise<boolean>;
-  
+
   // New Ahrefs methods
   getUrlMetrics: (url: string) => Promise<UrlMetrics | null>;
   getKeywordMetrics: (keyword: string, country?: string) => Promise<KeywordMetrics | null>;
@@ -95,7 +95,7 @@ interface ApiContextType {
 
 const ApiContext = createContext<ApiContextType | undefined>(undefined);
 
-export const ApiProvider: React.FC<{children: ReactNode}> = ({ children }) => {
+export const ApiProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const researchApi = useResearchApi();
   const websitesApi = useWebsitesApi();
   const clientsApi = useClientsApi();
@@ -103,7 +103,7 @@ export const ApiProvider: React.FC<{children: ReactNode}> = ({ children }) => {
   const dashboardApi = useDashboardApi();
   const phoneNumbersApi = usePhoneNumbersApi();
   const analyticsApi = useAnalyticsApi();
-  
+
   const [research, setResearch] = useState<MarketResearch[]>([]);
   const [websites, setWebsites] = useState<Website[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -111,23 +111,23 @@ export const ApiProvider: React.FC<{children: ReactNode}> = ({ children }) => {
   const [tasks, setTasks] = useState<Task[]>([]);
 
   // Calculate overall loading state
-  const loading = 
-    researchApi.loading || 
-    websitesApi.loading || 
-    clientsApi.loading || 
-    revenueApi.loading || 
-    dashboardApi.loading || 
-    phoneNumbersApi.loading || 
+  const loading =
+    researchApi.loading ||
+    websitesApi.loading ||
+    clientsApi.loading ||
+    revenueApi.loading ||
+    dashboardApi.loading ||
+    phoneNumbersApi.loading ||
     analyticsApi.loading;
-  
+
   // Get the first error that occurs
-  const error = 
-    researchApi.error || 
-    websitesApi.error || 
-    clientsApi.error || 
-    revenueApi.error || 
-    dashboardApi.error || 
-    phoneNumbersApi.error || 
+  const error =
+    researchApi.error ||
+    websitesApi.error ||
+    clientsApi.error ||
+    revenueApi.error ||
+    dashboardApi.error ||
+    phoneNumbersApi.error ||
     analyticsApi.error;
 
   // Research methods
@@ -212,27 +212,27 @@ export const ApiProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     const loadInitialData = async () => {
       try {
         // Load research data if needed
-        const researchResponse = await fetch('/api/research');
+        const researchResponse = await fetch('/research');
         const researchData = await researchResponse.json();
         setResearch(researchData);
-        
+
         // Load websites
         getWebsites();
-        
+
         // Load clients
         getClients();
-        
+
         // Load invoices
         const invoicesResult = await revenueApi.getInvoices();
         setInvoices(invoicesResult);
-        
+
         // Load tasks
         getTasks();
       } catch (err) {
         console.error('Error loading initial data:', err);
       }
     };
-    
+
     loadInitialData();
   }, [getWebsites, getClients, revenueApi, getTasks]);
 
@@ -247,13 +247,13 @@ export const ApiProvider: React.FC<{children: ReactNode}> = ({ children }) => {
         clients,
         invoices,
         tasks,
-        
+
         // Research methods
         startNewResearch,
         getCompetitorInsights: researchApi.getCompetitorInsights,
         getTrafficInsights: researchApi.getTrafficInsights,
         getSerpInsights: researchApi.getSerpInsights,
-        
+
         // Website methods
         getWebsites,
         addWebsite,
@@ -262,34 +262,34 @@ export const ApiProvider: React.FC<{children: ReactNode}> = ({ children }) => {
         getLeadsForWebsite: websitesApi.getLeadsForWebsite,
         getPhoneNumbersForWebsite: websitesApi.getPhoneNumbersForWebsite,
         generateWebsiteContent: websitesApi.generateWebsiteContent,
-        
+
         // Client methods
         getClients,
         getClient: clientsApi.getClient,
         addClient: clientsApi.addClient,
         updateClient: clientsApi.updateClient,
         deleteClient: clientsApi.deleteClient,
-        
+
         // Revenue methods
         getInvoices: revenueApi.getInvoices,
         createInvoice: revenueApi.createInvoice,
         updateInvoice: revenueApi.updateInvoice,
         getPricingRules: revenueApi.getPricingRules,
         savePricingRule: revenueApi.savePricingRule,
-        
+
         // Dashboard methods
         getDashboardStats: dashboardApi.getDashboardStats,
         getRecentActivity: dashboardApi.getRecentActivity,
         getTasks,
         saveTask,
         deleteTask,
-        
+
         // Phone numbers methods
         getPhoneNumbers: phoneNumbersApi.getPhoneNumbers,
         purchasePhoneNumber: phoneNumbersApi.purchasePhoneNumber,
         deletePhoneNumber: phoneNumbersApi.deletePhoneNumber,
         getCallHistory: phoneNumbersApi.getCallHistory,
-        
+
         // Analytics methods
         getWebsiteAnalytics: analyticsApi.getWebsiteAnalytics,
         getWebsiteBacklinks: analyticsApi.getWebsiteBacklinks,
