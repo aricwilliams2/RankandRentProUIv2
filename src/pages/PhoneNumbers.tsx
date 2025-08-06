@@ -899,8 +899,8 @@ export default function PhoneNumbers() {
             </Box>
           ) : (
             <Grid container spacing={2} sx={{ mt: 1 }}>
-                            {recordings.map((recording, index) => {
-                const associatedCall = (callLogs || []).find(call => 
+              {recordings.map((recording, index) => {
+                const associatedCall = (callLogs || []).find(call =>
                   call && (call.callSid === recording.callSid || call.call_sid === recording.callSid)
                 );
 
