@@ -102,6 +102,16 @@ interface AvailableNumber {
 export default function PhoneNumbers() {
   const { user } = useAuth();
   const userPhoneNumbers = useUserPhoneNumbers();
+
+  // Debug logging
+  console.log('PhoneNumbers component - User:', user);
+  console.log('PhoneNumbers component - UserPhoneNumbers:', {
+    loading: userPhoneNumbers.loading,
+    error: userPhoneNumbers.error,
+    phoneNumbers: userPhoneNumbers.phoneNumbers,
+    recordings: userPhoneNumbers.recordings,
+    calls: userPhoneNumbers.calls
+  });
   const [activeTab, setActiveTab] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [callHistoryOpen, setCallHistoryOpen] = useState(false);
@@ -130,14 +140,10 @@ export default function PhoneNumbers() {
   } | null>(null);
 
   const {
-    usePhoneNumbers,
     useAvailableNumbers,
-    useCallLogs,
-    useRecordings,
     useBuyNumber,
     useMakeCall,
     useDeletePhoneNumber,
-    useDeleteRecording,
   } = useTwilio();
 
   // Load call history and recordings when component mounts
@@ -155,9 +161,9 @@ export default function PhoneNumbers() {
   const buyNumberMutation = useBuyNumber();
   const makeCallMutation = useMakeCall();
   const deletePhoneNumberMutation = useDeletePhoneNumber();
-  const deleteRecordingMutation = useDeleteRecording();
 
   const handleDialogOpen = () => {
+    console.log('handleDialogOpen called');
     setDialogOpen(true);
   };
 
@@ -178,6 +184,7 @@ export default function PhoneNumbers() {
   };
 
   const handleCallInterfaceOpen = () => {
+    console.log('handleCallInterfaceOpen called');
     setCallInterfaceOpen(true);
   };
 
@@ -187,6 +194,7 @@ export default function PhoneNumbers() {
   };
 
   const handleRecordingsOpen = () => {
+    console.log('handleRecordingsOpen called');
     setRecordingsOpen(true);
   };
 
@@ -280,24 +288,7 @@ export default function PhoneNumbers() {
     }
   };
 
-  const handleDeleteRecording = async (recordingSid: string) => {
-    if (window.confirm('Are you sure you want to delete this recording?')) {
-      try {
-        await deleteRecordingMutation.mutateAsync(recordingSid);
-        setSnackbar({
-          open: true,
-          message: 'Recording deleted successfully!',
-          severity: 'success',
-        });
-      } catch (error) {
-        setSnackbar({
-          open: true,
-          message: `Failed to delete recording: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          severity: 'error',
-        });
-      }
-    }
-  };
+
 
   const getCallStatusIcon = (status: Call['status']) => {
     switch (status) {
@@ -414,20 +405,20 @@ export default function PhoneNumbers() {
       </Box>
 
       {/* Error Alert */}
-      {phoneNumbersError && (
+      {userPhoneNumbers.error && (
         <Alert severity="error" sx={{ mb: 3 }}>
-          Error loading phone numbers: {phoneNumbersError.message}
+          Error loading phone numbers: {userPhoneNumbers.error}
         </Alert>
       )}
 
       {/* My Numbers Tab */}
       {activeTab === 0 && (
         <Grid container spacing={3}>
-          {phoneNumbersLoading ? (
+          {userPhoneNumbers.loading ? (
             <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
               <CircularProgress />
             </Grid>
-          ) : phoneNumbers.length === 0 ? (
+          ) : userPhoneNumbers.phoneNumbers.length === 0 ? (
             <Grid item xs={12}>
               <Card>
                 <CardContent sx={{ textAlign: 'center', py: 4 }}>
@@ -449,17 +440,17 @@ export default function PhoneNumbers() {
               </Card>
             </Grid>
           ) : (
-            phoneNumbers.map((number) => {
+            userPhoneNumbers.phoneNumbers.map((number, index) => {
               const website = mockWebsites.find(w => w.id === number.websiteId);
               const numberCalls = callLogs.filter(call => call.phoneNumberId === number.id);
               const completedCalls = numberCalls.filter(call => call.status === 'completed');
-              const missedCalls = numberCalls.filter(call => call.status === 'missed');
+              const missedCalls = numberCalls.filter(call => call.status === 'no-answer');
               const averageDuration = completedCalls.length
                 ? completedCalls.reduce((acc, call) => acc + call.duration, 0) / completedCalls.length
                 : 0;
 
               return (
-                <Grid item xs={12} md={6} key={number.id}>
+                <Grid item xs={12} md={6} key={number.id || `phone-${index}`}>
                   <Card>
                     <CardContent>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
@@ -501,7 +492,7 @@ export default function PhoneNumbers() {
                           <IconButton
                             size="small"
                             color="error"
-                            onClick={() => handleDeletePhoneNumber(number.id)}
+                            onClick={() => handleDeletePhoneNumber(String(number.id))}
                             disabled={deletePhoneNumberMutation.isPending}
                           >
                             <Trash2 size={18} />
@@ -622,8 +613,8 @@ export default function PhoneNumbers() {
                 <TableBody>
                   {callLogs
                     .sort((a, b) => new Date(b.startTime || b.createdAt || 0).getTime() - new Date(a.startTime || a.createdAt || 0).getTime())
-                    .map((call) => (
-                      <TableRow key={call.id}>
+                    .map((call, index) => (
+                      <TableRow key={call.id || call.callSid || call.call_sid || `call-${index}`}>
                         <TableCell>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             {getCallStatusIcon(call.status as any)}
@@ -658,8 +649,14 @@ export default function PhoneNumbers() {
                           {call.recordingUrl && call.recording_status === 'completed' && (
                             <RecordingPlayer
                               recordingUrl={call.recordingUrl || call.recording_url || ''}
+                              recordingSid={call.recordingSid || call.recording_sid}
                               duration={call.recording_duration || call.duration}
                               callSid={call.callSid || call.call_sid || ''}
+                              fromNumber={call.from || call.from_number}
+                              toNumber={call.to || call.to_number}
+                              callDuration={call.duration}
+                              callStatus={call.status}
+                              createdAt={call.startTime || call.createdAt}
                               onError={(error) => {
                                 setSnackbar({
                                   open: true,
@@ -818,8 +815,8 @@ export default function PhoneNumbers() {
               >
                 {userPhoneNumbers.phoneNumbers
                   .filter(num => num.status === 'active')
-                  .map((number) => (
-                    <MenuItem key={number.id} value={number.phone_number || number.number}>
+                  .map((number, index) => (
+                    <MenuItem key={number.id || `menu-${index}`} value={number.phone_number || number.number}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
                         <Phone size={16} />
                         <Typography>{number.phone_number || number.number}</Typography>
@@ -893,16 +890,21 @@ export default function PhoneNumbers() {
               <Typography variant="body2" color="text.secondary">
                 Recorded calls will appear here
               </Typography>
+              {userPhoneNumbers.error && (
+                <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+                  Error: {userPhoneNumbers.error}
+                </Typography>
+              )}
             </Box>
           ) : (
             <Grid container spacing={2} sx={{ mt: 1 }}>
-              {recordings.map((recording) => {
+              {recordings.map((recording, index) => {
                 const associatedCall = callLogs.find(call =>
                   call.callSid === recording.callSid || call.call_sid === recording.callSid
                 );
 
                 return (
-                  <Grid item xs={12} key={recording.id}>
+                  <Grid item xs={12} key={recording.recordingSid || recording.id || `recording-${index}`}>
                     <Card variant="outlined">
                       <CardContent>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
@@ -937,11 +939,22 @@ export default function PhoneNumbers() {
                         </Box>
 
                         <Box sx={{ mb: 2 }}>
+                          {/* Debug info */}
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                            Debug - Media URL: {recording.mediaUrl || 'No URL'}
+                          </Typography>
                           <RecordingPlayer
                             recordingUrl={recording.mediaUrl}
+                            recordingSid={recording.recordingSid}
                             duration={recording.duration}
                             callSid={recording.callSid}
+                            fromNumber={recording.fromNumber}
+                            toNumber={recording.toNumber}
+                            callDuration={recording.callDuration}
+                            callStatus={recording.callStatus}
+                            createdAt={recording.createdAt}
                             onError={(error) => {
+                              console.error('RecordingPlayer error:', error);
                               setSnackbar({
                                 open: true,
                                 message: error,
@@ -996,8 +1009,8 @@ export default function PhoneNumbers() {
                 {callLogs
                   .filter(call => String(call.phoneNumberId) === String(selectedNumber?.id))
                   .sort((a, b) => new Date(b.startTime || b.createdAt || 0).getTime() - new Date(a.startTime || a.createdAt || 0).getTime())
-                  .map((call) => (
-                    <TableRow key={call.id}>
+                  .map((call, index) => (
+                    <TableRow key={call.id || call.callSid || call.call_sid || `dialog-call-${index}`}>
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           {getCallStatusIcon(call.status as any)}
@@ -1024,8 +1037,14 @@ export default function PhoneNumbers() {
                           {call.recordingUrl && (
                             <RecordingPlayer
                               recordingUrl={call.recordingUrl || call.recording_url || ''}
+                              recordingSid={call.recordingSid || call.recording_sid}
                               duration={call.recording_duration || call.duration}
                               callSid={call.callSid || call.call_sid || ''}
+                              fromNumber={call.from || call.from_number}
+                              toNumber={call.to || call.to_number}
+                              callDuration={call.duration}
+                              callStatus={call.status}
+                              createdAt={call.startTime || call.createdAt}
                               onError={(error) => {
                                 setSnackbar({
                                   open: true,

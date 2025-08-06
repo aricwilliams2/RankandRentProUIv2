@@ -120,6 +120,12 @@ export const twilioApi = {
     return response.data;
   },
 
+  // Stream recording audio (proxy endpoint - no login required)
+  getRecordingStream: (recordingSid: string) => {
+    const token = localStorage.getItem('token');
+    return `${API_BASE_URL}/api/twilio/recording/${recordingSid}?token=${token}`;
+  },
+
   // === LEGACY ENDPOINTS (for backward compatibility) ===
   
   // Get phone numbers (legacy - redirects to getMyNumbers)

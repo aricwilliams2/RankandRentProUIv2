@@ -90,18 +90,24 @@ export const UserPhoneNumbersProvider: React.FC<{ children: ReactNode }> = ({ ch
     // Helper function to transform backend recording data to frontend format
     const transformRecording = (backendRecording: any): TwilioRecording => ({
         id: String(backendRecording.id),
-        recordingSid: backendRecording.recording_sid,
-        userId: String(backendRecording.user_id),
-        callSid: backendRecording.call_sid,
-        phoneNumberId: String(backendRecording.phone_number_id),
-        duration: backendRecording.duration || 0,
+        recordingSid: backendRecording.recordingSid || backendRecording.recording_sid,
+        userId: String(backendRecording.userId || backendRecording.user_id),
+        callSid: backendRecording.callSid || backendRecording.call_sid,
+        phoneNumberId: String(backendRecording.phoneNumberId || backendRecording.phone_number_id),
+        duration: parseInt(backendRecording.duration) || 0,
         channels: backendRecording.channels || 1,
         status: backendRecording.status || 'completed',
-        mediaUrl: backendRecording.media_url || backendRecording.recording_url,
+        // Use the new proxy mediaUrl if available, fallback to original
+        mediaUrl: backendRecording.mediaUrl || backendRecording.media_url || backendRecording.recording_url,
         price: backendRecording.price,
-        priceUnit: backendRecording.price_unit || 'USD',
-        createdAt: new Date(backendRecording.created_at),
-        updatedAt: new Date(backendRecording.updated_at || backendRecording.created_at),
+        priceUnit: backendRecording.priceUnit || backendRecording.price_unit || 'USD',
+        createdAt: new Date(backendRecording.createdAt || backendRecording.created_at),
+        updatedAt: new Date(backendRecording.updatedAt || backendRecording.updated_at || backendRecording.created_at),
+        // New fields from enhanced API response
+        fromNumber: backendRecording.fromNumber,
+        toNumber: backendRecording.toNumber,
+        callDuration: backendRecording.callDuration,
+        callStatus: backendRecording.callStatus,
     });
 
     // Load user's phone numbers on mount and auth change

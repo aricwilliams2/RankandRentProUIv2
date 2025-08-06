@@ -566,11 +566,16 @@ export interface TwilioRecording {
   duration: number; // in seconds
   channels: number; // 1 = mono, 2 = stereo
   status: 'in-progress' | 'paused' | 'stopped' | 'processing' | 'completed' | 'absent';
-  mediaUrl: string; // URL to download recording
+  mediaUrl: string; // URL to download recording (now proxied)
   price?: number; // Cost in USD
   priceUnit?: string; // Currency
   createdAt: Date;
   updatedAt: Date;
+  // Enhanced fields from new API response
+  fromNumber?: string; // Caller number
+  toNumber?: string; // Recipient number
+  callDuration?: number; // Total call duration in seconds
+  callStatus?: string; // Call completion status
 }
 
 export interface UserPhoneNumbersContextType {

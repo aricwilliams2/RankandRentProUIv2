@@ -1,25 +1,48 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Box, IconButton, Typography, LinearProgress, Tooltip } from '@mui/material';
-import { Play, Pause, Download, Volume2 } from 'lucide-react';
+import { Box, IconButton, Typography, Tooltip } from '@mui/material';
+import { Play, Pause, Download, Volume2, Phone } from 'lucide-react';
+import { twilioApi } from '../services/twilioApi';
 
 interface RecordingPlayerProps {
-    recordingUrl: string;
+    recordingUrl?: string;
+    recordingSid?: string;
     duration: number;
     callSid: string;
     onError?: (error: string) => void;
+    // Enhanced props from new API
+    fromNumber?: string;
+    toNumber?: string;
+    callDuration?: number;
+    callStatus?: string;
+    createdAt?: Date;
 }
 
 export const RecordingPlayer: React.FC<RecordingPlayerProps> = ({
     recordingUrl,
+    recordingSid,
     duration,
     callSid,
-    onError
+    onError,
+    fromNumber,
+    toNumber,
+    callDuration,
+    callStatus,
+    createdAt
 }) => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [loading, setLoading] = useState(false);
     const [audioError, setAudioError] = useState<string | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
+
+    // Determine the best audio URL to use (prefer proxy endpoint)
+    const audioUrl = React.useMemo(() => {
+        if (recordingSid) {
+            // Use proxy endpoint for authenticated streaming
+            return twilioApi.getRecordingStream(recordingSid);
+        }
+        return recordingUrl;
+    }, [recordingSid, recordingUrl]);
 
     const formatTime = (seconds: number): string => {
         const mins = Math.floor(seconds / 60);
@@ -28,8 +51,9 @@ export const RecordingPlayer: React.FC<RecordingPlayerProps> = ({
     };
 
     const initializeAudio = () => {
-        if (!audioRef.current && recordingUrl) {
-            audioRef.current = new Audio(recordingUrl);
+        if (!audioRef.current && audioUrl) {
+            console.log('RecordingPlayer: Initializing audio with URL:', audioUrl);
+            audioRef.current = new Audio(audioUrl);
 
             audioRef.current.addEventListener('loadstart', () => setLoading(true));
             audioRef.current.addEventListener('canplay', () => setLoading(false));
@@ -54,12 +78,15 @@ export const RecordingPlayer: React.FC<RecordingPlayerProps> = ({
     };
 
     const togglePlayback = async () => {
-        if (!recordingUrl) {
+        if (!audioUrl) {
             const errorMsg = 'No recording URL available';
             setAudioError(errorMsg);
             onError?.(errorMsg);
+            console.log('RecordingPlayer: No recording URL provided');
             return;
         }
+
+        console.log('RecordingPlayer: Attempting to play:', audioUrl);
 
         initializeAudio();
 
@@ -98,10 +125,10 @@ export const RecordingPlayer: React.FC<RecordingPlayerProps> = ({
     };
 
     const downloadRecording = async () => {
-        if (!recordingUrl) return;
+        if (!audioUrl) return;
 
         try {
-            const response = await fetch(recordingUrl);
+            const response = await fetch(audioUrl);
             const blob = await response.blob();
 
             const url = window.URL.createObjectURL(blob);
@@ -212,19 +239,41 @@ export const RecordingPlayer: React.FC<RecordingPlayerProps> = ({
                 <IconButton
                     onClick={downloadRecording}
                     size="small"
-                    disabled={!recordingUrl}
+                    disabled={!audioUrl}
                     sx={{ ml: 0.5 }}
                 >
                     <Download size={16} />
                 </IconButton>
             </Tooltip>
 
-            <style jsx>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
+            {/* Enhanced Call Information */}
+            {(fromNumber || toNumber || callDuration || callStatus || createdAt) && (
+                <Box sx={{ ml: 2, minWidth: 200 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                        <Phone size={12} />
+                        <Typography variant="caption" sx={{ fontWeight: 'medium' }}>
+                            {fromNumber} → {toNumber}
+                        </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                        {callDuration && (
+                            <Typography variant="caption" color="text.secondary">
+                                Call: {formatTime(callDuration)}
+                            </Typography>
+                        )}
+                        {callStatus && (
+                            <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'capitalize' }}>
+                                {callStatus}
+                            </Typography>
+                        )}
+                    </Box>
+                    {createdAt && (
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                            {createdAt.toLocaleDateString()} {createdAt.toLocaleTimeString()}
+                        </Typography>
+                    )}
+                </Box>
+            )}
         </Box>
     );
 };
