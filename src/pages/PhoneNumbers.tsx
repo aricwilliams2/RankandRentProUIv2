@@ -50,6 +50,7 @@ import type { PhoneNumber, Website } from '../types';
 import { useTwilio } from '../hooks/useTwilio';
 import { useUserPhoneNumbers } from '../contexts/UserPhoneNumbersContext';
 import { useAuth } from '../contexts/AuthContext';
+import { RecordingPlayer } from '../components/RecordingPlayer';
 
 // Mock data for websites - replace with actual API calls
 const mockWebsites: Website[] = [
@@ -138,6 +139,14 @@ export default function PhoneNumbers() {
     useDeletePhoneNumber,
     useDeleteRecording,
   } = useTwilio();
+
+  // Load call history and recordings when component mounts
+  React.useEffect(() => {
+    if (user && userPhoneNumbers.phoneNumbers.length > 0) {
+      userPhoneNumbers.getCallHistory();
+      userPhoneNumbers.getRecordings();
+    }
+  }, [user, userPhoneNumbers.phoneNumbers.length]);
 
   // Queries
   const { data: phoneNumbers = [], isLoading: phoneNumbersLoading, error: phoneNumbersError } = usePhoneNumbers();
@@ -323,29 +332,9 @@ export default function PhoneNumbers() {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  // Helper function to convert TwilioCall to legacy Call interface for compatibility
-  const convertTwilioCallToCall = (twilioCall: import('../types').TwilioCall): Call => ({
-    id: twilioCall.id,
-    call_sid: twilioCall.callSid,
-    phoneNumberId: twilioCall.phoneNumberId,
-    duration: twilioCall.duration,
-    status: twilioCall.status === 'completed' ? 'completed' :
-      twilioCall.status === 'failed' ? 'failed' :
-        twilioCall.status === 'busy' ? 'busy' :
-          twilioCall.status === 'no-answer' ? 'no-answer' :
-            twilioCall.status === 'queued' ? 'queued' :
-              twilioCall.status === 'ringing' ? 'ringing' :
-                twilioCall.status === 'in-progress' ? 'in-progress' :
-                  'canceled',
-    callerNumber: twilioCall.direction === 'inbound' ? twilioCall.from : twilioCall.to,
-    timestamp: twilioCall.startTime,
-    recording: twilioCall.recordingUrl,
-    transcription: twilioCall.transcription,
-    price: twilioCall.price,
-  });
-
-  const callLogs = (callLogsData?.callLogs || userPhoneNumbers.calls).map(convertTwilioCallToCall);
-  const recordings = recordingsData?.recordings || [];
+  // Use call history from context
+  const callLogs = userPhoneNumbers.calls;
+  const recordings = userPhoneNumbers.recordings;
 
   return (
     <Box>
@@ -602,7 +591,7 @@ export default function PhoneNumbers() {
           <Typography variant="h6" sx={{ mb: 3 }}>
             Recent Calls
           </Typography>
-          {callLogsLoading ? (
+          {userPhoneNumbers.loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
               <CircularProgress />
             </Box>
@@ -624,58 +613,75 @@ export default function PhoneNumbers() {
                 <TableHead>
                   <TableRow>
                     <TableCell>Status</TableCell>
+                    <TableCell>Direction</TableCell>
                     <TableCell>From</TableCell>
                     <TableCell>To</TableCell>
                     <TableCell>Duration</TableCell>
                     <TableCell>Cost</TableCell>
                     <TableCell>Date & Time</TableCell>
-                    <TableCell align="right">Actions</TableCell>
+                    <TableCell align="right">Recording</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {callLogs
-                    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                    .sort((a, b) => new Date(b.startTime || b.createdAt || 0).getTime() - new Date(a.startTime || a.createdAt || 0).getTime())
                     .map((call) => (
                       <TableRow key={call.id}>
                         <TableCell>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            {getCallStatusIcon(call.status)}
+                            {getCallStatusIcon(call.status as any)}
                             <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
                               {call.status}
                             </Typography>
                           </Box>
                         </TableCell>
-                        <TableCell>{call.callerNumber}</TableCell>
-                        <TableCell>{call.phoneNumberId}</TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            {call.direction === 'inbound' ? '📲' : '📞'}
+                            <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
+                              {call.direction === 'outbound-api' ? 'outbound' : call.direction}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>{call.from || call.from_number}</TableCell>
+                        <TableCell>{call.to || call.to_number}</TableCell>
                         <TableCell>{formatDuration(call.duration)}</TableCell>
                         <TableCell>
                           {call.price ? `$${call.price}` : 'N/A'}
                         </TableCell>
                         <TableCell>
                           <Typography variant="body2">
-                            {new Date(call.timestamp).toLocaleDateString()}
+                            {new Date(call.startTime || call.createdAt || 0).toLocaleDateString()}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            {new Date(call.timestamp).toLocaleTimeString()}
+                            {new Date(call.startTime || call.createdAt || 0).toLocaleTimeString()}
                           </Typography>
                         </TableCell>
                         <TableCell align="right">
-                          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-                            {call.recording && (
-                              <Tooltip title="Play Recording">
-                                <IconButton size="small">
-                                  <Volume2 size={18} />
-                                </IconButton>
-                              </Tooltip>
-                            )}
-                            {call.status === 'missed' && (
-                              <Tooltip title="Call Back">
-                                <IconButton size="small">
-                                  <Forward size={18} />
-                                </IconButton>
-                              </Tooltip>
-                            )}
-                          </Box>
+                          {call.recordingUrl && call.recording_status === 'completed' && (
+                            <RecordingPlayer
+                              recordingUrl={call.recordingUrl || call.recording_url || ''}
+                              duration={call.recording_duration || call.duration}
+                              callSid={call.callSid || call.call_sid || ''}
+                              onError={(error) => {
+                                setSnackbar({
+                                  open: true,
+                                  message: error,
+                                  severity: 'error'
+                                });
+                              }}
+                            />
+                          )}
+                          {call.recordingUrl && call.recording_status === 'processing' && (
+                            <Typography variant="caption" color="text.secondary">
+                              Processing...
+                            </Typography>
+                          )}
+                          {!call.recordingUrl && (
+                            <Typography variant="caption" color="text.secondary">
+                              No recording
+                            </Typography>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -877,7 +883,7 @@ export default function PhoneNumbers() {
       >
         <DialogTitle>Call Recordings</DialogTitle>
         <DialogContent>
-          {recordingsLoading ? (
+          {userPhoneNumbers.loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
               <CircularProgress />
             </Box>
@@ -893,43 +899,65 @@ export default function PhoneNumbers() {
             </Box>
           ) : (
             <Grid container spacing={2} sx={{ mt: 1 }}>
-              {recordings.map((recording: any) => (
-                <Grid item xs={12} md={6} key={recording.sid}>
-                  <Card variant="outlined">
-                    <CardContent>
-                      <Typography variant="h6" sx={{ mb: 1 }}>
-                        Recording {recording.sid}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                        Duration: {formatRecordingDuration(recording.duration)}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                        Status: {recording.status}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                        Created: {new Date(recording.dateCreated).toLocaleString()}
-                      </Typography>
+              {recordings.map((recording) => {
+                const associatedCall = callLogs.find(call =>
+                  call.callSid === recording.callSid || call.call_sid === recording.callSid
+                );
 
-                      <Box sx={{ mb: 2 }}>
-                        <audio controls style={{ width: '100%' }}>
-                          <source src={recording.mediaUrl} type="audio/mpeg" />
-                          Your browser does not support the audio element.
-                        </audio>
-                      </Box>
+                return (
+                  <Grid item xs={12} key={recording.id}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                          <Box>
+                            <Typography variant="h6" sx={{ mb: 1 }}>
+                              Recording {recording.recordingSid}
+                            </Typography>
+                            {associatedCall && (
+                              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                Call: {associatedCall.from || associatedCall.from_number} → {associatedCall.to || associatedCall.to_number}
+                              </Typography>
+                            )}
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                              Duration: {formatRecordingDuration(recording.duration)}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                              Status: {recording.status}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                              Created: {new Date(recording.createdAt).toLocaleString()}
+                            </Typography>
+                          </Box>
+                          <Button
+                            variant="outlined"
+                            color="error"
+                            size="small"
+                            onClick={() => userPhoneNumbers.deleteRecording(recording.recordingSid)}
+                            disabled={userPhoneNumbers.loading}
+                          >
+                            {userPhoneNumbers.loading ? 'Deleting...' : 'Delete'}
+                          </Button>
+                        </Box>
 
-                      <Button
-                        variant="outlined"
-                        color="error"
-                        size="small"
-                        onClick={() => handleDeleteRecording(recording.sid)}
-                        disabled={deleteRecordingMutation.isPending}
-                      >
-                        {deleteRecordingMutation.isPending ? 'Deleting...' : 'Delete'}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
+                        <Box sx={{ mb: 2 }}>
+                          <RecordingPlayer
+                            recordingUrl={recording.mediaUrl}
+                            duration={recording.duration}
+                            callSid={recording.callSid}
+                            onError={(error) => {
+                              setSnackbar({
+                                open: true,
+                                message: error,
+                                severity: 'error'
+                              });
+                            }}
+                          />
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                );
+              })}
             </Grid>
           )}
         </DialogContent>

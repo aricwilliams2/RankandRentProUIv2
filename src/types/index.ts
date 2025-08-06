@@ -523,24 +523,38 @@ export interface ChecklistCategory {
 
 // NEW: Multi-user Twilio types
 export interface TwilioCall {
-  id: string;
-  callSid: string; // Twilio call SID
-  userId: string; // User who made/received the call
-  phoneNumberId: string; // User's phone number used
-  to: string; // Destination number
-  from: string; // Source number (user's number)
-  direction: 'inbound' | 'outbound';
+  id: string | number;
+  call_sid?: string; // Backend field
+  callSid?: string; // Frontend field
+  user_id?: string | number; // Backend field
+  userId?: string; // Frontend field
+  phone_number_id?: string | number; // Backend field
+  phoneNumberId?: string; // Frontend field
+  to_number?: string; // Backend field
+  from_number?: string; // Backend field
+  to?: string; // Frontend field
+  from?: string; // Frontend field
+  direction: 'inbound' | 'outbound' | 'outbound-api';
   status: 'queued' | 'ringing' | 'in-progress' | 'completed' | 'busy' | 'failed' | 'no-answer' | 'canceled';
   duration: number; // in seconds
-  price?: number; // Cost in USD
-  priceUnit?: string; // Currency
-  recordingUrl?: string;
-  recordingSid?: string;
+  price?: string | number; // Cost in USD (string from backend)
+  price_unit?: string; // Backend field
+  priceUnit?: string; // Frontend field
+  recording_url?: string; // Backend field
+  recordingUrl?: string; // Frontend field
+  recording_sid?: string; // Backend field
+  recordingSid?: string; // Frontend field
+  recording_duration?: number; // Backend field
+  recording_status?: 'completed' | 'processing' | 'failed'; // Backend field
   transcription?: string;
-  startTime: Date;
-  endTime?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  start_time?: string; // Backend field
+  startTime?: Date; // Frontend field
+  end_time?: string; // Backend field
+  endTime?: Date; // Frontend field
+  created_at?: string; // Backend field
+  createdAt?: Date; // Frontend field
+  updated_at?: string; // Backend field
+  updatedAt?: Date; // Frontend field
 }
 
 export interface TwilioRecording {
@@ -607,4 +621,26 @@ export interface BuyNumberResponse {
   requestedNumber: string;
   isDifferentNumber: boolean;
   message: string;
+}
+
+export interface CallHistoryApiResponse {
+  success: boolean;
+  callLogs: TwilioCall[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface RecordingsApiResponse {
+  success: boolean;
+  recordings: TwilioRecording[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }

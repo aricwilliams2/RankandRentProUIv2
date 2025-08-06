@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { PhoneNumber, TwilioCall, TwilioRecording, UserPhoneNumbersContextType, PhoneNumbersApiResponse, BuyNumberResponse } from '../types';
+import { PhoneNumber, TwilioCall, TwilioRecording, UserPhoneNumbersContextType, PhoneNumbersApiResponse, BuyNumberResponse, CallHistoryApiResponse, RecordingsApiResponse } from '../types';
 import { twilioApi } from '../services/twilioApi';
 import { useAuth } from './AuthContext';
 
@@ -49,6 +49,59 @@ export const UserPhoneNumbersProvider: React.FC<{ children: ReactNode }> = ({ ch
         updatedAt: new Date(backendNumber.updated_at),
         created_at: backendNumber.created_at,
         updated_at: backendNumber.updated_at,
+    });
+
+    // Helper function to transform backend call data to frontend format
+    const transformCall = (backendCall: any): TwilioCall => ({
+        id: String(backendCall.id),
+        callSid: backendCall.call_sid,
+        call_sid: backendCall.call_sid,
+        userId: String(backendCall.user_id),
+        user_id: backendCall.user_id,
+        phoneNumberId: String(backendCall.phone_number_id),
+        phone_number_id: backendCall.phone_number_id,
+        to: backendCall.to_number,
+        from: backendCall.from_number,
+        to_number: backendCall.to_number,
+        from_number: backendCall.from_number,
+        direction: backendCall.direction || 'outbound',
+        status: backendCall.status,
+        duration: backendCall.duration || 0,
+        price: backendCall.price,
+        price_unit: backendCall.price_unit,
+        priceUnit: backendCall.price_unit,
+        recordingUrl: backendCall.recording_url,
+        recording_url: backendCall.recording_url,
+        recordingSid: backendCall.recording_sid,
+        recording_sid: backendCall.recording_sid,
+        recording_duration: backendCall.recording_duration,
+        recording_status: backendCall.recording_status,
+        transcription: backendCall.transcription,
+        startTime: backendCall.start_time ? new Date(backendCall.start_time) : new Date(backendCall.created_at),
+        start_time: backendCall.start_time,
+        endTime: backendCall.end_time ? new Date(backendCall.end_time) : undefined,
+        end_time: backendCall.end_time,
+        createdAt: new Date(backendCall.created_at),
+        created_at: backendCall.created_at,
+        updatedAt: new Date(backendCall.updated_at || backendCall.created_at),
+        updated_at: backendCall.updated_at,
+    });
+
+    // Helper function to transform backend recording data to frontend format
+    const transformRecording = (backendRecording: any): TwilioRecording => ({
+        id: String(backendRecording.id),
+        recordingSid: backendRecording.recording_sid,
+        userId: String(backendRecording.user_id),
+        callSid: backendRecording.call_sid,
+        phoneNumberId: String(backendRecording.phone_number_id),
+        duration: backendRecording.duration || 0,
+        channels: backendRecording.channels || 1,
+        status: backendRecording.status || 'completed',
+        mediaUrl: backendRecording.media_url || backendRecording.recording_url,
+        price: backendRecording.price,
+        priceUnit: backendRecording.price_unit || 'USD',
+        createdAt: new Date(backendRecording.created_at),
+        updatedAt: new Date(backendRecording.updated_at || backendRecording.created_at),
     });
 
     // Load user's phone numbers on mount and auth change
@@ -236,15 +289,22 @@ export const UserPhoneNumbersProvider: React.FC<{ children: ReactNode }> = ({ ch
     const getCallHistory = async (params?: {
         phoneNumberId?: string;
         limit?: number;
-        page?: number
+        page?: number;
+        status?: string;
     }) => {
         if (!isAuthenticated) return;
 
         setLoading(true);
         setError(null);
         try {
-            const response = await twilioApi.getCallLogs(params || {});
-            setCalls(response.calls || []);
+            const response: CallHistoryApiResponse = await twilioApi.getCallLogs(params || {});
+
+            if (response.success && response.callLogs) {
+                const transformedCalls = response.callLogs.map(transformCall);
+                setCalls(transformedCalls);
+            } else {
+                setCalls([]);
+            }
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to fetch call history';
             setError(errorMessage);
@@ -291,8 +351,14 @@ export const UserPhoneNumbersProvider: React.FC<{ children: ReactNode }> = ({ ch
         setLoading(true);
         setError(null);
         try {
-            const response = await twilioApi.getRecordings(params || {});
-            setRecordings(response.recordings || []);
+            const response: RecordingsApiResponse = await twilioApi.getRecordings(params || {});
+
+            if (response.success && response.recordings) {
+                const transformedRecordings = response.recordings.map(transformRecording);
+                setRecordings(transformedRecordings);
+            } else {
+                setRecordings([]);
+            }
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to fetch recordings';
             setError(errorMessage);
