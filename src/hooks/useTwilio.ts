@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { twilioApi } from '../services/twilioApi';
-import type { PhoneNumber } from '../types';
+import { useUserPhoneNumbers } from '../contexts/UserPhoneNumbersContext';
+import type { PhoneNumber, TwilioCall, TwilioRecording } from '../types';
 
 interface Call {
   id: string;
@@ -47,6 +48,7 @@ interface RecordingsResponse {
 
 export const useTwilio = () => {
   const queryClient = useQueryClient();
+  const userPhoneNumbers = useUserPhoneNumbers();
 
   // Get available numbers
   const useAvailableNumbers = (params: {
@@ -56,101 +58,114 @@ export const useTwilio = () => {
   }) => {
     return useQuery({
       queryKey: ['availableNumbers', params],
-      queryFn: () => twilioApi.getAvailableNumbers(params),
+      queryFn: () => userPhoneNumbers.searchAvailableNumbers(params),
       enabled: !!params.areaCode || !!params.country,
     });
   };
 
-  // Get call logs
+  // Get call logs (now uses context data)
   const useCallLogs = (params: {
     page?: number;
     limit?: number;
     status?: string;
     phoneNumberId?: string;
   } = {}) => {
-    return useQuery({
-      queryKey: ['callLogs', params],
-      queryFn: () => twilioApi.getCallLogs(params),
-    });
+    return {
+      data: {
+        callLogs: userPhoneNumbers.calls.filter(call => {
+          if (params.phoneNumberId && call.phoneNumberId !== params.phoneNumberId) return false;
+          if (params.status && call.status !== params.status) return false;
+          return true;
+        }).slice(0, params.limit || 50)
+      },
+      isLoading: userPhoneNumbers.loading,
+      error: userPhoneNumbers.error ? new Error(userPhoneNumbers.error) : null
+    };
   };
 
   // Get specific call log
   const useCallLog = (callSid: string) => {
-    return useQuery({
-      queryKey: ['callLog', callSid],
-      queryFn: () => twilioApi.getCallLog(callSid),
-      enabled: !!callSid,
-    });
+    const call = userPhoneNumbers.calls.find(c => c.callSid === callSid);
+    return {
+      data: call ? { call } : null,
+      isLoading: userPhoneNumbers.loading,
+      error: userPhoneNumbers.error ? new Error(userPhoneNumbers.error) : null
+    };
   };
 
-  // Get recordings
+  // Get recordings (now uses context data)
   const useRecordings = (params: {
     page?: number;
     limit?: number;
     callSid?: string;
+    phoneNumberId?: string;
   } = {}) => {
-    return useQuery({
-      queryKey: ['recordings', params],
-      queryFn: () => twilioApi.getRecordings(params),
-    });
+    return {
+      data: {
+        recordings: userPhoneNumbers.recordings.filter(recording => {
+          if (params.callSid && recording.callSid !== params.callSid) return false;
+          if (params.phoneNumberId && recording.phoneNumberId !== params.phoneNumberId) return false;
+          return true;
+        }).slice(0, params.limit || 50)
+      },
+      isLoading: userPhoneNumbers.loading,
+      error: userPhoneNumbers.error ? new Error(userPhoneNumbers.error) : null
+    };
   };
 
   // Get call recordings
   const useCallRecordings = (callSid: string) => {
-    return useQuery({
-      queryKey: ['callRecordings', callSid],
-      queryFn: () => twilioApi.getCallRecordings(callSid),
-      enabled: !!callSid,
-    });
+    const recordings = userPhoneNumbers.recordings.filter(r => r.callSid === callSid);
+    return {
+      data: { recordings },
+      isLoading: userPhoneNumbers.loading,
+      error: userPhoneNumbers.error ? new Error(userPhoneNumbers.error) : null
+    };
   };
 
-  // Get phone numbers
+  // Get phone numbers (now uses context data)
   const usePhoneNumbers = () => {
-    return useQuery({
-      queryKey: ['phoneNumbers'],
-      queryFn: () => twilioApi.getPhoneNumbers(),
-    });
+    return {
+      data: userPhoneNumbers.phoneNumbers,
+      isLoading: userPhoneNumbers.loading,
+      error: userPhoneNumbers.error ? new Error(userPhoneNumbers.error) : null
+    };
   };
 
-  // Buy number mutation
+  // Buy number mutation (now uses context)
   const useBuyNumber = () => {
-    return useMutation({
-      mutationFn: twilioApi.buyNumber,
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['availableNumbers'] });
-        queryClient.invalidateQueries({ queryKey: ['phoneNumbers'] });
-      },
-    });
+    return {
+      mutateAsync: userPhoneNumbers.buyPhoneNumber,
+      isPending: userPhoneNumbers.loading,
+      error: userPhoneNumbers.error ? new Error(userPhoneNumbers.error) : null
+    };
   };
 
-  // Make call mutation
+  // Make call mutation (now uses context)
   const useMakeCall = () => {
-    return useMutation({
-      mutationFn: twilioApi.makeCall,
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['callLogs'] });
-      },
-    });
+    return {
+      mutateAsync: userPhoneNumbers.makeCall,
+      isPending: userPhoneNumbers.loading,
+      error: userPhoneNumbers.error ? new Error(userPhoneNumbers.error) : null
+    };
   };
 
-  // Delete recording mutation
+  // Delete recording mutation (now uses context)
   const useDeleteRecording = () => {
-    return useMutation({
-      mutationFn: twilioApi.deleteRecording,
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['recordings'] });
-      },
-    });
+    return {
+      mutateAsync: userPhoneNumbers.deleteRecording,
+      isPending: userPhoneNumbers.loading,
+      error: userPhoneNumbers.error ? new Error(userPhoneNumbers.error) : null
+    };
   };
 
-  // Delete phone number mutation
+  // Delete phone number mutation (now uses context)
   const useDeletePhoneNumber = () => {
-    return useMutation({
-      mutationFn: twilioApi.deletePhoneNumber,
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['phoneNumbers'] });
-      },
-    });
+    return {
+      mutateAsync: userPhoneNumbers.releasePhoneNumber,
+      isPending: userPhoneNumbers.loading,
+      error: userPhoneNumbers.error ? new Error(userPhoneNumbers.error) : null
+    };
   };
 
   return {

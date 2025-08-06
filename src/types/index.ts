@@ -124,15 +124,34 @@ export interface WebsiteContextType {
 }
 
 export interface PhoneNumber {
-  id: string;
-  number: string;
-  websiteId: string;
-  provider: string;
-  monthlyFee: number;
-  callCount: number;
-  status: "active" | "inactive";
-  createdAt: Date;
-  updatedAt: Date;
+  id: string | number;
+  number?: string; // For compatibility
+  phone_number: string; // Backend uses snake_case
+  user_id?: string | number; // Backend field
+  userId?: string; // Frontend compatibility
+  twilio_sid?: string; // Backend field
+  twilioSid?: string; // Frontend compatibility
+  friendly_name?: string; // Backend field
+  websiteId?: string; // Made optional - numbers can exist without websites
+  provider?: string;
+  monthlyFee?: number;
+  monthly_cost?: string; // Backend field as string
+  callCount?: number;
+  status?: "active" | "inactive";
+  is_active?: number; // Backend field (1/0)
+  country: string;
+  region?: string;
+  locality?: string;
+  purchase_price?: string; // Backend field
+  purchase_price_unit?: string; // Backend field
+  capabilities: {
+    voice?: boolean;
+    sms?: boolean;
+  };
+  created_at?: string; // Backend field
+  updated_at?: string; // Backend field
+  createdAt?: Date; // Frontend field
+  updatedAt?: Date; // Frontend field
 }
 
 export interface SEOMetrics {
@@ -500,4 +519,92 @@ export interface ChecklistCategory {
   color: string;
   icon: string;
   items: ChecklistItem[];
+}
+
+// NEW: Multi-user Twilio types
+export interface TwilioCall {
+  id: string;
+  callSid: string; // Twilio call SID
+  userId: string; // User who made/received the call
+  phoneNumberId: string; // User's phone number used
+  to: string; // Destination number
+  from: string; // Source number (user's number)
+  direction: 'inbound' | 'outbound';
+  status: 'queued' | 'ringing' | 'in-progress' | 'completed' | 'busy' | 'failed' | 'no-answer' | 'canceled';
+  duration: number; // in seconds
+  price?: number; // Cost in USD
+  priceUnit?: string; // Currency
+  recordingUrl?: string;
+  recordingSid?: string;
+  transcription?: string;
+  startTime: Date;
+  endTime?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TwilioRecording {
+  id: string;
+  recordingSid: string; // Twilio recording SID
+  userId: string; // User who owns this recording
+  callSid: string; // Associated call
+  phoneNumberId: string; // Phone number used
+  duration: number; // in seconds
+  channels: number; // 1 = mono, 2 = stereo
+  status: 'in-progress' | 'paused' | 'stopped' | 'processing' | 'completed' | 'absent';
+  mediaUrl: string; // URL to download recording
+  price?: number; // Cost in USD
+  priceUnit?: string; // Currency
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface UserPhoneNumbersContextType {
+  phoneNumbers: PhoneNumber[];
+  calls: TwilioCall[];
+  recordings: TwilioRecording[];
+  phoneNumberStats: {
+    total_numbers: number;
+    active_numbers: number;
+    total_purchase_cost: string;
+    total_monthly_cost: string;
+  } | null;
+  loading: boolean;
+  error: string | null;
+  
+  // Phone number management
+  getMyNumbers: () => Promise<void>;
+  searchAvailableNumbers: (params: { areaCode?: string; country?: string; limit?: number }) => Promise<any>;
+  buyPhoneNumber: (data: { phoneNumber: string; country?: string; areaCode?: string; websiteId?: string }) => Promise<BuyNumberResponse>;
+  updatePhoneNumber: (id: string, updates: Partial<PhoneNumber>) => Promise<PhoneNumber>;
+  releasePhoneNumber: (id: string) => Promise<void>;
+  
+  // Calling functionality
+  makeCall: (data: { to: string; from: string; record?: boolean; websiteId?: string }) => Promise<TwilioCall>;
+  getCallHistory: (params?: { phoneNumberId?: string; limit?: number; page?: number }) => Promise<void>;
+  getCallDetails: (callSid: string) => Promise<TwilioCall>;
+  
+  // Recording management
+  getRecordings: (params?: { callSid?: string; phoneNumberId?: string; limit?: number; page?: number }) => Promise<void>;
+  deleteRecording: (recordingSid: string) => Promise<void>;
+}
+
+// API Response types to match backend structure
+export interface PhoneNumbersApiResponse {
+  success: boolean;
+  phoneNumbers: PhoneNumber[];
+  stats: {
+    total_numbers: number;
+    active_numbers: number;
+    total_purchase_cost: string;
+    total_monthly_cost: string;
+  };
+}
+
+export interface BuyNumberResponse {
+  success: boolean;
+  phoneNumber: PhoneNumber;
+  requestedNumber: string;
+  isDifferentNumber: boolean;
+  message: string;
 }

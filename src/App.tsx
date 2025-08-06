@@ -21,6 +21,7 @@ import LeadSniperProFunc from "./pages/LeadSniperPro";
 import { TaskProvider } from "./contexts/TaskContext";
 import { LeadProvider } from "./contexts/LeadContext";
 import { WebsiteProvider } from "./contexts/WebsiteContext";
+import { UserPhoneNumbersProvider } from "./contexts/UserPhoneNumbersContext";
 import { Box, CircularProgress } from "@mui/material";
 import SerpResults from "./pages/SerpResults";
 import SuccessPage from "./pages/SuccessPage";
@@ -67,28 +68,30 @@ const AppContent = () => {
       <ClientProvider>
         <LeadProvider>
           <WebsiteProvider>
-            <TaskProvider>
-              <Router>
-                <Layout>
-                  <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/Leads" element={<LeadSniperProFunc />} />
-                    <Route path="/clients" element={<Clients />} />
-                    <Route path="/websites" element={<Websites />} />
-                    <Route path="/phone-numbers" element={<PhoneNumbers />} />
-                    <Route path="/checklists" element={<ClientChecklistPage />} />
-                    <Route path="/client-checklist/:clientId" element={<IndividualClientChecklistPage />} />
-                    <Route path="/analytics" element={<Analytics />} />
-                    <Route path="/revenue" element={<Revenue />} />
-                    <Route path="/research" element={<Research />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="/serp-results" element={<SerpResults />} />
-                    <Route path="/success" element={<SuccessPage />} />
-                    <Route path="/cancel" element={<CancelPage />} />
-                  </Routes>
-                </Layout>
-              </Router>
-            </TaskProvider>
+            <UserPhoneNumbersProvider>
+              <TaskProvider>
+                <Router>
+                  <Layout>
+                    <Routes>
+                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/Leads" element={<LeadSniperProFunc />} />
+                      <Route path="/clients" element={<Clients />} />
+                      <Route path="/websites" element={<Websites />} />
+                      <Route path="/phone-numbers" element={<PhoneNumbers />} />
+                      <Route path="/checklists" element={<ClientChecklistPage />} />
+                      <Route path="/client-checklist/:clientId" element={<IndividualClientChecklistPage />} />
+                      <Route path="/analytics" element={<Analytics />} />
+                      <Route path="/revenue" element={<Revenue />} />
+                      <Route path="/research" element={<Research />} />
+                      <Route path="/settings" element={<Settings />} />
+                      <Route path="/serp-results" element={<SerpResults />} />
+                      <Route path="/success" element={<SuccessPage />} />
+                      <Route path="/cancel" element={<CancelPage />} />
+                    </Routes>
+                  </Layout>
+                </Router>
+              </TaskProvider>
+            </UserPhoneNumbersProvider>
           </WebsiteProvider>
         </LeadProvider>
       </ClientProvider>

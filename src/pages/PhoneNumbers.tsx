@@ -24,11 +24,6 @@ import {
   Select,
   FormControl,
   InputLabel,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Divider,
   Tooltip,
   Alert,
   Snackbar,
@@ -50,14 +45,11 @@ import {
   Forward,
   History,
   Search,
-  Play,
-  Pause,
-  Stop,
-  Mic,
-  MicOff,
 } from 'lucide-react';
 import type { PhoneNumber, Website } from '../types';
 import { useTwilio } from '../hooks/useTwilio';
+import { useUserPhoneNumbers } from '../contexts/UserPhoneNumbersContext';
+import { useAuth } from '../contexts/AuthContext';
 
 // Mock data for websites - replace with actual API calls
 const mockWebsites: Website[] = [
@@ -88,7 +80,7 @@ interface Call {
   call_sid: string;
   phoneNumberId: string;
   duration: number;
-  status: 'completed' | 'missed' | 'voicemail' | 'failed' | 'busy' | 'no-answer';
+  status: 'completed' | 'missed' | 'voicemail' | 'failed' | 'busy' | 'no-answer' | 'queued' | 'ringing' | 'in-progress' | 'canceled';
   callerNumber: string;
   timestamp: Date;
   recording?: string;
@@ -107,6 +99,8 @@ interface AvailableNumber {
 }
 
 export default function PhoneNumbers() {
+  const { user } = useAuth();
+  const userPhoneNumbers = useUserPhoneNumbers();
   const [activeTab, setActiveTab] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [callHistoryOpen, setCallHistoryOpen] = useState(false);
@@ -125,8 +119,14 @@ export default function PhoneNumbers() {
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
-    severity: 'success' | 'error' | 'info';
+    severity: 'success' | 'error' | 'info' | 'warning';
   }>({ open: false, message: '', severity: 'info' });
+  const [purchaseResult, setPurchaseResult] = useState<{
+    show: boolean;
+    requestedNumber: string;
+    assignedNumber: string;
+    isDifferent: boolean;
+  } | null>(null);
 
   const {
     usePhoneNumbers,
@@ -190,16 +190,34 @@ export default function PhoneNumbers() {
 
   const handleBuyNumber = async (phoneNumber: string) => {
     try {
-      await buyNumberMutation.mutateAsync({
+      const response = await userPhoneNumbers.buyPhoneNumber({
         phoneNumber,
         country: searchParams.country,
         areaCode: searchParams.areaCode,
       });
-      setSnackbar({
-        open: true,
-        message: 'Phone number purchased successfully!',
-        severity: 'success',
+
+      // Show detailed result
+      setPurchaseResult({
+        show: true,
+        requestedNumber: response.requestedNumber || phoneNumber,
+        assignedNumber: response.phoneNumber.phone_number || response.phoneNumber.number || '',
+        isDifferent: response.isDifferentNumber
       });
+
+      // Also show snackbar notification
+      if (response.isDifferentNumber) {
+        setSnackbar({
+          open: true,
+          message: `The number ${response.requestedNumber} was taken. We got you ${response.phoneNumber.phone_number || response.phoneNumber.number} instead.`,
+          severity: 'warning',
+        });
+      } else {
+        setSnackbar({
+          open: true,
+          message: `Successfully purchased ${response.phoneNumber.phone_number || response.phoneNumber.number}!`,
+          severity: 'success',
+        });
+      }
       handleDialogClose();
     } catch (error) {
       setSnackbar({
@@ -212,7 +230,7 @@ export default function PhoneNumbers() {
 
   const handleMakeCall = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!callData.to) {
       setSnackbar({
         open: true,
@@ -305,20 +323,82 @@ export default function PhoneNumbers() {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  const callLogs = callLogsData?.callLogs || [];
+  // Helper function to convert TwilioCall to legacy Call interface for compatibility
+  const convertTwilioCallToCall = (twilioCall: import('../types').TwilioCall): Call => ({
+    id: twilioCall.id,
+    call_sid: twilioCall.callSid,
+    phoneNumberId: twilioCall.phoneNumberId,
+    duration: twilioCall.duration,
+    status: twilioCall.status === 'completed' ? 'completed' :
+      twilioCall.status === 'failed' ? 'failed' :
+        twilioCall.status === 'busy' ? 'busy' :
+          twilioCall.status === 'no-answer' ? 'no-answer' :
+            twilioCall.status === 'queued' ? 'queued' :
+              twilioCall.status === 'ringing' ? 'ringing' :
+                twilioCall.status === 'in-progress' ? 'in-progress' :
+                  'canceled',
+    callerNumber: twilioCall.direction === 'inbound' ? twilioCall.from : twilioCall.to,
+    timestamp: twilioCall.startTime,
+    recording: twilioCall.recordingUrl,
+    transcription: twilioCall.transcription,
+    price: twilioCall.price,
+  });
+
+  const callLogs = (callLogsData?.callLogs || userPhoneNumbers.calls).map(convertTwilioCallToCall);
   const recordings = recordingsData?.recordings || [];
 
   return (
     <Box>
+      {/* User Info Section */}
+      <Card sx={{ mb: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box>
+              <Typography variant="h5" fontWeight="bold" sx={{ mb: 1 }}>
+                Welcome to Your Calling Platform, {user?.name}!
+              </Typography>
+              <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                You own {userPhoneNumbers.phoneNumbers.length} phone numbers and have made {userPhoneNumbers.calls.length} calls
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 3, textAlign: 'center' }}>
+              <Box>
+                <Typography variant="h4" fontWeight="bold">
+                  {userPhoneNumbers.phoneNumberStats?.active_numbers || userPhoneNumbers.phoneNumbers.filter(n => n.status === 'active').length}
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.8 }}>Active Numbers</Typography>
+              </Box>
+              <Box>
+                <Typography variant="h4" fontWeight="bold">
+                  {userPhoneNumbers.phoneNumberStats?.total_numbers || userPhoneNumbers.phoneNumbers.length}
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.8 }}>Total Numbers</Typography>
+              </Box>
+              <Box>
+                <Typography variant="h4" fontWeight="bold">
+                  ${userPhoneNumbers.phoneNumberStats?.total_monthly_cost || '0.00'}
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.8 }}>Monthly Cost</Typography>
+              </Box>
+              <Box>
+                <Typography variant="h4" fontWeight="bold">{userPhoneNumbers.calls.length}</Typography>
+                <Typography variant="body2" sx={{ opacity: 0.8 }}>Calls Made</Typography>
+              </Box>
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Typography variant="h4" fontWeight="bold">
-          Phone Numbers
+          My Phone Numbers
         </Typography>
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Button
             variant="outlined"
             startIcon={<PhoneCall size={20} />}
             onClick={handleCallInterfaceOpen}
+            disabled={userPhoneNumbers.phoneNumbers.length === 0}
           >
             Make Call
           </Button>
@@ -327,7 +407,7 @@ export default function PhoneNumbers() {
             startIcon={<Volume2 size={20} />}
             onClick={handleRecordingsOpen}
           >
-            Recordings
+            Recordings ({userPhoneNumbers.recordings.length})
           </Button>
           <Button
             variant="contained"
@@ -400,19 +480,36 @@ export default function PhoneNumbers() {
                         <Box>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                             <Phone size={20} />
-                            <Typography variant="h6">{number.number}</Typography>
+                            <Typography variant="h6">{number.phone_number || number.number}</Typography>
                             <Chip
                               size="small"
                               label={number.status}
                               color={number.status === 'active' ? 'success' : 'default'}
                             />
+                            {number.friendly_name && (
+                              <Chip
+                                size="small"
+                                label={number.friendly_name}
+                                color="primary"
+                                variant="outlined"
+                              />
+                            )}
                           </Box>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <Globe size={16} />
                             <Typography variant="body2" color="text.secondary">
-                              {website?.domain || 'Unassigned'}
+                              {number.locality && number.region
+                                ? `${number.locality}, ${number.region}`
+                                : number.country || 'Unknown Location'}
                             </Typography>
                           </Box>
+                          {website?.domain && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                              <Typography variant="caption" color="text.secondary">
+                                Website: {website.domain}
+                              </Typography>
+                            </Box>
+                          )}
                         </Box>
                         <Box sx={{ display: 'flex', gap: 1 }}>
                           <IconButton
@@ -434,7 +531,7 @@ export default function PhoneNumbers() {
                                 <Typography variant="body2" color="text.secondary">Monthly Fee</Typography>
                                 <DollarSign size={16} />
                               </Box>
-                              <Typography variant="h6">${number.monthlyFee}</Typography>
+                              <Typography variant="h6">${number.monthlyFee || number.monthly_cost || '1.00'}</Typography>
                             </CardContent>
                           </Card>
                         </Grid>
@@ -687,7 +784,15 @@ export default function PhoneNumbers() {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Make a Call</DialogTitle>
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <PhoneCall size={24} />
+            <Typography variant="h6">Make a Call</Typography>
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Call using one of your purchased phone numbers
+          </Typography>
+        </DialogTitle>
         <DialogContent>
           <Box component="form" onSubmit={handleMakeCall} sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
@@ -698,17 +803,45 @@ export default function PhoneNumbers() {
               onChange={(e) => setCallData({ ...callData, to: e.target.value })}
               placeholder="+1234567890"
               required
+              helperText="Enter the phone number you want to call"
             />
-            
-            <TextField
-              fullWidth
-              label="From (Your Number)"
-              type="tel"
-              value={callData.from}
-              onChange={(e) => setCallData({ ...callData, from: e.target.value })}
-              placeholder="+1987654321"
-            />
-            
+
+            <FormControl fullWidth required>
+              <InputLabel>From (Your Number)</InputLabel>
+              <Select
+                value={callData.from}
+                label="From (Your Number)"
+                onChange={(e) => setCallData({ ...callData, from: e.target.value })}
+              >
+                {userPhoneNumbers.phoneNumbers
+                  .filter(num => num.status === 'active')
+                  .map((number) => (
+                    <MenuItem key={number.id} value={number.phone_number || number.number}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                        <Phone size={16} />
+                        <Typography>{number.phone_number || number.number}</Typography>
+                        {number.friendly_name && (
+                          <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                            ({number.friendly_name})
+                          </Typography>
+                        )}
+                        <Chip
+                          size="small"
+                          label={number.capabilities?.voice ? 'Voice' : 'No Voice'}
+                          color={number.capabilities?.voice ? 'success' : 'default'}
+                          sx={{ ml: 'auto' }}
+                        />
+                      </Box>
+                    </MenuItem>
+                  ))}
+              </Select>
+              {userPhoneNumbers.phoneNumbers.filter(num => num.status === 'active').length === 0 && (
+                <Typography variant="caption" color="error" sx={{ mt: 1 }}>
+                  You need to purchase an active phone number to make calls
+                </Typography>
+              )}
+            </FormControl>
+
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <input
                 type="checkbox"
@@ -717,6 +850,9 @@ export default function PhoneNumbers() {
                 onChange={(e) => setCallData({ ...callData, record: e.target.checked })}
               />
               <label htmlFor="record-call">Record Call</label>
+              <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                (Additional charges apply)
+              </Typography>
             </Box>
           </Box>
         </DialogContent>
@@ -725,7 +861,7 @@ export default function PhoneNumbers() {
           <Button
             variant="contained"
             onClick={handleMakeCall}
-            disabled={makeCallMutation.isPending}
+            disabled={makeCallMutation.isPending || !callData.from || userPhoneNumbers.phoneNumbers.filter(num => num.status === 'active').length === 0}
           >
             {makeCallMutation.isPending ? 'Initiating Call...' : 'Make Call'}
           </Button>
@@ -773,14 +909,14 @@ export default function PhoneNumbers() {
                       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                         Created: {new Date(recording.dateCreated).toLocaleString()}
                       </Typography>
-                      
+
                       <Box sx={{ mb: 2 }}>
                         <audio controls style={{ width: '100%' }}>
                           <source src={recording.mediaUrl} type="audio/mpeg" />
                           Your browser does not support the audio element.
                         </audio>
                       </Box>
-                      
+
                       <Button
                         variant="outlined"
                         color="error"
@@ -886,6 +1022,91 @@ export default function PhoneNumbers() {
           <Button onClick={handleCallHistoryClose}>Close</Button>
         </DialogActions>
       </Dialog>
+
+      {/* Purchase Result Dialog */}
+      {purchaseResult && (
+        <Dialog
+          open={purchaseResult.show}
+          onClose={() => setPurchaseResult(null)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              {purchaseResult.isDifferent ? (
+                <Alert severity="warning" sx={{ width: '100%', mb: 2 }}>
+                  <Typography variant="h6" sx={{ mb: 1 }}>
+                    Number Assignment Changed
+                  </Typography>
+                </Alert>
+              ) : (
+                <Alert severity="success" sx={{ width: '100%', mb: 2 }}>
+                  <Typography variant="h6" sx={{ mb: 1 }}>
+                    Number Successfully Purchased!
+                  </Typography>
+                </Alert>
+              )}
+            </Box>
+          </DialogTitle>
+          <DialogContent>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {purchaseResult.isDifferent && (
+                <>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Requested Number:
+                    </Typography>
+                    <Typography variant="h6" sx={{ color: 'error.main' }}>
+                      {purchaseResult.requestedNumber}
+                    </Typography>
+                    <Typography variant="caption" color="error.main">
+                      (This number was already taken)
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Assigned Number:
+                    </Typography>
+                    <Typography variant="h6" sx={{ color: 'success.main' }}>
+                      {purchaseResult.assignedNumber}
+                    </Typography>
+                    <Typography variant="caption" color="success.main">
+                      (Your new phone number)
+                    </Typography>
+                  </Box>
+                  <Alert severity="info" sx={{ mt: 2 }}>
+                    Don't worry! Twilio found you the best available alternative number in the same area.
+                    Your new number has the same capabilities and pricing.
+                  </Alert>
+                </>
+              )}
+
+              {!purchaseResult.isDifferent && (
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Your New Number:
+                  </Typography>
+                  <Typography variant="h6" sx={{ color: 'success.main' }}>
+                    {purchaseResult.assignedNumber}
+                  </Typography>
+                  <Typography variant="caption" color="success.main">
+                    (Exactly what you requested!)
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={() => setPurchaseResult(null)}
+              variant="contained"
+              color="primary"
+            >
+              Got it!
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
 
       {/* Snackbar for notifications */}
       <Snackbar
