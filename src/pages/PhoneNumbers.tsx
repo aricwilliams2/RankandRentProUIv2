@@ -149,10 +149,7 @@ export default function PhoneNumbers() {
   }, [user, userPhoneNumbers.phoneNumbers.length]);
 
   // Queries
-  const { data: phoneNumbers = [], isLoading: phoneNumbersLoading, error: phoneNumbersError } = usePhoneNumbers();
   const { data: availableNumbers, isLoading: availableNumbersLoading } = useAvailableNumbers(searchParams);
-  const { data: callLogsData, isLoading: callLogsLoading } = useCallLogs();
-  const { data: recordingsData, isLoading: recordingsLoading } = useRecordings();
 
   // Mutations
   const buyNumberMutation = useBuyNumber();
@@ -997,41 +994,48 @@ export default function PhoneNumbers() {
               </TableHead>
               <TableBody>
                 {callLogs
-                  .filter(call => call.phoneNumberId === selectedNumber?.id)
-                  .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                  .filter(call => String(call.phoneNumberId) === String(selectedNumber?.id))
+                  .sort((a, b) => new Date(b.startTime || b.createdAt || 0).getTime() - new Date(a.startTime || a.createdAt || 0).getTime())
                   .map((call) => (
                     <TableRow key={call.id}>
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          {getCallStatusIcon(call.status)}
+                          {getCallStatusIcon(call.status as any)}
                           <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
                             {call.status}
                           </Typography>
                         </Box>
                       </TableCell>
-                      <TableCell>{call.callerNumber}</TableCell>
+                      <TableCell>{call.from || call.from_number}</TableCell>
                       <TableCell>{formatDuration(call.duration)}</TableCell>
                       <TableCell>
                         {call.price ? `$${call.price}` : 'N/A'}
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2">
-                          {new Date(call.timestamp).toLocaleDateString()}
+                          {new Date(call.startTime || call.createdAt || 0).toLocaleDateString()}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {new Date(call.timestamp).toLocaleTimeString()}
+                          {new Date(call.startTime || call.createdAt || 0).toLocaleTimeString()}
                         </Typography>
                       </TableCell>
                       <TableCell align="right">
                         <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-                          {call.recording && (
-                            <Tooltip title="Play Recording">
-                              <IconButton size="small">
-                                <Volume2 size={18} />
-                              </IconButton>
-                            </Tooltip>
+                          {call.recordingUrl && (
+                            <RecordingPlayer
+                              recordingUrl={call.recordingUrl || call.recording_url || ''}
+                              duration={call.recording_duration || call.duration}
+                              callSid={call.callSid || call.call_sid || ''}
+                              onError={(error) => {
+                                setSnackbar({
+                                  open: true,
+                                  message: error,
+                                  severity: 'error'
+                                });
+                              }}
+                            />
                           )}
-                          {call.status === 'missed' && (
+                          {call.status === 'no-answer' && (
                             <Tooltip title="Call Back">
                               <IconButton size="small">
                                 <Forward size={18} />
