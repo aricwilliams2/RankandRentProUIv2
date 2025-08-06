@@ -442,11 +442,11 @@ export default function PhoneNumbers() {
           ) : (
             userPhoneNumbers.phoneNumbers.map((number, index) => {
               const website = mockWebsites.find(w => w.id === number.websiteId);
-              const numberCalls = callLogs.filter(call => call.phoneNumberId === number.id);
-              const completedCalls = numberCalls.filter(call => call.status === 'completed');
-              const missedCalls = numberCalls.filter(call => call.status === 'no-answer');
+              const numberCalls = (callLogs || []).filter(call => call?.phoneNumberId === number.id);
+              const completedCalls = numberCalls.filter(call => call?.status === 'completed');
+              const missedCalls = numberCalls.filter(call => call?.status === 'no-answer');
               const averageDuration = completedCalls.length
-                ? completedCalls.reduce((acc, call) => acc + call.duration, 0) / completedCalls.length
+                ? completedCalls.reduce((acc, call) => acc + (call?.duration || 0), 0) / completedCalls.length
                 : 0;
 
               return (
@@ -611,8 +611,9 @@ export default function PhoneNumbers() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {callLogs
-                    .sort((a, b) => new Date(b.startTime || b.createdAt || 0).getTime() - new Date(a.startTime || a.createdAt || 0).getTime())
+                  {(callLogs || [])
+                    .filter(Boolean) // Remove null/undefined entries
+                    .sort((a, b) => new Date(b?.startTime || b?.createdAt || 0).getTime() - new Date(a?.startTime || a?.createdAt || 0).getTime())
                     .map((call, index) => (
                       <TableRow key={call.id || call.callSid || call.call_sid || `call-${index}`}>
                         <TableCell>
@@ -898,9 +899,9 @@ export default function PhoneNumbers() {
             </Box>
           ) : (
             <Grid container spacing={2} sx={{ mt: 1 }}>
-              {recordings.map((recording, index) => {
-                const associatedCall = callLogs.find(call =>
-                  call.callSid === recording.callSid || call.call_sid === recording.callSid
+                            {recordings.map((recording, index) => {
+                const associatedCall = (callLogs || []).find(call => 
+                  call && (call.callSid === recording.callSid || call.call_sid === recording.callSid)
                 );
 
                 return (
@@ -1006,9 +1007,10 @@ export default function PhoneNumbers() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {callLogs
-                  .filter(call => String(call.phoneNumberId) === String(selectedNumber?.id))
-                  .sort((a, b) => new Date(b.startTime || b.createdAt || 0).getTime() - new Date(a.startTime || a.createdAt || 0).getTime())
+                {(callLogs || [])
+                  .filter(Boolean) // Remove null/undefined entries
+                  .filter(call => call && String(call.phoneNumberId) === String(selectedNumber?.id))
+                  .sort((a, b) => new Date(b?.startTime || b?.createdAt || 0).getTime() - new Date(a?.startTime || a?.createdAt || 0).getTime())
                   .map((call, index) => (
                     <TableRow key={call.id || call.callSid || call.call_sid || `dialog-call-${index}`}>
                       <TableCell>
