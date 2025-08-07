@@ -2,7 +2,7 @@ import React, { createContext, useState, useEffect, useContext, useCallback } fr
 import { Website, WebsiteContextType } from "../types";
 
 const WebsiteContext = createContext<WebsiteContextType | undefined>(undefined);
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 
 // Helper function to strip down domain input to just the domain name
 const stripDomain = (input: string): string => {
@@ -61,7 +61,7 @@ const transformWebsiteForAPI = (website: Partial<Website>) => {
 };
 
 const fetchWebsitesAPI = async (): Promise<Website[]> => {
-  const response = await fetch(`${API_BASE_URL}/websites`, {
+  const response = await fetch(`/api/websites`, {
     headers: getAuthHeaders(),
   });
   const json = await response.json();
@@ -112,7 +112,7 @@ const createWebsiteAPI = async (website: Partial<Website>): Promise<Website> => 
     niche: website.niche
   };
 
-  const response = await fetch(`${API_BASE_URL}/websites`, {
+  const response = await fetch(`/api/websites`, {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(requestBody),
@@ -150,7 +150,7 @@ const createWebsiteAPI = async (website: Partial<Website>): Promise<Website> => 
 };
 
 const updateWebsiteAPI = async (id: string, updates: Partial<Website>): Promise<Website> => {
-  const response = await fetch(`${API_BASE_URL}/websites/${id}`, {
+  const response = await fetch(`/api/websites/${id}`, {
     method: "PUT",
     headers: getAuthHeaders(),
     body: JSON.stringify(transformWebsiteForAPI(updates)),
@@ -183,7 +183,7 @@ const updateWebsiteAPI = async (id: string, updates: Partial<Website>): Promise<
 };
 
 const deleteWebsiteAPI = async (id: string) => {
-  await fetch(`${API_BASE_URL}/websites/${id}`, {
+  await fetch(`/api/websites/${id}`, {
     method: "DELETE",
     headers: getAuthHeaders(),
   });

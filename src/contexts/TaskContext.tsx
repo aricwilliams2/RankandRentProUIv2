@@ -2,7 +2,7 @@ import React, { createContext, useState, useEffect, useContext, useCallback } fr
 import { Task, TaskContextType } from "../types";
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 
 // Helper function to get auth headers
 const getAuthHeaders = () => {
@@ -34,7 +34,7 @@ const transformTaskForAPI = (task: Partial<Task>) => {
 };
 
 const fetchTasksAPI = async (): Promise<Task[]> => {
-  const response = await fetch(`${API_BASE_URL}/tasks`, {
+  const response = await fetch(`/api/tasks`, {
     headers: getAuthHeaders(),
   });
   const json = await response.json();
@@ -54,7 +54,7 @@ const fetchTasksAPI = async (): Promise<Task[]> => {
 
 const createTaskAPI = async (task: Partial<Task>): Promise<Task> => {
   const apiTask = transformTaskForAPI(task);
-  const response = await fetch(`${API_BASE_URL}/tasks`, {
+  const response = await fetch(`/api/tasks`, {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(apiTask),
@@ -76,7 +76,7 @@ const createTaskAPI = async (task: Partial<Task>): Promise<Task> => {
 
 const updateTaskAPI = async (id: string, updates: Partial<Task>): Promise<Task> => {
   const apiUpdates = transformTaskForAPI(updates);
-  const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
+  const response = await fetch(`/api/tasks/${id}`, {
     method: "PUT",
     headers: getAuthHeaders(),
     body: JSON.stringify(apiUpdates),
@@ -97,7 +97,7 @@ const updateTaskAPI = async (id: string, updates: Partial<Task>): Promise<Task> 
 };
 
 const deleteTaskAPI = async (id: string) => {
-  await fetch(`${API_BASE_URL}/tasks/${id}`, {
+  await fetch(`/api/tasks/${id}`, {
     method: "DELETE",
     headers: getAuthHeaders(),
   });

@@ -74,7 +74,7 @@ interface TrafficData {
   }[];
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 
 export default function Analytics() {
   const location = useLocation();
@@ -121,7 +121,7 @@ export default function Analytics() {
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/website-traffic?url=${encodeURIComponent(domain)}&mode=subdomains`);
+      const response = await fetch(`/api/website-traffic?url=${encodeURIComponent(domain)}&mode=subdomains`);
 
       if (!response.ok) {
         throw new Error(`API Error: ${response.status} ${response.statusText}`);

@@ -52,7 +52,7 @@ interface SerpData {
   message: string;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 
 export default function SerpResults() {
   const location = useLocation();
@@ -93,7 +93,7 @@ export default function SerpResults() {
       }
 
       const response = await fetch(
-        `${API_BASE_URL}/google-rank-check?keyword=${encodeURIComponent(keyword)}&url=${encodeURIComponent(cleanUrl)}&country=us&id=google-serp`,
+        `/api/google-rank-check?keyword=${encodeURIComponent(keyword)}&url=${encodeURIComponent(cleanUrl)}&country=us&id=google-serp`,
         {
           method: 'POST',
         }

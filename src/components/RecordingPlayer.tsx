@@ -36,13 +36,34 @@ export const RecordingPlayer: React.FC<RecordingPlayerProps> = ({
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
     // Determine the best audio URL to use (prefer proxy endpoint)
+    const [authenticatedAudioUrl, setAuthenticatedAudioUrl] = useState<string | null>(null);
+    const [isLoadingAuth, setIsLoadingAuth] = useState(false);
+
     const audioUrl = React.useMemo(() => {
         if (recordingSid) {
-            // Use proxy endpoint for authenticated streaming
-            return twilioApi.getRecordingStream(recordingSid);
+            // Use authenticated endpoint for proper authorization
+            return authenticatedAudioUrl || recordingUrl;
         }
         return recordingUrl;
-    }, [recordingSid, recordingUrl]);
+    }, [recordingSid, recordingUrl, authenticatedAudioUrl]);
+
+    // Load authenticated audio URL when recordingSid changes
+    React.useEffect(() => {
+        if (recordingSid && !authenticatedAudioUrl) {
+            setIsLoadingAuth(true);
+            twilioApi.getRecordingStreamWithAuth(recordingSid)
+                .then(url => {
+                    setAuthenticatedAudioUrl(url);
+                    setIsLoadingAuth(false);
+                })
+                .catch(error => {
+                    console.error('Failed to load authenticated recording:', error);
+                    setIsLoadingAuth(false);
+                    // Fallback to query parameter method
+                    setAuthenticatedAudioUrl(twilioApi.getRecordingStream(recordingSid));
+                });
+        }
+    }, [recordingSid, authenticatedAudioUrl]);
 
     const formatTime = (seconds: number): string => {
         const mins = Math.floor(seconds / 60);
@@ -83,6 +104,11 @@ export const RecordingPlayer: React.FC<RecordingPlayerProps> = ({
             setAudioError(errorMsg);
             onError?.(errorMsg);
             console.log('RecordingPlayer: No recording URL provided');
+            return;
+        }
+
+        if (isLoadingAuth) {
+            console.log('RecordingPlayer: Still loading authenticated URL');
             return;
         }
 

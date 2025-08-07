@@ -3,7 +3,7 @@ import { User, AuthContextType } from "../types";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -42,7 +42,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      const response = await fetch(`/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -78,7 +78,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+      const response = await fetch(`/api/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

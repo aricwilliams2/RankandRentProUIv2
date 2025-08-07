@@ -1,10 +1,9 @@
 import { useState, useCallback } from "react";
-import type { Website, SEOMetrics, Backlink, KeywordData, TrafficInsights, UrlMetrics, KeywordMetrics, KeywordGenerator } from "../types";
+import type { Website, SEOMetrics, KeywordData, TrafficInsights, UrlMetrics, KeywordMetrics, KeywordGenerator } from "../types";
 
 export const useAnalyticsApi = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   const getWebsiteAnalytics = useCallback(async (websiteId: string): Promise<SEOMetrics | null> => {
     setLoading(true);
@@ -22,7 +21,7 @@ export const useAnalyticsApi = () => {
     }
   }, []);
 
-  const getWebsiteBacklinks = useCallback(async (websiteId: string): Promise<Backlink[]> => {
+  const getWebsiteBacklinks = useCallback(async (websiteId: string): Promise<any[]> => {
     setLoading(true);
     setError(null);
 
@@ -97,8 +96,7 @@ export const useAnalyticsApi = () => {
     setError(null);
 
     try {
-      const apiUrl = API_BASE_URL + `/url-metrics?url=${encodeURIComponent(url)}`;
-      const response = await fetch(apiUrl);
+      const response = await fetch(`/api/url-metrics?url=${encodeURIComponent(url)}`);
 
       if (!response.ok) {
         throw new Error("Failed to fetch URL metrics");
@@ -119,8 +117,7 @@ export const useAnalyticsApi = () => {
     setError(null);
 
     try {
-      const apiUrl = API_BASE_URL + `/keyword-metrics?keyword=${encodeURIComponent(keyword)}&country=${country}`;
-      const response = await fetch(apiUrl);
+      const response = await fetch(`/api/keyword-metrics?keyword=${encodeURIComponent(keyword)}&country=${country}`);
 
       if (!response.ok) {
         throw new Error("Failed to fetch keyword metrics");
@@ -141,8 +138,7 @@ export const useAnalyticsApi = () => {
     setError(null);
 
     try {
-      const apiUrl = API_BASE_URL + `/keyword-generator?keyword=${encodeURIComponent(keyword)}&country=${country}`;
-      const response = await fetch(apiUrl);
+      const response = await fetch(`/api/keyword-generator?keyword=${encodeURIComponent(keyword)}&country=${country}`);
 
       if (!response.ok) {
         throw new Error("Failed to fetch keyword ideas");
@@ -158,13 +154,12 @@ export const useAnalyticsApi = () => {
     }
   }, []);
 
-  const checkGoogleRank = useCallback(async (keyword: string, url: string, country: string = "us"): Promise<GoogleRankCheck | null> => {
+  const checkGoogleRank = useCallback(async (keyword: string, url: string, country: string = "us"): Promise<any | null> => {
     setLoading(true);
     setError(null);
 
     try {
-      const apiUrl = API_BASE_URL + `/google-rank-check?keyword=${encodeURIComponent(keyword)}&url=${encodeURIComponent(url)}&country=${country}&id=google-serp`;
-      const response = await fetch(apiUrl);
+      const response = await fetch(`/api/google-rank-check?keyword=${encodeURIComponent(keyword)}&url=${encodeURIComponent(url)}&country=${country}&id=google-serp`);
 
       if (!response.ok) {
         throw new Error("Failed to check Google ranking");

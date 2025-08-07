@@ -3,7 +3,7 @@ import { Client, ClientContextType, SortField, SortDirection } from "../types";
 import { useAuth } from "./AuthContext";
 
 const ClientContext = createContext<ClientContextType | undefined>(undefined);
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 
 // Helper function to get auth headers
 const getAuthHeaders = () => {
@@ -20,7 +20,7 @@ const getAuthHeaders = () => {
 };
 
 const fetchClientsAPI = async (): Promise<Client[]> => {
-  const response = await fetch(`${API_BASE_URL}/clients`, {
+  const response = await fetch(`/api/clients`, {
     headers: getAuthHeaders(),
   });
   const json = await response.json();
@@ -57,7 +57,7 @@ const updateClientAPI = async (client: Client, fieldsToUpdate?: string[]): Promi
     Object.assign(data, filteredData);
   }
 
-  const response = await fetch(`${API_BASE_URL}/clients/${client.id}`, {
+  const response = await fetch(`/api/clients/${client.id}`, {
     method: "PUT",
     headers: getAuthHeaders(),
     body: JSON.stringify(data),
@@ -89,7 +89,7 @@ const createClientAPI = async (clientData: Partial<Client>): Promise<Client> => 
     notes: clientData.notes || null,
   };
 
-  const response = await fetch(`${API_BASE_URL}/clients`, {
+  const response = await fetch(`/api/clients`, {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(data),
@@ -105,7 +105,7 @@ const createClientAPI = async (clientData: Partial<Client>): Promise<Client> => 
 };
 
 const deleteClientAPI = async (id: string) => {
-  await fetch(`${API_BASE_URL}/clients/${id}`, {
+  await fetch(`/api/clients/${id}`, {
     method: "DELETE",
     headers: getAuthHeaders(),
   });

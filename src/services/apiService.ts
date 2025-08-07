@@ -293,7 +293,7 @@ export const createCallLogAPI = async (leadId: string, callLogData: {
 }) => {
   try {
     const token = localStorage.getItem("token");
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/call-logs`, {
+    const response = await fetch(`/api/call-logs`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -330,7 +330,7 @@ export const updateCallLogAPI = async (callLogId: string, updateData: {
 }) => {
   try {
     const token = localStorage.getItem("token");
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/call-logs/${callLogId}`, {
+    const response = await fetch(`/api/call-logs/${callLogId}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -361,7 +361,7 @@ export const updateCallLogAPI = async (callLogId: string, updateData: {
 export const fetchCallLogsAPI = async (leadId: string) => {
   try {
     const token = localStorage.getItem("token");
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/leads/${leadId}/call-logs`, {
+    const response = await fetch(`/api/leads/${leadId}/call-logs`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -387,7 +387,7 @@ export const fetchCallLogsAPI = async (leadId: string) => {
 export const deleteCallLogAPI = async (callLogId: string) => {
   try {
     const token = localStorage.getItem("token");
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/call-logs/${callLogId}`, {
+    const response = await fetch(`/api/call-logs/${callLogId}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",

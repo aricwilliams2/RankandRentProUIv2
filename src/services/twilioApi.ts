@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://newrankandrentapi.onrender.com';
 
 // Create axios instance with auth interceptor
 const apiClient = axios.create({
@@ -123,7 +123,25 @@ export const twilioApi = {
   // Stream recording audio (proxy endpoint - no login required)
   getRecordingStream: (recordingSid: string) => {
     const token = localStorage.getItem('token');
-    return `${API_BASE_URL}/api/twilio/recording/${recordingSid}?token=${token}`;
+    return `${API_BASE_URL}/twilio/recording/${recordingSid}?token=${token}`;
+  },
+
+  // Get recording stream with proper authorization headers
+  getRecordingStreamWithAuth: async (recordingSid: string) => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/twilio/recording/${recordingSid}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'audio/wav'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch recording: ${response.status}`);
+    }
+    
+    const blob = await response.blob();
+    return URL.createObjectURL(blob);
   },
 
   // === LEGACY ENDPOINTS (for backward compatibility) ===

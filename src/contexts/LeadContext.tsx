@@ -10,7 +10,7 @@ const initialFilters: Filters = {
 };
 
 // API Configuration - Updated for local development
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 
 // Helper function to get auth headers
 const getAuthHeaders = () => {
@@ -91,7 +91,7 @@ const transformLeadForAPI = (lead: Lead, fieldsToUpdate?: string[]) => {
 // API call to fetch leads with pagination support
 const fetchLeadsAPI = async (): Promise<Lead[]> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/leads`, {
+    const response = await fetch(`/api/leads`, {
       method: "GET",
       headers: getAuthHeaders(),
     });
@@ -150,7 +150,7 @@ const fetchLeadsAPI = async (): Promise<Lead[]> => {
 const updateLeadAPI = async (lead: Lead, fieldsToUpdate?: string[]) => {
   try {
     const leadData = transformLeadForAPI(lead, fieldsToUpdate);
-    const response = await fetch(`${API_BASE_URL}/leads/${lead.id}`, {
+    const response = await fetch(`/api/leads/${lead.id}`, {
       method: "PUT", // Laravel API uses PUT for updates
       headers: getAuthHeaders(),
       body: JSON.stringify(leadData),
@@ -192,7 +192,7 @@ const createLeadAPI = async (leadData: Partial<Lead>) => {
       contacted: leadData.contacted || false,
     };
 
-    const response = await fetch(`${API_BASE_URL}/leads`, {
+    const response = await fetch(`/api/leads`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify(requestBody),
@@ -222,7 +222,7 @@ const createLeadAPI = async (leadData: Partial<Lead>) => {
 // API call to delete a lead
 const deleteLeadAPI = async (leadId: string) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/leads/${leadId}`, {
+    const response = await fetch(`/api/leads/${leadId}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
     });
@@ -358,7 +358,7 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       // Update API first - send the contacted field with proper boolean value
-      const response = await fetch(`${API_BASE_URL}/leads/${id}`, {
+      const response = await fetch(`/api/leads/${id}`, {
         method: "PUT",
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -412,7 +412,7 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
 
       // Update lead contacted status via API
-      const response = await fetch(`${API_BASE_URL}/leads/${leadId}`, {
+      const response = await fetch(`/api/leads/${leadId}`, {
         method: "PUT",
         headers: getAuthHeaders(),
         body: JSON.stringify({
