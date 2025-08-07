@@ -289,8 +289,17 @@ export const UserPhoneNumbersProvider: React.FC<{ children: ReactNode }> = ({ ch
     }): Promise<TwilioCall> => {
         if (!isAuthenticated || !user) throw new Error('User must be authenticated');
 
-        // Verify user owns the "from" number
-        const ownedNumber = phoneNumbers.find(num => num.number === data.from);
+        console.log('makeCall called with data:', data);
+        console.log('Available phone numbers:', phoneNumbers);
+
+        // Verify user owns the "from" number - check both number and phone_number fields
+        const ownedNumber = phoneNumbers.find(num => 
+            num.number === data.from || 
+            num.phone_number === data.from
+        );
+        
+        console.log('Found owned number:', ownedNumber);
+        
         if (!ownedNumber) {
             throw new Error('You can only make calls from phone numbers you own');
         }
@@ -302,14 +311,32 @@ export const UserPhoneNumbersProvider: React.FC<{ children: ReactNode }> = ({ ch
         setLoading(true);
         setError(null);
         try {
+            console.log('Making API call to twilioApi.makeCall');
             const response = await twilioApi.makeCall(data);
-            const newCall = response.call;
+            console.log('API response:', response);
+            
+            // Handle the actual API response structure where callSid is at root level
+            const newCall: TwilioCall = {
+                id: response.callSid || 'temp-' + Date.now(), // Use callSid as id, fallback to timestamp
+                callSid: response.callSid,
+                call_sid: response.callSid, // Backend compatibility
+                from: response.from,
+                to: response.to,
+                direction: 'outbound-api',
+                status: response.status || 'queued',
+                duration: 0,
+                startTime: new Date(),
+                createdAt: new Date(),
+                updatedAt: new Date()
+            };
+            console.log('New call object:', newCall);
 
             // Add to local state
             setCalls(prev => [newCall, ...prev]);
 
             return newCall;
         } catch (err) {
+            console.error('Error in makeCall:', err);
             const errorMessage = err instanceof Error ? err.message : 'Failed to make call';
             setError(errorMessage);
             throw err;

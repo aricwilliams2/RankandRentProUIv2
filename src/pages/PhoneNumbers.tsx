@@ -256,13 +256,44 @@ export default function PhoneNumbers() {
 
     try {
       const result = await makeCallMutation.mutateAsync(callData);
-      setSnackbar({
-        open: true,
-        message: `Call initiated! Call SID: ${result.callSid}`,
-        severity: 'success',
-      });
+      
+      // Debug logging to help identify the response structure
+      console.log('Make call result:', result);
+      
+      // Check if result is undefined or null
+      if (!result) {
+        console.warn('Make call returned undefined result');
+        setSnackbar({
+          open: true,
+          message: 'Call initiated successfully!',
+          severity: 'success',
+        });
+        handleCallInterfaceClose();
+        return;
+      }
+      
+      // Handle different possible property names for callSid
+      const callSid = result.callSid || result.call_sid || result.id || 'Unknown';
+      
+      // Check if we have a valid call object
+      if (result && (result.callSid || result.call_sid || result.id)) {
+        setSnackbar({
+          open: true,
+          message: `Call initiated! Call SID: ${callSid}`,
+          severity: 'success',
+        });
+      } else {
+        // If no callSid found, still show success but with a generic message
+        setSnackbar({
+          open: true,
+          message: 'Call initiated successfully!',
+          severity: 'success',
+        });
+      }
+      
       handleCallInterfaceClose();
     } catch (error) {
+      console.error('Make call error:', error);
       setSnackbar({
         open: true,
         message: `Failed to initiate call: ${error instanceof Error ? error.message : 'Unknown error'}`,
