@@ -599,7 +599,6 @@ export interface UserPhoneNumbersContextType {
   releasePhoneNumber: (id: string) => Promise<void>;
   
   // Calling functionality
-  makeCall: (data: { to: string; from: string; record?: boolean; websiteId?: string }) => Promise<TwilioCall>;
   getCallHistory: (params?: { phoneNumberId?: string; limit?: number; page?: number }) => Promise<void>;
   getCallDetails: (callSid: string) => Promise<TwilioCall>;
   

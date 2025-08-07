@@ -21,6 +21,29 @@ apiClient.interceptors.request.use((config) => {
 
 // Multi-user Twilio API endpoints
 export const twilioApi = {
+  // === AUTHENTICATION ===
+  
+  // Get Twilio Voice SDK access token
+  getAccessToken: async () => {
+    console.log('Making request to:', `${API_BASE_URL}/twilio/access-token`);
+    const token = localStorage.getItem('token');
+    console.log('Using auth token:', token ? 'Present' : 'Missing');
+    
+    try {
+      const response = await apiClient.get('/twilio/access-token');
+      console.log('API response status:', response.status);
+      console.log('API response data:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('API request failed:', error);
+      if (error.response) {
+        console.error('Response status:', error.response.status);
+        console.error('Response data:', error.response.data);
+      }
+      throw error;
+    }
+  },
+
   // === PHONE NUMBER MANAGEMENT ===
   
   // Get user's phone numbers
@@ -65,18 +88,7 @@ export const twilioApi = {
     return response.data;
   },
 
-  // === CALLING FUNCTIONALITY ===
 
-  // Make a call using user's phone number
-  makeCall: async (data: {
-    to: string;
-    from: string; // Must be user's owned number
-    record?: boolean;
-    websiteId?: string;
-  }) => {
-    const response = await apiClient.post('/twilio/call', data);
-    return response.data;
-  },
 
   // Get user's call history
   getCallLogs: async (params: {

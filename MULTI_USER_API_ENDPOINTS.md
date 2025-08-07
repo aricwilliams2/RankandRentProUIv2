@@ -9,6 +9,19 @@ All endpoints require authentication via Bearer token in the Authorization heade
 Authorization: Bearer <jwt_token>
 ```
 
+### GET /api/twilio/access-token
+Get Twilio Voice SDK access token for browser-based calling
+
+**Response:**
+```json
+{
+  "success": true,
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+**Note:** This token is required for browser-based calling using the Twilio Voice SDK.
+
 ## 📞 Phone Number Management
 
 ### GET /api/twilio/my-numbers
@@ -141,48 +154,7 @@ Release a phone number
 }
 ```
 
-## 📞 Calling Functionality
-
-### POST /api/twilio/call
-Make a call using user's phone number
-
-**Request Body:**
-```json
-{
-  "to": "+14155559876",
-  "from": "+14155551234",  // Must be user's owned number
-  "record": true,
-  "websiteId": "456"  // optional
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "call": {
-    "id": "1",
-    "callSid": "CA1234567890abcdef",
-    "userId": "123",
-    "phoneNumberId": "1",
-    "to": "+14155559876",
-    "from": "+14155551234",
-    "direction": "outbound",
-    "status": "queued",
-    "duration": 0,
-    "price": null,
-    "priceUnit": "USD",
-    "recordingUrl": null,
-    "recordingSid": null,
-    "transcription": null,
-    "startTime": "2024-01-01T12:00:00Z",
-    "endTime": null,
-    "createdAt": "2024-01-01T12:00:00Z",
-    "updatedAt": "2024-01-01T12:00:00Z"
-  },
-  "message": "Call initiated successfully"
-}
-```
+## 📞 Call History & Recordings
 
 ### GET /api/twilio/call-logs
 Get user's call history

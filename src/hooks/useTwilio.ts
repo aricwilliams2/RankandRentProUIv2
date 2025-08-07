@@ -141,14 +141,7 @@ export const useTwilio = () => {
     };
   };
 
-  // Make call mutation (now uses context)
-  const useMakeCall = () => {
-    return {
-      mutateAsync: userPhoneNumbers.makeCall,
-      isPending: userPhoneNumbers.loading,
-      error: userPhoneNumbers.error ? new Error(userPhoneNumbers.error) : null
-    };
-  };
+
 
   // Delete recording mutation (now uses context)
   const useDeleteRecording = () => {
@@ -176,7 +169,6 @@ export const useTwilio = () => {
     useCallRecordings,
     usePhoneNumbers,
     useBuyNumber,
-    useMakeCall,
     useDeleteRecording,
     useDeletePhoneNumber,
   };

@@ -35,7 +35,6 @@ import {
   Phone,
   Plus,
   Trash2,
-  PhoneCall,
   PhoneMissed,
   Clock,
   DollarSign,
@@ -51,6 +50,7 @@ import { useTwilio } from '../hooks/useTwilio';
 import { useUserPhoneNumbers } from '../contexts/UserPhoneNumbersContext';
 import { useAuth } from '../contexts/AuthContext';
 import { RecordingPlayer } from '../components/RecordingPlayer';
+import BrowserCallComponent from '../components/BrowserCallComponent';
 
 // Mock data for websites - replace with actual API calls
 const mockWebsites: Website[] = [
@@ -115,18 +115,14 @@ export default function PhoneNumbers() {
   const [activeTab, setActiveTab] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [callHistoryOpen, setCallHistoryOpen] = useState(false);
-  const [callInterfaceOpen, setCallInterfaceOpen] = useState(false);
+
   const [recordingsOpen, setRecordingsOpen] = useState(false);
   const [selectedNumber, setSelectedNumber] = useState<PhoneNumber | null>(null);
   const [searchParams, setSearchParams] = useState({
     areaCode: '',
     country: 'US',
   });
-  const [callData, setCallData] = useState({
-    to: '',
-    from: '',
-    record: true,
-  });
+
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -159,7 +155,6 @@ export default function PhoneNumbers() {
 
   // Mutations
   const buyNumberMutation = useBuyNumber();
-  const makeCallMutation = useMakeCall();
   const deletePhoneNumberMutation = useDeletePhoneNumber();
 
   const handleDialogOpen = () => {
@@ -183,15 +178,7 @@ export default function PhoneNumbers() {
     setSelectedNumber(null);
   };
 
-  const handleCallInterfaceOpen = () => {
-    console.log('handleCallInterfaceOpen called');
-    setCallInterfaceOpen(true);
-  };
 
-  const handleCallInterfaceClose = () => {
-    setCallInterfaceOpen(false);
-    setCallData({ to: '', from: '', record: true });
-  };
 
   const handleRecordingsOpen = () => {
     console.log('handleRecordingsOpen called');
@@ -242,65 +229,7 @@ export default function PhoneNumbers() {
     }
   };
 
-  const handleMakeCall = async (e: React.FormEvent) => {
-    e.preventDefault();
 
-    if (!callData.to) {
-      setSnackbar({
-        open: true,
-        message: 'Please enter a phone number to call',
-        severity: 'error',
-      });
-      return;
-    }
-
-    try {
-      const result = await makeCallMutation.mutateAsync(callData);
-      
-      // Debug logging to help identify the response structure
-      console.log('Make call result:', result);
-      
-      // Check if result is undefined or null
-      if (!result) {
-        console.warn('Make call returned undefined result');
-        setSnackbar({
-          open: true,
-          message: 'Call initiated successfully!',
-          severity: 'success',
-        });
-        handleCallInterfaceClose();
-        return;
-      }
-      
-      // Handle different possible property names for callSid
-      const callSid = result.callSid || result.call_sid || result.id || 'Unknown';
-      
-      // Check if we have a valid call object
-      if (result && (result.callSid || result.call_sid || result.id)) {
-        setSnackbar({
-          open: true,
-          message: `Call initiated! Call SID: ${callSid}`,
-          severity: 'success',
-        });
-      } else {
-        // If no callSid found, still show success but with a generic message
-        setSnackbar({
-          open: true,
-          message: 'Call initiated successfully!',
-          severity: 'success',
-        });
-      }
-      
-      handleCallInterfaceClose();
-    } catch (error) {
-      console.error('Make call error:', error);
-      setSnackbar({
-        open: true,
-        message: `Failed to initiate call: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        severity: 'error',
-      });
-    }
-  };
 
   const handleDeletePhoneNumber = async (id: string) => {
     try {
@@ -324,7 +253,7 @@ export default function PhoneNumbers() {
   const getCallStatusIcon = (status: Call['status']) => {
     switch (status) {
       case 'completed':
-        return <PhoneCall size={16} color="green" />;
+        return <Phone size={16} color="green" />;
       case 'missed':
         return <PhoneMissed size={16} color="red" />;
       case 'voicemail':
@@ -404,14 +333,6 @@ export default function PhoneNumbers() {
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Button
             variant="outlined"
-            startIcon={<PhoneCall size={20} />}
-            onClick={handleCallInterfaceOpen}
-            disabled={userPhoneNumbers.phoneNumbers.length === 0}
-          >
-            Make Call
-          </Button>
-          <Button
-            variant="outlined"
             startIcon={<Volume2 size={20} />}
             onClick={handleRecordingsOpen}
           >
@@ -432,6 +353,7 @@ export default function PhoneNumbers() {
         <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)}>
           <Tab label="My Numbers" />
           <Tab label="Call History" />
+          <Tab label="Browser Call" />
         </Tabs>
       </Box>
 
@@ -548,7 +470,7 @@ export default function PhoneNumbers() {
                             <CardContent>
                               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                                 <Typography variant="body2" color="text.secondary">Total Calls</Typography>
-                                <PhoneCall size={16} />
+                                <Phone size={16} />
                               </Box>
                               <Typography variant="h6">{numberCalls.length}</Typography>
                             </CardContent>
@@ -617,7 +539,7 @@ export default function PhoneNumbers() {
           ) : callLogs.length === 0 ? (
             <Card>
               <CardContent sx={{ textAlign: 'center', py: 4 }}>
-                <PhoneCall size={48} color="#ccc" />
+                <Phone size={48} color="#ccc" />
                 <Typography variant="h6" color="text.secondary" sx={{ mt: 2 }}>
                   No call history yet
                 </Typography>
@@ -718,6 +640,20 @@ export default function PhoneNumbers() {
         </Box>
       )}
 
+      {/* Browser Call Tab */}
+      {activeTab === 2 && (
+        <Box>
+          <Typography variant="h6" sx={{ mb: 3 }}>
+            Browser-Based Calling
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Make calls directly from your browser using your microphone and speakers. 
+            This feature allows you to make calls without using your phone.
+          </Typography>
+          <BrowserCallComponent />
+        </Box>
+      )}
+
       {/* Purchase Number Dialog */}
       <Dialog
         open={dialogOpen}
@@ -809,96 +745,7 @@ export default function PhoneNumbers() {
         </DialogActions>
       </Dialog>
 
-      {/* Call Interface Dialog */}
-      <Dialog
-        open={callInterfaceOpen}
-        onClose={handleCallInterfaceClose}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <PhoneCall size={24} />
-            <Typography variant="h6">Make a Call</Typography>
-          </Box>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Call using one of your purchased phone numbers
-          </Typography>
-        </DialogTitle>
-        <DialogContent>
-          <Box component="form" onSubmit={handleMakeCall} sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField
-              fullWidth
-              label="To (Phone Number)"
-              type="tel"
-              value={callData.to}
-              onChange={(e) => setCallData({ ...callData, to: e.target.value })}
-              placeholder="+1234567890"
-              required
-              helperText="Enter the phone number you want to call"
-            />
 
-            <FormControl fullWidth required>
-              <InputLabel>From (Your Number)</InputLabel>
-              <Select
-                value={callData.from}
-                label="From (Your Number)"
-                onChange={(e) => setCallData({ ...callData, from: e.target.value })}
-              >
-                {userPhoneNumbers.phoneNumbers
-                  .filter(num => num.status === 'active')
-                  .map((number, index) => (
-                    <MenuItem key={number.id || `menu-${index}`} value={number.phone_number || number.number}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-                        <Phone size={16} />
-                        <Typography>{number.phone_number || number.number}</Typography>
-                        {number.friendly_name && (
-                          <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
-                            ({number.friendly_name})
-                          </Typography>
-                        )}
-                        <Chip
-                          size="small"
-                          label={number.capabilities?.voice ? 'Voice' : 'No Voice'}
-                          color={number.capabilities?.voice ? 'success' : 'default'}
-                          sx={{ ml: 'auto' }}
-                        />
-                      </Box>
-                    </MenuItem>
-                  ))}
-              </Select>
-              {userPhoneNumbers.phoneNumbers.filter(num => num.status === 'active').length === 0 && (
-                <Typography variant="caption" color="error" sx={{ mt: 1 }}>
-                  You need to purchase an active phone number to make calls
-                </Typography>
-              )}
-            </FormControl>
-
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <input
-                type="checkbox"
-                id="record-call"
-                checked={callData.record}
-                onChange={(e) => setCallData({ ...callData, record: e.target.checked })}
-              />
-              <label htmlFor="record-call">Record Call</label>
-              <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
-                (Additional charges apply)
-              </Typography>
-            </Box>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCallInterfaceClose}>Cancel</Button>
-          <Button
-            variant="contained"
-            onClick={handleMakeCall}
-            disabled={makeCallMutation.isPending || !callData.from || userPhoneNumbers.phoneNumbers.filter(num => num.status === 'active').length === 0}
-          >
-            {makeCallMutation.isPending ? 'Initiating Call...' : 'Make Call'}
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Recordings Dialog */}
       <Dialog
