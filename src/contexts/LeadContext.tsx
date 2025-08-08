@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, useContext, useMemo } from "react";
 import { Lead, LeadContextType, Filters, AreaData, SortField, SortDirection, CallLog } from "../types";
-import { useAuth } from "./AuthContext";
-import { createCallLogAPI, updateCallLogAPI, fetchCallLogsAPI, deleteCallLogAPI } from "../services/apiService";
+import { createCallLogAPI, updateCallLogAPI, fetchCallLogsAPI } from "../services/apiService";
+import { apiCall } from '../config/api';
 
 const LeadContext = createContext<LeadContextType | undefined>(undefined);
 
@@ -12,18 +12,7 @@ const initialFilters: Filters = {
 // API Configuration - Updated for local development
 
 
-// Helper function to get auth headers
-const getAuthHeaders = () => {
-  const token = localStorage.getItem("token");
-  // const user = localStorage.getItem("user");
-  // const userId = user ? JSON.parse(user).id : null;
 
-  return {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-    ...(token && { Authorization: `Bearer ${token}` }),
-  };
-};
 
 // Transform API lead data to frontend format
 const transformAPILeadToFrontend = (apiLead: any): Lead => {
@@ -91,10 +80,7 @@ const transformLeadForAPI = (lead: Lead, fieldsToUpdate?: string[]) => {
 // API call to fetch leads with pagination support
 const fetchLeadsAPI = async (): Promise<Lead[]> => {
   try {
-    const response = await fetch(`/api/leads`, {
-      method: "GET",
-      headers: getAuthHeaders(),
-    });
+    const response = await apiCall('/api/leads');
 
     if (!response.ok) {
       throw new Error(`API Error: ${response.status} ${response.statusText}`);
@@ -150,9 +136,8 @@ const fetchLeadsAPI = async (): Promise<Lead[]> => {
 const updateLeadAPI = async (lead: Lead, fieldsToUpdate?: string[]) => {
   try {
     const leadData = transformLeadForAPI(lead, fieldsToUpdate);
-    const response = await fetch(`/api/leads/${lead.id}`, {
+    const response = await apiCall(`/api/leads/${lead.id}`, {
       method: "PUT", // Laravel API uses PUT for updates
-      headers: getAuthHeaders(),
       body: JSON.stringify(leadData),
     });
 
@@ -192,9 +177,8 @@ const createLeadAPI = async (leadData: Partial<Lead>) => {
       contacted: leadData.contacted || false,
     };
 
-    const response = await fetch(`/api/leads`, {
+    const response = await apiCall('/api/leads', {
       method: "POST",
-      headers: getAuthHeaders(),
       body: JSON.stringify(requestBody),
     });
 
@@ -222,9 +206,8 @@ const createLeadAPI = async (leadData: Partial<Lead>) => {
 // API call to delete a lead
 const deleteLeadAPI = async (leadId: string) => {
   try {
-    const response = await fetch(`/api/leads/${leadId}`, {
+    const response = await apiCall(`/api/leads/${leadId}`, {
       method: "DELETE",
-      headers: getAuthHeaders(),
     });
 
     if (!response.ok) {
@@ -358,9 +341,8 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       // Update API first - send the contacted field with proper boolean value
-      const response = await fetch(`/api/leads/${id}`, {
+      const response = await apiCall(`/api/leads/${id}`, {
         method: "PUT",
-        headers: getAuthHeaders(),
         body: JSON.stringify({
           contacted: updatedLead.contacted
         }),
@@ -412,9 +394,8 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
 
       // Update lead contacted status via API
-      const response = await fetch(`/api/leads/${leadId}`, {
+      const response = await apiCall(`/api/leads/${leadId}`, {
         method: "PUT",
-        headers: getAuthHeaders(),
         body: JSON.stringify({
           contacted: true
         }),

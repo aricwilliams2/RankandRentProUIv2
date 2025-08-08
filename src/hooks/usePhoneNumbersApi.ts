@@ -1,5 +1,7 @@
 import { useState, useCallback } from 'react';
 import type { PhoneNumber } from '../types';
+import { apiCall } from '../config/api';
+
 
 interface Call {
   id: string;
@@ -21,7 +23,7 @@ export const usePhoneNumbersApi = () => {
     setError(null);
     
     try {
-      const response = await fetch('/phone-numbers');
+      const response = await apiCall('/api/phone-numbers');
       const data = await response.json();
       return data.map((number: any) => ({
         ...number,
@@ -44,11 +46,8 @@ export const usePhoneNumbersApi = () => {
     setError(null);
     
     try {
-      const response = await fetch('/phone-numbers', {
+      const response = await apiCall('/api/phone-numbers', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ websiteId, provider }),
       });
       const data = await response.json();
@@ -70,7 +69,7 @@ export const usePhoneNumbersApi = () => {
     setError(null);
     
     try {
-      await fetch(`/phone-numbers/${id}`, {
+      await apiCall(`/api/phone-numbers/${id}`, {
         method: 'DELETE',
       });
       return true;
@@ -87,7 +86,7 @@ export const usePhoneNumbersApi = () => {
     setError(null);
     
     try {
-      const response = await fetch(`/phone-numbers/${phoneNumberId}/calls`);
+      const response = await apiCall(`/api/phone-numbers/${phoneNumberId}/calls`);
       const data = await response.json();
       return data.map((call: any) => ({
         ...call,

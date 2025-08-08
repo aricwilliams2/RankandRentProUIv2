@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -16,7 +17,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   useTheme,
   TextField,
   InputAdornment,
@@ -29,8 +29,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  BarChart,
-  Bar,
   PieChart,
   Pie,
   Cell,
@@ -41,7 +39,6 @@ import {
   DollarSign,
   Search,
   MapPin,
-  ArrowLeft,
   Calendar,
   Target,
   Activity,
@@ -76,6 +73,8 @@ interface TrafficData {
 
 
 
+import { apiCall } from '../config/api';
+
 export default function Analytics() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -85,10 +84,7 @@ export default function Analytics() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [websiteInput, setWebsiteInput] = useState('');
-  const [showSerpResults, setShowSerpResults] = useState(false);
-  const [serpData, setSerpData] = useState<any>(null);
-  const [currentKeyword, setCurrentKeyword] = useState('');
-  const [currentTraffic, setCurrentTraffic] = useState(0);
+
 
   // Get domain from location state or URL params
   const domain = location.state?.domain || new URLSearchParams(location.search).get('domain');
@@ -121,7 +117,7 @@ export default function Analytics() {
     setError(null);
 
     try {
-      const response = await fetch(`/api/website-traffic?url=${encodeURIComponent(domain)}&mode=subdomains`);
+      const response = await apiCall(`/api/website-traffic?url=${encodeURIComponent(domain)}&mode=subdomains`);
 
       if (!response.ok) {
         throw new Error(`API Error: ${response.status} ${response.statusText}`);
@@ -479,9 +475,9 @@ export default function Analytics() {
                     />
                     <Tooltip
                       formatter={(value, name) => [value, 'Organic Traffic']}
-                      labelFormatter={(label, payload) => {
-                        const item = payload?.[0]?.payload;
-                        return item ? item.fullDate : label;
+                      labelFormatter={(label: string) => {
+                        const chartItem = chartData.find(item => item.month === label);
+                        return chartItem ? chartItem.fullDate : label;
                       }}
                     />
                     <Line

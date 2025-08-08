@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { Client, Communication } from '../types';
+import { apiCall } from '../config/api';
 
 export const useClientsApi = () => {
   const [loading, setLoading] = useState(false);
@@ -10,7 +11,7 @@ export const useClientsApi = () => {
     setError(null);
     
     try {
-      const response = await fetch('/api/clients');
+      const response = await apiCall('/api/clients');
       const data = await response.json();
       return data;
     } catch (err) {
@@ -26,7 +27,7 @@ export const useClientsApi = () => {
     setError(null);
     
     try {
-      const response = await fetch(`/api/clients/${id}`);
+      const response = await apiCall(`/api/clients/${id}`);
       const data = await response.json();
       return data;
     } catch (err) {
@@ -42,11 +43,8 @@ export const useClientsApi = () => {
     setError(null);
     
     try {
-      const response = await fetch('/api/clients', {
+      const response = await apiCall('/api/clients', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(client),
       });
       const data = await response.json();
@@ -64,11 +62,8 @@ export const useClientsApi = () => {
     setError(null);
     
     try {
-      const response = await fetch(`/api/clients/${id}`, {
+      const response = await apiCall(`/api/clients/${id}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(client),
       });
       const data = await response.json();
@@ -86,7 +81,7 @@ export const useClientsApi = () => {
     setError(null);
     
     try {
-      await fetch(`/api/clients/${id}`, {
+      await apiCall(`/api/clients/${id}`, {
         method: 'DELETE',
       });
       return true;
@@ -103,7 +98,7 @@ export const useClientsApi = () => {
     setError(null);
     
     try {
-      const response = await fetch(`/api/clients/${clientId}/communication`);
+      const response = await apiCall(`/api/clients/${clientId}/communication`);
       const data = await response.json();
       return data;
     } catch (err) {
@@ -122,11 +117,8 @@ export const useClientsApi = () => {
     setError(null);
     
     try {
-      const response = await fetch(`/api/clients/${clientId}/communication`, {
+      const response = await apiCall(`/api/clients/${clientId}/communication`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(communication),
       });
       const data = await response.json();

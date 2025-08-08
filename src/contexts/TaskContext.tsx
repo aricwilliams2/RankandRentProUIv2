@@ -1,22 +1,11 @@
 import React, { createContext, useState, useEffect, useContext, useCallback } from "react";
 import { Task, TaskContextType } from "../types";
+import { apiCall } from '../config/api';
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
 
 
-// Helper function to get auth headers
-const getAuthHeaders = () => {
-  const token = localStorage.getItem("token");
-  const user = localStorage.getItem("user");
-  const userId = user ? JSON.parse(user).id : null;
 
-  return {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-    ...(token && { Authorization: `Bearer ${token}` }),
-    ...(userId && { "X-User-ID": userId }),
-  };
-};
 
 // Transform frontend camelCase to API snake_case
 const transformTaskForAPI = (task: Partial<Task>) => {
@@ -34,9 +23,7 @@ const transformTaskForAPI = (task: Partial<Task>) => {
 };
 
 const fetchTasksAPI = async (): Promise<Task[]> => {
-  const response = await fetch(`/api/tasks`, {
-    headers: getAuthHeaders(),
-  });
+  const response = await apiCall('/api/tasks');
   const json = await response.json();
   return json.data.map((task: any) => ({
     id: String(task.id),
@@ -54,9 +41,8 @@ const fetchTasksAPI = async (): Promise<Task[]> => {
 
 const createTaskAPI = async (task: Partial<Task>): Promise<Task> => {
   const apiTask = transformTaskForAPI(task);
-  const response = await fetch(`/api/tasks`, {
+  const response = await apiCall('/api/tasks', {
     method: "POST",
-    headers: getAuthHeaders(),
     body: JSON.stringify(apiTask),
   });
   const created = await response.json();
@@ -76,9 +62,8 @@ const createTaskAPI = async (task: Partial<Task>): Promise<Task> => {
 
 const updateTaskAPI = async (id: string, updates: Partial<Task>): Promise<Task> => {
   const apiUpdates = transformTaskForAPI(updates);
-  const response = await fetch(`/api/tasks/${id}`, {
+  const response = await apiCall(`/api/tasks/${id}`, {
     method: "PUT",
-    headers: getAuthHeaders(),
     body: JSON.stringify(apiUpdates),
   });
   const updated = await response.json();
@@ -97,9 +82,8 @@ const updateTaskAPI = async (id: string, updates: Partial<Task>): Promise<Task> 
 };
 
 const deleteTaskAPI = async (id: string) => {
-  await fetch(`/api/tasks/${id}`, {
+  await apiCall(`/api/tasks/${id}`, {
     method: "DELETE",
-    headers: getAuthHeaders(),
   });
 };
 

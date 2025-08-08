@@ -83,7 +83,7 @@ export default function LoginPage() {
         // 1. Register the user
 
         // 2. Create Stripe Checkout Session
-        const stripeRes = await fetch("https://newrankandrentapi.onrender.com/stripe/create-checkout-session", {
+        const stripeRes = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://newrankandrentapi.onrender.com'}/stripe/create-checkout-session`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

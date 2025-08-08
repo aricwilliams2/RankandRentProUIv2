@@ -1,28 +1,14 @@
 import React, { createContext, useState, useEffect, useContext, useMemo, useCallback } from "react";
 import { Client, ClientContextType, SortField, SortDirection } from "../types";
-import { useAuth } from "./AuthContext";
+import { apiCall } from '../config/api';
 
 const ClientContext = createContext<ClientContextType | undefined>(undefined);
 
 
-// Helper function to get auth headers
-const getAuthHeaders = () => {
-  const token = localStorage.getItem("token");
-  const user = localStorage.getItem("user");
-  const userId = user ? JSON.parse(user).id : null;
 
-  return {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-    ...(token && { Authorization: `Bearer ${token}` }),
-    ...(userId && { "X-User-ID": userId }),
-  };
-};
 
 const fetchClientsAPI = async (): Promise<Client[]> => {
-  const response = await fetch(`/api/clients`, {
-    headers: getAuthHeaders(),
-  });
+  const response = await apiCall('/api/clients');
   const json = await response.json();
   return json.data.map((client: any) => ({
     ...client,
@@ -57,9 +43,8 @@ const updateClientAPI = async (client: Client, fieldsToUpdate?: string[]): Promi
     Object.assign(data, filteredData);
   }
 
-  const response = await fetch(`/api/clients/${client.id}`, {
+  const response = await apiCall(`/api/clients/${client.id}`, {
     method: "PUT",
-    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
 
@@ -89,9 +74,8 @@ const createClientAPI = async (clientData: Partial<Client>): Promise<Client> => 
     notes: clientData.notes || null,
   };
 
-  const response = await fetch(`/api/clients`, {
+  const response = await apiCall('/api/clients', {
     method: "POST",
-    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
   const client = await response.json();
@@ -105,9 +89,8 @@ const createClientAPI = async (clientData: Partial<Client>): Promise<Client> => 
 };
 
 const deleteClientAPI = async (id: string) => {
-  await fetch(`/api/clients/${id}`, {
+  await apiCall(`/api/clients/${id}`, {
     method: "DELETE",
-    headers: getAuthHeaders(),
   });
 };
 

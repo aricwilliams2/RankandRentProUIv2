@@ -1,5 +1,7 @@
 import { useState, useCallback } from 'react';
 import type { Task } from '../types';
+import { apiCall } from '../config/api';
+
 
 interface DashboardStats {
   totalRevenue: number;
@@ -30,7 +32,7 @@ export const useDashboardApi = () => {
     setError(null);
     
     try {
-      const response = await fetch('/api/dashboard/stats');
+      const response = await apiCall('/api/dashboard/stats');
       const data = await response.json();
       return data;
     } catch (err) {
@@ -46,7 +48,7 @@ export const useDashboardApi = () => {
     setError(null);
     
     try {
-      const response = await fetch('/api/dashboard/activity');
+      const response = await apiCall('/api/dashboard/activity');
       const data = await response.json();
       return data.map((activity: any) => ({
         ...activity,
@@ -65,10 +67,8 @@ export const useDashboardApi = () => {
     setError(null);
     
     try {
-      const url = status 
-        ? `/api/tasks?status=${status}` 
-        : '/api/tasks';
-      const response = await fetch(url);
+      const url = status ? `/api/tasks?status=${status}` : '/api/tasks';
+      const response = await apiCall(url);
       const data = await response.json();
       
       // Convert string dates to Date objects
@@ -94,11 +94,8 @@ export const useDashboardApi = () => {
       const method = task.id ? 'PATCH' : 'POST';
       const url = task.id ? `/api/tasks/${task.id}` : '/api/tasks';
       
-      const response = await fetch(url, {
+      const response = await apiCall(url, {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(task),
       });
       const data = await response.json();
@@ -123,7 +120,7 @@ export const useDashboardApi = () => {
     setError(null);
     
     try {
-      await fetch(`/api/tasks/${id}`, {
+      await apiCall(`/api/tasks/${id}`, {
         method: 'DELETE',
       });
       return true;

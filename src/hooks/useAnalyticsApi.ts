@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
-import type { Website, SEOMetrics, KeywordData, TrafficInsights, UrlMetrics, KeywordMetrics, KeywordGenerator } from "../types";
+import type { SEOMetrics, KeywordData, TrafficInsights, UrlMetrics, KeywordMetrics, KeywordGenerator } from "../types";
+import { apiCall } from '../config/api';
 
 export const useAnalyticsApi = () => {
   const [loading, setLoading] = useState(false);
@@ -10,7 +11,7 @@ export const useAnalyticsApi = () => {
     setError(null);
 
     try {
-      const response = await fetch(`/api/analytics/websites/${websiteId}`);
+      const response = await apiCall(`/api/analytics/websites/${websiteId}`);
       const data = await response.json();
       return data;
     } catch (err) {
@@ -26,7 +27,7 @@ export const useAnalyticsApi = () => {
     setError(null);
 
     try {
-      const response = await fetch(`/api/analytics/websites/${websiteId}/backlinks`);
+      const response = await apiCall(`/api/analytics/websites/${websiteId}/backlinks`);
       const data = await response.json();
       return data;
     } catch (err) {
@@ -42,7 +43,7 @@ export const useAnalyticsApi = () => {
     setError(null);
 
     try {
-      const response = await fetch(`/api/analytics/websites/${websiteId}/keywords`);
+      const response = await apiCall(`/api/analytics/websites/${websiteId}/keywords`);
       const data = await response.json();
       return data;
     } catch (err) {
@@ -58,7 +59,7 @@ export const useAnalyticsApi = () => {
     setError(null);
 
     try {
-      const response = await fetch(`/api/analytics/websites/${websiteId}/traffic`);
+      const response = await apiCall(`/api/analytics/websites/${websiteId}/traffic`);
       const data = await response.json();
       return data;
     } catch (err) {
@@ -74,7 +75,7 @@ export const useAnalyticsApi = () => {
     setError(null);
 
     try {
-      const response = await fetch(`/api/analytics/websites/${websiteId}/refresh`, {
+      const response = await apiCall(`/api/analytics/websites/${websiteId}/refresh`, {
         method: "POST",
       });
 
@@ -96,7 +97,7 @@ export const useAnalyticsApi = () => {
     setError(null);
 
     try {
-      const response = await fetch(`/api/url-metrics?url=${encodeURIComponent(url)}`);
+      const response = await apiCall(`/api/url-metrics?url=${encodeURIComponent(url)}`);
 
       if (!response.ok) {
         throw new Error("Failed to fetch URL metrics");
@@ -117,7 +118,7 @@ export const useAnalyticsApi = () => {
     setError(null);
 
     try {
-      const response = await fetch(`/api/keyword-metrics?keyword=${encodeURIComponent(keyword)}&country=${country}`);
+      const response = await apiCall(`/api/keyword-metrics?keyword=${encodeURIComponent(keyword)}&country=${country}`);
 
       if (!response.ok) {
         throw new Error("Failed to fetch keyword metrics");
@@ -138,7 +139,7 @@ export const useAnalyticsApi = () => {
     setError(null);
 
     try {
-      const response = await fetch(`/api/keyword-generator?keyword=${encodeURIComponent(keyword)}&country=${country}`);
+      const response = await apiCall(`/api/keyword-generator?keyword=${encodeURIComponent(keyword)}&country=${country}`);
 
       if (!response.ok) {
         throw new Error("Failed to fetch keyword ideas");
@@ -159,7 +160,7 @@ export const useAnalyticsApi = () => {
     setError(null);
 
     try {
-      const response = await fetch(`/api/google-rank-check?keyword=${encodeURIComponent(keyword)}&url=${encodeURIComponent(url)}&country=${country}&id=google-serp`);
+      const response = await apiCall(`/api/google-rank-check?keyword=${encodeURIComponent(keyword)}&url=${encodeURIComponent(url)}&country=${country}&id=google-serp`);
 
       if (!response.ok) {
         throw new Error("Failed to check Google ranking");

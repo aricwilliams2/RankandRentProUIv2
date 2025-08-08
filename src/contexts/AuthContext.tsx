@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+
 import { User, AuthContextType } from "../types";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,7 +43,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setError(null);
 
     try {
-      const response = await fetch(`/api/auth/login`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://newrankandrentapi.onrender.com'}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -78,7 +79,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setError(null);
 
     try {
-      const response = await fetch(`/api/auth/register`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://newrankandrentapi.onrender.com'}/api/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

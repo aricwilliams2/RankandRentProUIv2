@@ -1,4 +1,5 @@
 import type { MarketResearch, CompetitorAnalysis, KeywordOpportunity, ActivityResponse } from '../types';
+import { apiCall } from '../config/api';
 
 // Define interfaces for API responses
 interface SerpResponse {
@@ -70,23 +71,20 @@ interface CompetitorResponse {
   total_items: number;
 }
 
-// Mock API functions for demonstration - in production, these would be actual API calls
 export const fetchSerpData = async (keyword: string): Promise<SerpResponse> => {
-  // In a real implementation, this would make an actual API call
-  // For demo purposes, we'll return the data from the provided JSON
-  const response = await fetch('/api/serp?keyword=' + encodeURIComponent(keyword));
+  const response = await apiCall(`/api/serp?keyword=${encodeURIComponent(keyword)}`);
   return await response.json();
 };
 
 export const fetchTrafficData = async (domain: string): Promise<TrafficResponse> => {
   // In a real implementation, this would make an actual API call
-  const response = await fetch('/api/traffic?domain=' + encodeURIComponent(domain));
+  const response = await apiCall(`/api/traffic?domain=${encodeURIComponent(domain)}`);
   return await response.json();
 };
 
 export const fetchCompetitorData = async (domain: string): Promise<CompetitorResponse> => {
   // In a real implementation, this would make an actual API call
-  const response = await fetch('/api/competitors?domain=' + encodeURIComponent(domain));
+  const response = await apiCall(`/api/competitors?domain=${encodeURIComponent(domain)}`);
   return await response.json();
 };
 
@@ -273,7 +271,7 @@ export const analyzeDomainStatistics = (data: CompetitorResponse) => {
 // Function to fetch recent activity
 export const fetchRecentActivity = async (limit: number = 10): Promise<ActivityResponse> => {
   try {
-    const response = await fetch(`/api/dashboard/activity?limit=${limit}`);
+    const response = await apiCall(`/api/dashboard/activity?limit=${limit}`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -292,14 +290,8 @@ export const createCallLogAPI = async (leadId: string, callLogData: {
   duration?: number;
 }) => {
   try {
-    const token = localStorage.getItem("token");
-    const response = await fetch(`/api/call-logs`, {
+    const response = await apiCall('/api/call-logs', {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
       body: JSON.stringify({
         lead_id: leadId,
         outcome: callLogData.outcome,
@@ -329,14 +321,8 @@ export const updateCallLogAPI = async (callLogId: string, updateData: {
   nextFollowUp?: string;
 }) => {
   try {
-    const token = localStorage.getItem("token");
-    const response = await fetch(`/api/call-logs/${callLogId}`, {
+    const response = await apiCall(`/api/call-logs/${callLogId}`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
       body: JSON.stringify({
         outcome: updateData.outcome,
         notes: updateData.notes,
@@ -360,15 +346,7 @@ export const updateCallLogAPI = async (callLogId: string, updateData: {
 
 export const fetchCallLogsAPI = async (leadId: string) => {
   try {
-    const token = localStorage.getItem("token");
-    const response = await fetch(`/api/leads/${leadId}/call-logs`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
-    });
+    const response = await apiCall(`/api/leads/${leadId}/call-logs`);
 
     if (!response.ok) {
       const errorData = await response.json();
@@ -386,14 +364,8 @@ export const fetchCallLogsAPI = async (leadId: string) => {
 
 export const deleteCallLogAPI = async (callLogId: string) => {
   try {
-    const token = localStorage.getItem("token");
-    const response = await fetch(`/api/call-logs/${callLogId}`, {
+    const response = await apiCall(`/api/call-logs/${callLogId}`, {
       method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
     });
 
     if (!response.ok) {

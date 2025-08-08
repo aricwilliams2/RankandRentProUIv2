@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useContext, useCallback } from "react";
 import { Website, WebsiteContextType } from "../types";
+import { apiCall } from '../config/api';
 
 const WebsiteContext = createContext<WebsiteContextType | undefined>(undefined);
 
@@ -23,19 +24,7 @@ const stripDomain = (input: string): string => {
   return domain.trim();
 };
 
-// Helper function to get auth headers
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
-  const user = localStorage.getItem('user');
-  const userId = user ? JSON.parse(user).id : null;
 
-  return {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-    ...(token && { 'Authorization': `Bearer ${token}` }),
-    ...(userId && { 'X-User-ID': userId }),
-  };
-};
 
 // Convert frontend camelCase to backend snake_case
 const transformWebsiteForAPI = (website: Partial<Website>) => {
@@ -61,9 +50,7 @@ const transformWebsiteForAPI = (website: Partial<Website>) => {
 };
 
 const fetchWebsitesAPI = async (): Promise<Website[]> => {
-  const response = await fetch(`/api/websites`, {
-    headers: getAuthHeaders(),
-  });
+  const response = await apiCall('/api/websites');
   const json = await response.json();
 
   // Handle different response structures
@@ -112,9 +99,8 @@ const createWebsiteAPI = async (website: Partial<Website>): Promise<Website> => 
     niche: website.niche
   };
 
-  const response = await fetch(`/api/websites`, {
+  const response = await apiCall('/api/websites', {
     method: "POST",
-    headers: getAuthHeaders(),
     body: JSON.stringify(requestBody),
   });
 
@@ -150,9 +136,8 @@ const createWebsiteAPI = async (website: Partial<Website>): Promise<Website> => 
 };
 
 const updateWebsiteAPI = async (id: string, updates: Partial<Website>): Promise<Website> => {
-  const response = await fetch(`/api/websites/${id}`, {
+  const response = await apiCall(`/api/websites/${id}`, {
     method: "PUT",
-    headers: getAuthHeaders(),
     body: JSON.stringify(transformWebsiteForAPI(updates)),
   });
   const json = await response.json();
@@ -183,9 +168,8 @@ const updateWebsiteAPI = async (id: string, updates: Partial<Website>): Promise<
 };
 
 const deleteWebsiteAPI = async (id: string) => {
-  await fetch(`/api/websites/${id}`, {
+  await apiCall(`/api/websites/${id}`, {
     method: "DELETE",
-    headers: getAuthHeaders(),
   });
 };
 

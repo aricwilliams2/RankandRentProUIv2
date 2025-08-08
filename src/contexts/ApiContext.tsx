@@ -6,6 +6,7 @@ import { useRevenueApi } from '../hooks/useRevenueApi';
 import { useDashboardApi } from '../hooks/useDashboardApi';
 import { usePhoneNumbersApi } from '../hooks/usePhoneNumbersApi';
 import { useAnalyticsApi } from '../hooks/useAnalyticsApi';
+import { apiCall } from '../config/api';
 import type {
   MarketResearch,
   CompetitorInsights,
@@ -19,11 +20,11 @@ import type {
   PhoneNumber,
   Task,
   SEOMetrics,
-  Backlink,
   KeywordData,
   UrlMetrics,
   KeywordMetrics,
-  KeywordGenerator
+  KeywordGenerator,
+  GoogleRankCheck
 } from '../types';
 
 interface ApiContextType {
@@ -82,7 +83,7 @@ interface ApiContextType {
 
   // Analytics methods
   getWebsiteAnalytics: (websiteId: string) => Promise<SEOMetrics | null>;
-  getWebsiteBacklinks: (websiteId: string) => Promise<Backlink[]>;
+  getWebsiteBacklinks: (websiteId: string) => Promise<any[]>;
   getKeywordRankings: (websiteId: string) => Promise<KeywordData[]>;
   refreshAnalytics: (websiteId: string) => Promise<boolean>;
 
@@ -208,33 +209,33 @@ export const ApiProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [dashboardApi]);
 
   // Initialize data
-  React.useEffect(() => {
-    const loadInitialData = async () => {
-      try {
-        // Load research data if needed
-        const researchResponse = await fetch('/research');
-        const researchData = await researchResponse.json();
-        setResearch(researchData);
+  // React.useEffect(() => {
+  //   const loadInitialData = async () => {
+  //     try {
+  //       // Load research data if needed
+  //       const researchResponse = await apiCall('/api/research');
+  //       const researchData = await researchResponse.json();
+  //       setResearch(researchData);
 
-        // Load websites
-        getWebsites();
+  //       // Load websites
+  //       getWebsites();
 
-        // Load clients
-        getClients();
+  //       // Load clients
+  //       getClients();
 
-        // Load invoices
-        const invoicesResult = await revenueApi.getInvoices();
-        setInvoices(invoicesResult);
+  //       // Load invoices
+  //       const invoicesResult = await revenueApi.getInvoices();
+  //       setInvoices(invoicesResult);
 
-        // Load tasks
-        getTasks();
-      } catch (err) {
-        console.error('Error loading initial data:', err);
-      }
-    };
+  //       // Load tasks
+  //       getTasks();
+  //     } catch (err) {
+  //       console.error('Error loading initial data:', err);
+  //     }
+  //   };
 
-    loadInitialData();
-  }, [getWebsites, getClients, revenueApi, getTasks]);
+  //   loadInitialData();
+  // }, [getWebsites, getClients, revenueApi, getTasks]);
 
   return (
     <ApiContext.Provider

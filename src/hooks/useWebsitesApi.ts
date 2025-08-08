@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { Website, Lead, PhoneNumber } from '../types';
+import { apiCall } from '../config/api';
 
 export const useWebsitesApi = () => {
   const [loading, setLoading] = useState(false);
@@ -10,7 +11,7 @@ export const useWebsitesApi = () => {
     setError(null);
     
     try {
-      const response = await fetch('/api/websites');
+      const response = await apiCall('/api/websites');
       const data = await response.json();
       return data;
     } catch (err) {
@@ -26,11 +27,8 @@ export const useWebsitesApi = () => {
     setError(null);
     
     try {
-      const response = await fetch('/api/websites', {
+      const response = await apiCall('/api/websites', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(website),
       });
       const data = await response.json();
@@ -48,11 +46,8 @@ export const useWebsitesApi = () => {
     setError(null);
     
     try {
-      const response = await fetch(`/api/websites/${id}`, {
+      const response = await apiCall(`/api/websites/${id}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(website),
       });
       const data = await response.json();
@@ -70,7 +65,7 @@ export const useWebsitesApi = () => {
     setError(null);
     
     try {
-      await fetch(`/api/websites/${id}`, {
+      await apiCall(`/api/websites/${id}`, {
         method: 'DELETE',
       });
       return true;
@@ -87,7 +82,7 @@ export const useWebsitesApi = () => {
     setError(null);
     
     try {
-      const response = await fetch(`/api/websites/${websiteId}/leads`);
+      const response = await apiCall(`/api/websites/${websiteId}/leads`);
       const data = await response.json();
       return data;
     } catch (err) {
@@ -103,7 +98,7 @@ export const useWebsitesApi = () => {
     setError(null);
     
     try {
-      const response = await fetch(`/api/websites/${websiteId}/phone-numbers`);
+      const response = await apiCall(`/api/websites/${websiteId}/phone-numbers`);
       const data = await response.json();
       return data;
     } catch (err) {
@@ -122,11 +117,8 @@ export const useWebsitesApi = () => {
     setError(null);
     
     try {
-      const response = await fetch(`/api/websites/${websiteId}/generate-content`, {
+      const response = await apiCall(`/api/websites/${websiteId}/generate-content`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(contentData),
       });
       

@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { Invoice, PricingRule } from '../types';
+import { apiCall } from '../config/api';
 
 export const useRevenueApi = () => {
   const [loading, setLoading] = useState(false);
@@ -10,7 +11,7 @@ export const useRevenueApi = () => {
     setError(null);
     
     try {
-      const response = await fetch('/api/invoices');
+      const response = await apiCall('/api/invoices');
       const data = await response.json();
       return data;
     } catch (err) {
@@ -26,7 +27,7 @@ export const useRevenueApi = () => {
     setError(null);
     
     try {
-      const response = await fetch(`/api/invoices/${id}`);
+      const response = await apiCall(`/api/invoices/${id}`);
       const data = await response.json();
       return data;
     } catch (err) {
@@ -42,11 +43,8 @@ export const useRevenueApi = () => {
     setError(null);
     
     try {
-      const response = await fetch('/api/invoices', {
+      const response = await apiCall('/api/invoices', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(invoice),
       });
       const data = await response.json();
@@ -64,11 +62,8 @@ export const useRevenueApi = () => {
     setError(null);
     
     try {
-      const response = await fetch(`/api/invoices/${id}`, {
+      const response = await apiCall(`/api/invoices/${id}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(invoice),
       });
       const data = await response.json();
@@ -86,7 +81,7 @@ export const useRevenueApi = () => {
     setError(null);
     
     try {
-      await fetch(`/api/invoices/${id}`, {
+      await apiCall(`/api/invoices/${id}`, {
         method: 'DELETE',
       });
       return true;
@@ -106,7 +101,7 @@ export const useRevenueApi = () => {
       const url = websiteId 
         ? `/api/pricing-rules?websiteId=${websiteId}` 
         : '/api/pricing-rules';
-      const response = await fetch(url);
+      const response = await apiCall(url);
       const data = await response.json();
       return data;
     } catch (err) {
@@ -125,11 +120,8 @@ export const useRevenueApi = () => {
       const method = rule.id ? 'PATCH' : 'POST';
       const url = rule.id ? `/api/pricing-rules/${rule.id}` : '/api/pricing-rules';
       
-      const response = await fetch(url, {
+      const response = await apiCall(url, {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(rule),
       });
       const data = await response.json();
@@ -147,7 +139,7 @@ export const useRevenueApi = () => {
     setError(null);
     
     try {
-      await fetch(`/api/pricing-rules/${id}`, {
+      await apiCall(`/api/pricing-rules/${id}`, {
         method: 'DELETE',
       });
       return true;
