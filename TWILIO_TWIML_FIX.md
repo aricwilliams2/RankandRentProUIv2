@@ -1,32 +1,27 @@
 # Twilio TwiML Fix for Inbound/Outbound Calls
 
 ## Problem
-The current TwiML webhook only handles **inbound** calls, but browser calls should be **outbound** calls. This causes browser calls to be treated as inbound calls and get the wrong TwiML response.
+The current TwiML webhook only handles **inbound** calls, but browser calls need to be detected and handled differently. Twilio automatically sets the Direction as "inbound" for all calls to the webhook, so we need to detect browser calls by examining the From and Caller fields.
 
 ## Current Issue
 When making a browser call, the server receives:
 ```json
 {
   "Direction": "inbound",
-  "From": "client:user_1755201356774", 
+  "From": "+18776653167", 
   "To": "(910) 755-5577",
-  "Caller": "client:user_1755201356774"
+  "Caller": "client:user_1755202676388"
 }
 ```
 
-But it should be:
-```json
-{
-  "Direction": "outbound-api",
-  "From": "+19106019073",
-  "To": "+19107555577", 
-  "Caller": "client:user_1755201356774"
-}
-```
+The key indicators of a browser call are:
+- `From` contains a phone number (starts with +)
+- `Caller` contains a client identity (starts with client:)
+- `Direction` is always "inbound" (Twilio's default)
 
 ## Solution: Updated TwiML Webhook
 
-The server-side TwiML webhook needs to handle both inbound and outbound calls:
+The server-side TwiML webhook needs to handle both inbound and outbound calls. Since Twilio automatically sets the Direction, we need to detect browser calls differently:
 
 ```javascript
 // Updated TwiML webhook handler
@@ -40,9 +35,27 @@ app.post('/api/twilio/voice', (req, res) => {
   
   console.log(`📞 Call - Direction: ${Direction}, From: ${From}, To: ${To}, Called: ${Called}, Caller: ${Caller}`);
   
-  // Handle different call directions
-  if (Direction === 'inbound') {
-    // Inbound call to your phone number
+  // Detect browser calls: From is a phone number, Caller is a client identity
+  const isBrowserCall = From && From.startsWith('+') && Caller && Caller.startsWith('client:');
+  
+  if (isBrowserCall) {
+    // Browser call from client to phone number
+    console.log(`📞 Browser call detected: ${From} to ${To}`);
+    
+    // For browser calls, we want to connect the call directly
+    const twiml = new VoiceResponse();
+    
+    // Connect the call to the destination
+    twiml.dial({
+      callerId: From, // Use the selected phone number as caller ID
+      record: 'record-from-answer',
+      recordingStatusCallback: '/api/twilio/recording-callback'
+    }, To);
+    
+    res.type('text/xml');
+    res.send(twiml.toString());
+  } else if (Direction === 'inbound') {
+    // Real inbound call to your phone number
     console.log(`📞 Real inbound call received to: ${Called}`);
     
     // Check if this is a known phone number
@@ -71,22 +84,6 @@ app.post('/api/twilio/voice', (req, res) => {
       res.type('text/xml');
       res.send(twiml.toString());
     }
-  } else if (Direction === 'outbound-api') {
-    // Outbound call from browser/client
-    console.log(`📞 Outbound call from browser: ${From} to ${To}`);
-    
-    // For outbound calls, we want to connect the call directly
-    const twiml = new VoiceResponse();
-    
-    // Connect the call to the destination
-    twiml.dial({
-      callerId: From, // Use the client identity as caller ID
-      record: 'record-from-answer',
-      recordingStatusCallback: '/api/twilio/recording-callback'
-    }, To);
-    
-    res.type('text/xml');
-    res.send(twiml.toString());
   } else {
     // Handle other directions (outbound-dial, etc.)
     console.log(`📞 Other call direction: ${Direction}`);
@@ -115,7 +112,7 @@ app.post('/api/twilio/voice', (req, res) => {
 - Enable recording and status callbacks
 
 ### 4. Browser Call Configuration
-The browser call should be configured to make outbound calls:
+The browser call should be configured to pass the selected phone number and direction for database tracking:
 
 ```javascript
 // In BrowserCallComponent.tsx
@@ -123,7 +120,7 @@ const conn = await device.connect({
   params: {
     To: toNumber,
     From: selectedFromNumber, // Use selected phone number as caller ID
-    Direction: 'outbound-api' // Explicitly set direction
+    Direction: 'outbound-api' // For database tracking (Twilio ignores this)
   }
 });
 ```

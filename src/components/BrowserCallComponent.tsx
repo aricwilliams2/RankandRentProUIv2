@@ -137,7 +137,7 @@ const BrowserCallComponent = () => {
          params: {
            To: toNumber,
            From: selectedFromNumber, // Use selected phone number as caller ID
-           Direction: 'outbound-api' // Explicitly set as outbound call
+           Direction: 'outbound-api' // For database tracking
          }
        });
       
@@ -216,13 +216,11 @@ const BrowserCallComponent = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">Select a phone number</option>
-              {userPhoneNumbers.phoneNumbers.map((number) => (
-                <option key={number.id} value={number.phone_number || number.number}>
-                  {number.phone_number || number.number} 
-                  {number.friendly_name && ` (${number.friendly_name})`}
-                  {number.locality && number.region && ` - ${number.locality}, ${number.region}`}
-                </option>
-              ))}
+                             {userPhoneNumbers.phoneNumbers.map((number) => (
+                 <option key={number.id} value={number.phone_number || number.number}>
+                   {number.phone_number || number.number}
+                 </option>
+               ))}
             </select>
             <p className="text-xs text-gray-500 mt-1">
               Choose which of your phone numbers to display as the caller ID
