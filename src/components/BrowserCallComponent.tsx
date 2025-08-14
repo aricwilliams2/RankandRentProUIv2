@@ -12,6 +12,7 @@ const BrowserCallComponent = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [error, setError] = useState('');
   const [toNumber, setToNumber] = useState('');
+  const [callStatus, setCallStatus] = useState('idle');
   const [selectedFromNumber, setSelectedFromNumber] = useState<string>('');
   
   // Get user's phone numbers
@@ -21,8 +22,7 @@ const BrowserCallComponent = () => {
   useEffect(() => {
     const initDevice = async () => {
       try {
-        // Get access token from your backend
-        console.log('Attempting to get access token...');
+        console.log('🎫 Getting access token...');
         
         // Check if user is authenticated
         const authToken = localStorage.getItem('token');
@@ -33,75 +33,77 @@ const BrowserCallComponent = () => {
         
         const response = await twilioApi.getAccessToken();
         
-        console.log('Access token response:', response);
-
-        // Handle both possible response formats
-        const token = response.token || (response.success && response.token);
-        
-        if (!token) {
+        if (!response.token) {
           console.error('No token in response:', response);
           throw new Error('Failed to get access token - no token in response');
         }
         
-        // Initialize device
-        const dev = new Device(token);
+        console.log('✅ Access token received');
         
-        // Set up event listeners
+        const dev = new Device(response.token);
+
         dev.on('ready', () => {
           console.log('✅ Device ready');
-          setError(''); // Clear any previous errors
+          setCallStatus('ready');
+          setError('');
         });
+
         dev.on('connect', (conn) => {
           console.log('✅ Call connected');
           setConnection(conn);
           setIsConnected(true);
           setIsCalling(false);
-          setError(''); // Clear any previous errors
+          setCallStatus('connected');
+          setError('');
         });
+
         dev.on('disconnect', () => {
-          console.log('📞 Call disconnected');
+          console.log('📞 Call ended');
           setConnection(null);
           setIsConnected(false);
           setIsCalling(false);
+          setCallStatus('idle');
+          setError('');
         });
+
         dev.on('error', (error) => {
-          console.error('Device error:', error);
-          setError(`Device error: ${error.message}`);
-          setIsCalling(false);
+          console.log('❌ Device error:', error);
+          if (error.code === 31005 || error.message.includes('HANGUP')) {
+            console.log('📞 Call ended normally (person hung up or didn\'t answer)');
+            setConnection(null);
+            setIsConnected(false);
+            setIsCalling(false);
+            setCallStatus('idle');
+            setError('');
+          } else {
+            setError(`Device error: ${error.message}`);
+            setCallStatus('error');
+          }
         });
+
         dev.on('incoming', (connection) => {
           console.log('📞 Incoming call');
         });
+
         dev.on('cancel', () => {
           console.log('📞 Call cancelled');
           setIsCalling(false);
         });
+
         dev.on('close', () => {
           console.log('📞 Device closed');
         });
-        
+
         setDevice(dev);
       } catch (error) {
-        console.error('Access token error:', error);
+        console.error('❌ Failed to initialize:', error);
         setError(`Failed to initialize: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        setCallStatus('error');
       }
     };
-
+    
     initDevice();
   }, []);
-
-  // Helper function to format phone numbers
-  const formatPhoneNumber = (number: string): string => {
-    // Remove all non-digit characters except +
-    let cleaned = number.replace(/[^\d+]/g, '');
-    
-    // If it doesn't start with +, add +1 for US numbers
-    if (!cleaned.startsWith('+')) {
-      cleaned = '+1' + cleaned;
-    }
-    
-    return cleaned;
-  };
 
   const makeCall = async () => {
     if (!device || isCalling || isConnected) return;
@@ -109,75 +111,47 @@ const BrowserCallComponent = () => {
       setError('Please enter a phone number to call');
       return;
     }
-    if (!selectedFromNumber) {
-      setError('Please select a phone number to call from');
-      return;
-    }
 
     try {
       setIsCalling(true);
+      setCallStatus('calling');
       setError('');
       
-      // Format the phone numbers properly
-      const formattedToNumber = formatPhoneNumber(toNumber.trim());
-      const formattedFromNumber = formatPhoneNumber(selectedFromNumber.trim());
+      console.log('📞 Making call to:', toNumber);
       
-      // Validate phone number format
-      if (!formattedToNumber.match(/^\+[1-9]\d{1,14}$/)) {
-        throw new Error('Invalid phone number format. Please use format: +1 (555) 123-4567');
-      }
-      
-      console.log('Making call with params:', {
-        To: formattedToNumber,
-        From: formattedFromNumber
+      // ✅ CORRECT WAY: Pass parameters as an object
+      const conn = await device.connect({
+        params: {
+          To: toNumber
+        }
+        // ❌ DON'T include Caller or From - let Twilio handle this
       });
       
-      // Try different call configurations
-      let conn;
-      try {
-        // First try with both To and From parameters
-        conn = await device.connect({ 
-          params: { 
-            To: formattedToNumber,
-            From: formattedFromNumber
-          } 
-        });
-      } catch (firstError) {
-        console.log('First attempt failed, trying without From parameter:', firstError);
-        try {
-          // Try without the From parameter (let Twilio use the default)
-          conn = await device.connect({ 
-            params: { 
-              To: formattedToNumber
-            } 
-          });
-        } catch (secondError) {
-          console.log('Second attempt failed, trying with minimal params:', secondError);
-          // Try with minimal parameters
-          conn = await device.connect({ 
-            params: { 
-              To: formattedToNumber
-            } 
-          });
-        }
-      }
-      
       setConnection(conn);
-      
-    } catch (error) {
-      console.error('Call error details:', error);
-      setError(`Call failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } catch (error: any) {
+      console.error('❌ Call failed:', error);
+      if (error.code === 31005 || error.message.includes('HANGUP')) {
+        console.log('📞 Call ended normally');
+        setError('');
+        setCallStatus('idle');
+      } else {
+        setError(`Call failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        setCallStatus('error');
+      }
       setIsCalling(false);
     }
   };
 
   const hangUp = () => {
     if (connection) {
+      console.log('📞 Hanging up call');
       connection.disconnect();
     }
     setConnection(null);
     setIsConnected(false);
     setIsCalling(false);
+    setCallStatus('idle');
+    setError('');
   };
 
   const toggleMute = () => {
@@ -185,26 +159,7 @@ const BrowserCallComponent = () => {
       const muted = !connection.isMuted();
       connection.mute(muted);
       setIsMuted(muted);
-    }
-  };
-
-  // Test call function for debugging
-  const testCall = async () => {
-    if (!device) return;
-    
-    try {
-      console.log('Testing call with Twilio test number...');
-      const conn = await device.connect({ 
-        params: { 
-          To: '+15551234567' // Twilio test number
-        } 
-      });
-      setConnection(conn);
-      setIsConnected(true);
-      setIsCalling(false);
-    } catch (error) {
-      console.error('Test call failed:', error);
-      setError(`Test call failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.log(`🎤 ${muted ? 'Muted' : 'Unmuted'}`);
     }
   };
 
@@ -218,43 +173,26 @@ const BrowserCallComponent = () => {
         </div>
       )}
       
+      <div className="mb-6 p-4 bg-gray-50 rounded-md">
+        <h3 className="font-medium mb-2">Status</h3>
+        <div className="space-y-1 text-sm">
+          <p><strong>Status:</strong> {callStatus}</p>
+          <p><strong>Device Ready:</strong> {device ? '✅ Yes' : '❌ No'}</p>
+          <p><strong>Connected:</strong> {isConnected ? '✅ Yes' : '❌ No'}</p>
+          <p><strong>Muted:</strong> {isMuted ? '✅ Yes' : '❌ No'}</p>
+          <p><strong>Available Numbers:</strong> {userPhoneNumbers.phoneNumbers.length}</p>
+        </div>
+      </div>
+
       {!isConnected ? (
-        // Call Setup
         <div className="space-y-4">
-          {/* From Number Selection */}
+          {/* Phone Number Input */}
           <div>
-            <label htmlFor="fromNumber" className="block text-sm font-medium text-gray-700 mb-2">
-              Call From (Your Number)
-            </label>
-            <select
-              id="fromNumber"
-              value={selectedFromNumber}
-              onChange={(e) => setSelectedFromNumber(e.target.value)}
-              disabled={isCalling}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">Select your phone number</option>
-              {userPhoneNumbers.phoneNumbers.map((phoneNumber: PhoneNumber) => (
-                <option key={phoneNumber.id} value={phoneNumber.number || phoneNumber.phone_number}>
-                  {phoneNumber.number || phoneNumber.phone_number} 
-                  {phoneNumber.websiteId && ` (${phoneNumber.websiteId})`}
-                </option>
-              ))}
-            </select>
-            {userPhoneNumbers.phoneNumbers.length === 0 && (
-              <p className="text-sm text-gray-500 mt-1">
-                No phone numbers available. Please purchase a number first.
-              </p>
-            )}
-          </div>
-          
-          {/* To Number Input */}
-          <div>
-            <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">
-              Call To (Target Number)
+            <label htmlFor="toNumber" className="block text-sm font-medium text-gray-700 mb-2">
+              Phone Number to Call:
             </label>
             <input
-              id="phoneNumber"
+              id="toNumber"
               type="tel"
               value={toNumber}
               onChange={(e) => setToNumber(e.target.value)}
@@ -267,55 +205,38 @@ const BrowserCallComponent = () => {
             </p>
           </div>
           
-          <button 
-            onClick={makeCall} 
-            disabled={!device || isCalling || !toNumber.trim() || !selectedFromNumber}
+          <button
+            onClick={makeCall}
+            disabled={!device || isCalling || !toNumber.trim()}
             className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {isCalling ? '📞 Connecting...' : '🎙️ Start Call'}
           </button>
-           
-           {/* Test Call Button */}
-           <button 
-             onClick={testCall} 
-             disabled={!device || isCalling}
-             className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed mt-2"
-           >
-             🧪 Test Call (+15551234567)
-           </button>
         </div>
       ) : (
-        // Active Call Controls
         <div className="space-y-4">
-          <p className="text-lg font-medium">📞 Connected to {toNumber}</p>
-          <p className="text-sm text-gray-600">From: {selectedFromNumber}</p>
-          <div className="flex space-x-4">
-            <button 
-              onClick={toggleMute}
-              className="flex-1 bg-yellow-600 text-white py-2 px-4 rounded-md hover:bg-yellow-700"
-            >
-              {isMuted ? '🔊 Unmute' : '🎤 Mute'}
-            </button>
-            <button 
-              onClick={hangUp}
-              className="flex-1 bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700"
-            >
-              📞 Hang Up
-            </button>
+          <div className="p-4 bg-green-50 border border-green-200 rounded-md text-center">
+            <h3 className="text-lg font-medium text-green-800 mb-2">📞 Connected to {toNumber}</h3>
+            <div className="flex space-x-4 justify-center">
+              <button
+                onClick={toggleMute}
+                className="px-4 py-2 rounded-md text-white font-medium"
+                style={{
+                  backgroundColor: isMuted ? '#dc3545' : '#28a745'
+                }}
+              >
+                {isMuted ? '🔇 Unmute' : '🎤 Mute'}
+              </button>
+              <button
+                onClick={hangUp}
+                className="px-4 py-2 bg-red-600 text-white rounded-md font-medium hover:bg-red-700"
+              >
+                📞 Hang Up
+              </button>
+            </div>
           </div>
         </div>
       )}
-      
-      <div className="mt-6 p-4 bg-gray-50 rounded-md">
-        <h3 className="font-medium mb-2">Status</h3>
-        <div className="space-y-1 text-sm">
-          <p>Device Ready: {device ? '✅ Yes' : '❌ No'}</p>
-          <p>Connected: {isConnected ? '✅ Yes' : '❌ No'}</p>
-          <p>Muted: {isMuted ? '✅ Yes' : '❌ No'}</p>
-          <p>Selected Number: {selectedFromNumber || 'None selected'}</p>
-          <p>Available Numbers: {userPhoneNumbers.phoneNumbers.length}</p>
-        </div>
-      </div>
     </div>
   );
 };
