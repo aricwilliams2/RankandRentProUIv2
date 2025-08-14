@@ -51,6 +51,7 @@ import { useUserPhoneNumbers } from '../contexts/UserPhoneNumbersContext';
 import { useAuth } from '../contexts/AuthContext';
 import { RecordingPlayer } from '../components/RecordingPlayer';
 import BrowserCallComponent from '../components/BrowserCallComponent';
+import CallForwardingComponent from '../components/CallForwardingComponent';
 
 // Mock data for websites - replace with actual API calls
 const mockWebsites: Website[] = [
@@ -138,7 +139,6 @@ export default function PhoneNumbers() {
   const {
     useAvailableNumbers,
     useBuyNumber,
-    useMakeCall,
     useDeletePhoneNumber,
   } = useTwilio();
 
@@ -353,6 +353,7 @@ export default function PhoneNumbers() {
         <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)}>
           <Tab label="My Numbers" />
           <Tab label="Call History" />
+          <Tab label="Call Forwarding" />
           <Tab label="Browser Call" />
         </Tabs>
       </Box>
@@ -640,14 +641,27 @@ export default function PhoneNumbers() {
         </Box>
       )}
 
-      {/* Browser Call Tab */}
+      {/* Call Forwarding Tab */}
       {activeTab === 2 && (
+        <Box>
+          <Typography variant="h6" sx={{ mb: 3 }}>
+            Call Forwarding
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Manage how your calls are forwarded to other numbers. Set up forwarding rules to ensure you never miss important calls.
+          </Typography>
+          <CallForwardingComponent />
+        </Box>
+      )}
+
+      {/* Browser Call Tab */}
+      {activeTab === 3 && (
         <Box>
           <Typography variant="h6" sx={{ mb: 3 }}>
             Browser-Based Calling
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Make calls directly from your browser using your microphone and speakers. 
+            Make calls directly from your browser using your microphone and speakers.
             This feature allows you to make calls without using your phone.
           </Typography>
           <BrowserCallComponent />

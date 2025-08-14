@@ -648,3 +648,44 @@ export interface RecordingsApiResponse {
     totalPages: number;
   };
 }
+
+// Call Forwarding Types
+export interface CallForwarding {
+  id: string;
+  user_id: string;
+  phone_number_id: string;
+  forward_to_number: string;
+  is_active: boolean;
+  forwarding_type: 'always' | 'busy' | 'no_answer' | 'unavailable';
+  ring_timeout: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CallForwardingFormData {
+  phone_number_id: string;
+  forward_to_number: string;
+  forwarding_type: 'always' | 'busy' | 'no_answer' | 'unavailable';
+  ring_timeout: number;
+}
+
+export interface CallForwardingApiResponse {
+  success: boolean;
+  callForwarding?: CallForwarding;
+  callForwardings?: CallForwarding[];
+  data?: CallForwarding[]; // Backend returns data in this field
+  message?: string;
+  error?: string;
+}
+
+export interface CallForwardingContextType {
+  callForwardings: CallForwarding[];
+  loading: boolean;
+  error: string | null;
+  getCallForwardings: () => Promise<void>;
+  createCallForwarding: (data: CallForwardingFormData) => Promise<CallForwarding>;
+  updateCallForwarding: (id: string, updates: Partial<CallForwarding>) => Promise<CallForwarding>;
+  toggleCallForwarding: (id: string, isActive: boolean) => Promise<void>;
+  deleteCallForwarding: (id: string) => Promise<void>;
+  getCallForwardingByPhoneNumber: (phoneNumberId: string) => CallForwarding | undefined;
+}
