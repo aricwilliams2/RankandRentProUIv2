@@ -18,6 +18,14 @@ const BrowserCallComponent = () => {
   // Get user's phone numbers
   const userPhoneNumbers = useUserPhoneNumbers();
 
+  // Set default selected number when phone numbers load
+  useEffect(() => {
+    if (userPhoneNumbers.phoneNumbers.length > 0 && !selectedFromNumber) {
+      const firstNumber = userPhoneNumbers.phoneNumbers[0];
+      setSelectedFromNumber(firstNumber.phone_number || firstNumber.number || '');
+    }
+  }, [userPhoneNumbers.phoneNumbers, selectedFromNumber]);
+
   // Initialize Twilio Device
   useEffect(() => {
     const initDevice = async () => {
@@ -117,15 +125,21 @@ const BrowserCallComponent = () => {
       setCallStatus('calling');
       setError('');
       
-      console.log('📞 Making call to:', toNumber);
-      
-      // ✅ CORRECT WAY: Pass parameters as an object
-      const conn = await device.connect({
-        params: {
-          To: toNumber
-        }
-        // ❌ DON'T include Caller or From - let Twilio handle this
-      });
+             console.log('📞 Making call to:', toNumber);
+       console.log('📞 Call parameters:', {
+         To: toNumber,
+         From: selectedFromNumber,
+         Direction: 'outbound-api'
+       });
+       
+       // ✅ CORRECT WAY: Pass parameters as an object
+       const conn = await device.connect({
+         params: {
+           To: toNumber,
+           From: selectedFromNumber, // Use selected phone number as caller ID
+           Direction: 'outbound-api' // Explicitly set as outbound call
+         }
+       });
       
       setConnection(conn);
     } catch (error: any) {
@@ -181,11 +195,40 @@ const BrowserCallComponent = () => {
           <p><strong>Connected:</strong> {isConnected ? '✅ Yes' : '❌ No'}</p>
           <p><strong>Muted:</strong> {isMuted ? '✅ Yes' : '❌ No'}</p>
           <p><strong>Available Numbers:</strong> {userPhoneNumbers.phoneNumbers.length}</p>
+          {selectedFromNumber && (
+            <p><strong>Selected Number:</strong> {selectedFromNumber}</p>
+          )}
         </div>
       </div>
 
       {!isConnected ? (
         <div className="space-y-4">
+          {/* Call From Number Selection */}
+          <div>
+            <label htmlFor="fromNumber" className="block text-sm font-medium text-gray-700 mb-2">
+              Call From (Your Number):
+            </label>
+            <select
+              id="fromNumber"
+              value={selectedFromNumber}
+              onChange={(e) => setSelectedFromNumber(e.target.value)}
+              disabled={isCalling}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Select a phone number</option>
+              {userPhoneNumbers.phoneNumbers.map((number) => (
+                <option key={number.id} value={number.phone_number || number.number}>
+                  {number.phone_number || number.number} 
+                  {number.friendly_name && ` (${number.friendly_name})`}
+                  {number.locality && number.region && ` - ${number.locality}, ${number.region}`}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Choose which of your phone numbers to display as the caller ID
+            </p>
+          </div>
+
           {/* Phone Number Input */}
           <div>
             <label htmlFor="toNumber" className="block text-sm font-medium text-gray-700 mb-2">
@@ -207,7 +250,7 @@ const BrowserCallComponent = () => {
           
           <button
             onClick={makeCall}
-            disabled={!device || isCalling || !toNumber.trim()}
+            disabled={!device || isCalling || !toNumber.trim() || !selectedFromNumber}
             className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {isCalling ? '📞 Connecting...' : '🎙️ Start Call'}
@@ -217,6 +260,9 @@ const BrowserCallComponent = () => {
         <div className="space-y-4">
           <div className="p-4 bg-green-50 border border-green-200 rounded-md text-center">
             <h3 className="text-lg font-medium text-green-800 mb-2">📞 Connected to {toNumber}</h3>
+            {selectedFromNumber && (
+              <p className="text-sm text-green-700 mb-3">From: {selectedFromNumber}</p>
+            )}
             <div className="flex space-x-4 justify-center">
               <button
                 onClick={toggleMute}
