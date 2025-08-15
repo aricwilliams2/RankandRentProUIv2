@@ -1,8 +1,9 @@
 import React, { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Box, Button, Card, CardContent, TextField, Typography, Alert, CircularProgress, Tab, Tabs, Container } from "@mui/material";
 import { Lock, User, Mail, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
-import { loadStripe } from "@stripe/stripe-js";
+// import { loadStripe } from "@stripe/stripe-js";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -21,7 +22,10 @@ function TabPanel(props: TabPanelProps) {
 }
 
 export default function LoginPage() {
-  const { login, register, loading, error } = useAuth();
+  const { login, /* register,*/ loading, error } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as any)?.from || "/";
   const [tabValue, setTabValue] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -31,7 +35,7 @@ export default function LoginPage() {
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
     setFormErrors({});
     setFormData({ name: "", email: "", password: "" });
@@ -79,6 +83,7 @@ export default function LoginPage() {
       if (tabValue === 0) {
         // Login
         await login(formData.email, formData.password);
+        navigate(from, { replace: true });
       } else {
         // 1. Register the user
 

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { Box, Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, useTheme, useMediaQuery, AppBar, Toolbar, IconButton, Button, Avatar, Menu, MenuItem } from "@mui/material";
-import { LayoutDashboard, Users, Globe, Phone, LineChart, Calculator, Search, Settings, Menu as MenuIcon, X, LogOut, User, CheckSquare } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Box, Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, useTheme, useMediaQuery, AppBar, Toolbar, IconButton, Avatar, Menu, MenuItem } from "@mui/material";
+import { LayoutDashboard, Users, Phone, LineChart, Settings, Menu as MenuIcon, X, LogOut, User } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
 const navItems = [
@@ -14,7 +14,7 @@ const navItems = [
   { icon: Phone, label: "Phone Numbers", path: "/phone-numbers" },
   // { icon: Calculator, label: "Revenue", path: "/revenue" },
   // { icon: Search, label: "Research", path: "/research" },
-  // { icon: Settings, label: "Settings", path: "/settings" },
+  { icon: Settings, label: "Settings", path: "/settings" },
 ];
 
 const DRAWER_WIDTH = 240;
@@ -25,6 +25,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const handleDrawerToggle = () => {
@@ -46,6 +47,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const handleLogout = () => {
     logout();
     handleProfileMenuClose();
+    navigate("/login", { replace: true });
   };
   const drawerContent = (
     <Box>

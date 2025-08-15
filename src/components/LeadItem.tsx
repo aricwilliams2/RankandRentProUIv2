@@ -7,7 +7,7 @@ import { Lead, CallLog } from "../types";
 import { useLeadContext } from "../contexts/LeadContext";
 import { useClientContext } from "../contexts/ClientContext";
 import LeadFormDialog from "./LeadFormDialog";
-import { useAuth } from "../contexts/AuthContext";
+// import { useAuth } from "../contexts/AuthContext";
 
 interface LeadItemProps {
   lead: Lead;
@@ -223,6 +223,23 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
     }
   };
 
+  const getStatusAccentBorder = (status: Lead["status"]) => {
+    switch (status) {
+      case "New":
+        return "border-blue-300";
+      case "Contacted":
+        return "border-yellow-300";
+      case "Qualified":
+        return "border-green-300";
+      case "Converted":
+        return "border-purple-300";
+      case "Lost":
+        return "border-red-300";
+      default:
+        return "border-gray-200";
+    }
+  };
+
   const getNextFollowUp = () => {
     if (!lead.callLogs || lead.callLogs.length === 0) return null;
 
@@ -426,8 +443,9 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
         <MobileCard />
       </div>
 
-      {/* Desktop Table Row */}
-      <tr ref={ref} className={`hidden sm:table-row border-b transition-colors cursor-pointer hover:bg-blue-50 ${lead.contacted ? "bg-green-50/50" : "bg-white"} ${isFollowUpDue ? "border-l-4 border-orange-400" : ""} ${deleting ? "opacity-50" : ""}`} onClick={handleRowClick}>
+      {/* Desktop Table Row (compact) */}
+      <tr ref={ref} className={`hidden sm:table-row border-b transition-colors cursor-pointer hover:bg-blue-50 even:bg-gray-50 ${lead.contacted ? "bg-green-50/50" : ""} ${isFollowUpDue ? "border-l-4 border-orange-400" : ""} ${deleting ? "opacity-50" : ""}`} onClick={handleRowClick}>
+        {/* Business */}
         <td className="p-3 lg:p-4">
           <div className="flex items-start gap-2">
             <div className={`mt-1 flex-shrink-0 w-4 h-4 rounded-full border ${lead.contacted ? "bg-green-500 border-green-600" : "border-gray-300"} flex items-center justify-center`}>{lead.contacted && <Check className="w-3 h-3 text-white" />}</div>
@@ -446,14 +464,18 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
             </div>
           </div>
         </td>
-        <td className="p-3 lg:p-4">
+
+        {/* Reviews (hide on small desktop widths via CSS in header) */}
+        <td className="hidden md:table-cell p-3 lg:p-4">
           <div className="mt-1">
             <StarRating reviews={lead.reviews} />
           </div>
         </td>
+
+        {/* Phone */}
         <td className="p-3 lg:p-4">
           {hasPhoneNumber ? (
-            <a href={`tel:${lead.phone.replace(/[^\d+]/g, "")}`} className="flex items-center text-blue-600 font-medium hover:text-blue-800 transition-colors group text-sm\" onClick={(e) => e.stopPropagation()}>
+            <a href={`tel:${lead.phone.replace(/[^\d+]/g, "")}`} className="flex items-center text-blue-600 font-medium hover:text-blue-800 transition-colors group text-sm" onClick={(e) => e.stopPropagation()}>
               <Phone className="w-4 h-4 mr-1.5 group-hover:animate-pulse" />
               <span className="border-b border-blue-300 group-hover:border-blue-600">{lead.phone.replace(/(\d{3})(\d{3})(\d{4})/, "($1) $2-$3")}</span>
             </a>
@@ -461,7 +483,9 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
             <span className="text-gray-400 text-sm">No phone</span>
           )}
         </td>
-        <td className="p-3 lg:p-4 pt:5">
+
+        {/* Website (hidden at small desktop widths by header visibility) */}
+        <td className="hidden lg:table-cell p-3 lg:p-4 pt:5">
           {lead.website ? (
             <a href={lead.website} target="_blank" rel="noopener noreferrer" className="flex items-center text-blue-600 font-medium hover:text-blue-800 transition-colors text-sm" onClick={(e) => e.stopPropagation()}>
               <ExternalLink className="w-4 h-4 mr-1.5" />
@@ -471,147 +495,152 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
             <span className="text-gray-400 text-sm">No website</span>
           )}
         </td>
-        <td className="p-3 lg:p-4">
-          <div className="flex items-center gap-2">
-            {hasPhoneNumber && (
-              <button onClick={handleCallLogClick} className="flex items-center text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors text-sm px-2 py-1 rounded" title="Log Call">
-                <Edit className="w-4 h-4 mr-1" />
-                <span>Log Call</span>
-              </button>
-            )}
-            {isFollowUpDue && (
-              <div className="flex items-center text-orange-600 text-xs bg-orange-50 px-2 py-1 rounded">
-                <Clock className="w-3 h-3 mr-1" />
-                Due
+      </tr>
+
+      {/* Under-row: Call Log, Call History, Actions */}
+      <tr className="hidden sm:table-row">
+        <td colSpan={4} className="p-3 pt-0 lg:p-4 lg:pt-0">
+          <div className={`flex flex-col gap-3 rounded-md bg-white ring-1 shadow-sm ring-gray-200 border-l-4 ${getStatusAccentBorder(lead.status)} px-3 py-3`}>
+            {/* Actions row */}
+            <div className="flex items-center gap-1 flex-wrap">
+              {lead.website && (
+                <Tooltip title="View Analytics">
+                  <button onClick={handleViewAnalytics} className="p-1 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors">
+                    <BarChart3 className="w-4 h-4" />
+                  </button>
+                </Tooltip>
+              )}
+              {lead.website && (
+                <Tooltip title="Click to see Google GMB">
+                  <button onClick={() => openGoogleMapsSearch(lead.website)} className="p-1 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded transition-colors">
+                    <Map className="w-4 h-4" />
+                  </button>
+                </Tooltip>
+              )}
+              <Tooltip title="Convert to Client">
+                <button onClick={handleConvertToClient} disabled={convertingToClient} className="p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors disabled:opacity-50">
+                  <UserPlus className="w-4 h-4" />
+                </button>
+              </Tooltip>
+              <Tooltip title="Edit Lead">
+                <button onClick={handleEditClick} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
+                  <Pencil className="w-4 h-4" />
+                </button>
+              </Tooltip>
+              <Tooltip title="Delete Lead">
+                <button onClick={handleDeleteClick} disabled={deleting} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </Tooltip>
+
+              {/* Call log quick action */}
+              {hasPhoneNumber && (
+                <button onClick={handleCallLogClick} className="ml-2 flex items-center text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors text-sm px-2 py-1 rounded" title="Log Call">
+                  <Edit className="w-4 h-4 mr-1" />
+                  <span>Log Call</span>
+                </button>
+              )}
+            </div>
+
+            {/* Call History toggle + note preview */}
+            <div className="flex items-center gap-2">
+              {lead.callLogs && lead.callLogs.length > 0 && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowCallHistory(!showCallHistory);
+                  }}
+                  className="flex items-center text-gray-600 hover:text-gray-800 transition-colors text-sm"
+                >
+                  <MessageSquare className="w-4 h-4 mr-1" />
+                  <span>{lead.callLogs.length} {lead.callLogs.length > 1 ? 'calls' : 'call'}</span>
+                  {showCallHistory ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />}
+                </button>
+              )}
+              {(latestNote || lead.notes) && <div className="text-xs text-gray-600 max-w-[18rem] lg:max-w-[32rem] truncate">{latestNote || lead.notes}</div>}
+              {isFollowUpDue && (
+                <div className="flex items-center text-orange-600 text-xs bg-orange-50 px-2 py-1 rounded">
+                  <Clock className="w-3 h-3 mr-1" />
+                  Due
+                </div>
+              )}
+            </div>
+
+            {/* Expanded Call History */}
+            {showCallHistory && lead.callLogs && lead.callLogs.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <h4 className="font-medium text-sm text-gray-700">Call History</h4>
+                  {sortedLogs.length > 3 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowAllLogs(!showAllLogs);
+                      }}
+                      className="flex items-center text-blue-600 hover:text-blue-800 transition-colors text-sm"
+                    >
+                      <MoreHorizontal className="w-4 h-4 mr-1" />
+                      {showAllLogs ? `Show Less` : `Show All ${sortedLogs.length} Logs`}
+                    </button>
+                  )}
+                </div>
+                {displayedLogs.map((log) => (
+                  <div key={log.id} className="flex justify-between items-start bg-white p-3 rounded border text-sm">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${getOutcomeColor(log.outcome)}`}>{getOutcomeLabel(log.outcome)}</span>
+                        <span className="text-gray-500 text-xs">{new Date(log.callDate).toLocaleString()}</span>
+                        <Tooltip title="Edit this log">
+                          <button onClick={() => handleEditLog(log)} className="text-gray-400 hover:text-blue-600 transition-colors">
+                            <Edit className="w-4 h-4" />
+                          </button>
+                        </Tooltip>
+                      </div>
+                      {editingLogId === log.id ? (
+                        <div className="space-y-2 mt-2">
+                          <select value={editOutcome} onChange={(e) => setEditOutcome(e.target.value as CallLog["outcome"])} className="w-full p-2 border border-gray-300 rounded">
+                            <option value="follow_up_1_day">Follow up in 1 day</option>
+                            <option value="follow_up_72_hours">Follow up in 72 hours</option>
+                            <option value="follow_up_next_week">Follow up next week</option>
+                            <option value="follow_up_next_month">Follow up next month</option>
+                            <option value="follow_up_3_months">Follow up in 3 months</option>
+                          </select>
+                          <textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)} className="w-full p-2 border border-gray-300 rounded resize-none" rows={3} style={{ direction: "ltr" }} dir="ltr" />
+                          <div className="flex gap-2">
+                            <button onClick={handleSaveEdit} className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">
+                              <Save className="w-4 h-4" />
+                              Save
+                            </button>
+                            <button onClick={handleCancelEdit} className="flex items-center gap-1 px-3 py-1 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
+                              <X className="w-4 h-4" />
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          {log.notes && <p className="text-gray-700 mt-1">{log.notes}</p>}
+                          {log.nextFollowUp && (
+                            <div className="flex items-center text-blue-600 text-xs mt-1">
+                              <Calendar className="w-3 h-3 mr-1" />
+                              Follow up: {new Date(log.nextFollowUp).toLocaleString()}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
-          </div>
-        </td>
-        <td className="p-3 lg:p-4">
-          <div className="flex items-center gap-2">
-            {lead.callLogs && lead.callLogs.length > 0 && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowCallHistory(!showCallHistory);
-                }}
-                className="flex items-center text-gray-600 hover:text-gray-800 transition-colors text-sm"
-              >
-                <MessageSquare className="w-4 h-4 mr-1" />
-                <span>{lead.callLogs.length}</span>
-                {showCallHistory ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />}
-              </button>
-            )}
-            {(latestNote || lead.notes) && <div className="text-xs text-gray-600 max-w-xs truncate">{latestNote || lead.notes}</div>}
-          </div>
-        </td>
-        <td className="p-3 lg:p-4">
-          <div className="flex items-center gap-1">
-            {lead.website && (
-              <Tooltip title="View Analytics">
-                <button onClick={handleViewAnalytics} className="p-1 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors">
-                  <BarChart3 className="w-4 h-4" />
-                </button>
-              </Tooltip>
-            )}
-            {lead.website && (
-              <Tooltip title="Click to see Google GMB">
-                <button onClick={() => openGoogleMapsSearch(lead.website)} className="p-1 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded transition-colors">
-                  <Map className="w-4 h-4" />
-                </button>
-              </Tooltip>
-            )}
-            <Tooltip title="Convert to Client">
-              <button onClick={handleConvertToClient} disabled={convertingToClient} className="p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors disabled:opacity-50">
-                <UserPlus className="w-4 h-4" />
-              </button>
-            </Tooltip>
-
-            <Tooltip title="Edit Lead">
-              <button onClick={handleEditClick} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
-                <Pencil className="w-4 h-4" />
-              </button>
-            </Tooltip>
-            <Tooltip title="Delete Lead">
-              <button onClick={handleDeleteClick} disabled={deleting} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50">
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </Tooltip>
           </div>
         </td>
       </tr>
 
-      {/* Call History Row */}
-      {showCallHistory && lead.callLogs && lead.callLogs.length > 0 && (
-        <tr className="bg-gray-50 hidden sm:table-row">
-          <td colSpan={7} className="p-3 lg:p-4">
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <h4 className="font-medium text-sm text-gray-700">Call History</h4>
-                {sortedLogs.length > 3 && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowAllLogs(!showAllLogs);
-                    }}
-                    className="flex items-center text-blue-600 hover:text-blue-800 transition-colors text-sm"
-                  >
-                    <MoreHorizontal className="w-4 h-4 mr-1" />
-                    {showAllLogs ? `Show Less` : `Show All ${sortedLogs.length} Logs`}
-                  </button>
-                )}
-              </div>
-              {displayedLogs.map((log) => (
-                <div key={log.id} className="flex justify-between items-start bg-white p-3 rounded border text-sm">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${getOutcomeColor(log.outcome)}`}>{getOutcomeLabel(log.outcome)}</span>
-                      <span className="text-gray-500 text-xs">{new Date(log.callDate).toLocaleString()}</span>
-                      <Tooltip title="Edit this log">
-                        <button onClick={() => handleEditLog(log)} className="text-gray-400 hover:text-blue-600 transition-colors">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                      </Tooltip>
-                    </div>
-                    {editingLogId === log.id ? (
-                      <div className="space-y-2 mt-2">
-                        <select value={editOutcome} onChange={(e) => setEditOutcome(e.target.value as CallLog["outcome"])} className="w-full p-2 border border-gray-300 rounded">
-                          <option value="follow_up_1_day">Follow up in 1 day</option>
-                          <option value="follow_up_72_hours">Follow up in 72 hours</option>
-                          <option value="follow_up_next_week">Follow up next week</option>
-                          <option value="follow_up_next_month">Follow up next month</option>
-                          <option value="follow_up_3_months">Follow up in 3 months</option>
-                        </select>
-                        <textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)} className="w-full p-2 border border-gray-300 rounded resize-none" rows={3} style={{ direction: "ltr" }} dir="ltr" />
-                        <div className="flex gap-2">
-                          <button onClick={handleSaveEdit} className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">
-                            <Save className="w-4 h-4" />
-                            Save
-                          </button>
-                          <button onClick={handleCancelEdit} className="flex items-center gap-1 px-3 py-1 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
-                            <X className="w-4 h-4" />
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        {log.notes && <p className="text-gray-700 mt-1">{log.notes}</p>}
-                        {log.nextFollowUp && (
-                          <div className="flex items-center text-blue-600 text-xs mt-1">
-                            <Calendar className="w-3 h-3 mr-1" />
-                            Follow up: {new Date(log.nextFollowUp).toLocaleString()}
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </td>
-        </tr>
-      )}
+      {/* Spacer row for visual separation */}
+      <tr className="hidden sm:table-row">
+        <td colSpan={4} className="py-1"></td>
+      </tr>
 
       {/* Call Logging Dialog */}
       {showCallDialog && (

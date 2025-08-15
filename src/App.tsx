@@ -1,4 +1,4 @@
-import { HashRouter as Router, Routes, Route } from "react-router-dom";
+import { HashRouter as Router, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { CssBaseline } from "@mui/material";
@@ -42,8 +42,9 @@ const theme = createTheme({
   },
 });
 
-const AppContent = () => {
+const RequireAuth = () => {
   const { isAuthenticated, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -62,45 +63,59 @@ const AppContent = () => {
   }
 
   if (!isAuthenticated) {
-    return <LoginPage />;
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
+  return <Outlet />;
+};
+
+const ProtectedShell = () => (
+  <ApiProvider>
+    <ClientProvider>
+      <LeadProvider>
+        <WebsiteProvider>
+          <UserPhoneNumbersProvider>
+            <CallForwardingProvider>
+              <TaskProvider>
+                <Layout>
+                  <Outlet />
+                </Layout>
+              </TaskProvider>
+            </CallForwardingProvider>
+          </UserPhoneNumbersProvider>
+        </WebsiteProvider>
+      </LeadProvider>
+    </ClientProvider>
+  </ApiProvider>
+);
+
+const AppContent = () => {
   return (
-    <ApiProvider>
-      <ClientProvider>
-        <LeadProvider>
-          <WebsiteProvider>
-            <UserPhoneNumbersProvider>
-              <CallForwardingProvider>
-                <TaskProvider>
-                  <Router>
-                    <Layout>
-                      <Routes>
-                        <Route path="/" element={<Dashboard />} />
-                        <Route path="/Leads" element={<LeadSniperProFunc />} />
-                        <Route path="/clients" element={<Clients />} />
-                        <Route path="/websites" element={<Websites />} />
-                        <Route path="/phone-numbers" element={<PhoneNumbers />} />
-                        <Route path="/call-forwarding" element={<CallForwardingPage />} />
-                        <Route path="/checklists" element={<ClientChecklistPage />} />
-                        <Route path="/client-checklist/:clientId" element={<IndividualClientChecklistPage />} />
-                        <Route path="/analytics" element={<Analytics />} />
-                        <Route path="/revenue" element={<Revenue />} />
-                        <Route path="/research" element={<Research />} />
-                        <Route path="/settings" element={<Settings />} />
-                        <Route path="/serp-results" element={<SerpResults />} />
-                        <Route path="/success" element={<SuccessPage />} />
-                        <Route path="/cancel" element={<CancelPage />} />
-                      </Routes>
-                    </Layout>
-                  </Router>
-                </TaskProvider>
-              </CallForwardingProvider>
-            </UserPhoneNumbersProvider>
-          </WebsiteProvider>
-        </LeadProvider>
-      </ClientProvider>
-    </ApiProvider>
+    <Router>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route element={<RequireAuth />}>
+          <Route element={<ProtectedShell />}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/Leads" element={<LeadSniperProFunc />} />
+            <Route path="/clients" element={<Clients />} />
+            <Route path="/websites" element={<Websites />} />
+            <Route path="/phone-numbers" element={<PhoneNumbers />} />
+            <Route path="/call-forwarding" element={<CallForwardingPage />} />
+            <Route path="/checklists" element={<ClientChecklistPage />} />
+            <Route path="/client-checklist/:clientId" element={<IndividualClientChecklistPage />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/revenue" element={<Revenue />} />
+            <Route path="/research" element={<Research />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/serp-results" element={<SerpResults />} />
+            <Route path="/success" element={<SuccessPage />} />
+            <Route path="/cancel" element={<CancelPage />} />
+          </Route>
+        </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Router>
   );
 };
 

@@ -75,15 +75,7 @@ const LeadsList: React.FC = () => {
               <th className="text-left p-3 lg:p-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 text-sm" onClick={() => handleSort("website")}>
                 <div className="flex items-center">Website {renderSortIndicator("website")}</div>
               </th>
-              <th className="text-left p-3 lg:p-4 font-semibold text-gray-700 text-sm">
-                Call Log
-              </th>
-              <th className="text-left p-3 lg:p-4 font-semibold text-gray-700 text-sm">
-                Call History
-              </th>
-              <th className="text-left p-3 lg:p-4 font-semibold text-gray-700 text-sm">
-                Actions
-              </th>
+              {/* Secondary details (Call Log, Call History, Actions) are shown under each lead */}
             </tr>
           </thead>
           <tbody>
