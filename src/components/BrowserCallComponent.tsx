@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Device } from '@twilio/voice-sdk';
 import { twilioApi } from '../services/twilioApi';
+import { useBilling } from '../contexts/BillingContext';
 import { useUserPhoneNumbers } from '../contexts/UserPhoneNumbersContext';
 import { PhoneNumber } from '../types';
 
@@ -12,8 +13,8 @@ const BrowserCallComponent = () => {
   // const [isMuted, setIsMuted] = useState(false);
   const [error, setError] = useState('');
   const [toNumber, setToNumber] = useState('');
-  const [callStatus, setCallStatus] = useState('idle');
   const [selectedFromNumber, setSelectedFromNumber] = useState<string>('');
+  const { billing } = useBilling();
 
   // Get user's phone numbers
   const userPhoneNumbers = useUserPhoneNumbers();
@@ -30,6 +31,10 @@ const BrowserCallComponent = () => {
   useEffect(() => {
     const initDevice = async () => {
       try {
+        // Optional pre-check: block when out of minutes and balance < $5
+        if (billing && billing.freeMinutesRemaining <= 0 && billing.balance < 5) {
+          throw new Error('Insufficient balance. Please add at least $5 to make calls.');
+        }
         // Get access token from your backend
         console.log('Attempting to get access token...');
 
@@ -58,7 +63,6 @@ const BrowserCallComponent = () => {
         // Set up event listeners
         dev.on('ready', () => {
           console.log('✅ Device ready');
-          setCallStatus('ready');
           setError('');
         });
 
@@ -67,7 +71,6 @@ const BrowserCallComponent = () => {
           setConnection(conn);
           setIsConnected(true);
           setIsCalling(false);
-          setCallStatus('connected');
           setError('');
         });
 
@@ -76,7 +79,6 @@ const BrowserCallComponent = () => {
           setConnection(null);
           setIsConnected(false);
           setIsCalling(false);
-          setCallStatus('idle');
           setError('');
         });
 
@@ -87,11 +89,9 @@ const BrowserCallComponent = () => {
             setConnection(null);
             setIsConnected(false);
             setIsCalling(false);
-            setCallStatus('idle');
             setError('');
           } else {
             setError(`Device error: ${error.message}`);
-            setCallStatus('error');
           }
         });
         dev.on('incoming', () => {
@@ -107,17 +107,15 @@ const BrowserCallComponent = () => {
           console.log('📞 Device closed');
         });
 
-
         setDevice(dev);
       } catch (error) {
         console.error('❌ Failed to initialize:', error);
         setError(`Failed to initialize: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        setCallStatus('error');
       }
     };
 
     initDevice();
-  }, []);
+  }, [billing]);
 
   // Helper function to format phone numbers
   const formatPhoneNumber = (number: string): string => {
@@ -134,6 +132,10 @@ const BrowserCallComponent = () => {
 
   const makeCall = async () => {
     if (!device || isCalling || isConnected) return;
+    if (billing && billing.freeMinutesRemaining <= 0 && billing.balance < 5) {
+      setError('Insufficient balance. Add at least $5 to place calls.');
+      return;
+    }
     if (!toNumber.trim()) {
       setError('Please enter a phone number to call');
       return;
@@ -141,7 +143,6 @@ const BrowserCallComponent = () => {
 
     try {
       setIsCalling(true);
-      setCallStatus('calling');
       setError('');
 
       // Format the phone numbers properly
@@ -169,6 +170,12 @@ const BrowserCallComponent = () => {
           }
         });
       } catch (firstError) {
+        // If the backend rejects with 402 via access-token step, surface friendly message
+        if ((firstError as any)?.code === 31205 || (firstError as any)?.status === 402) {
+          setError('Payment required. Please add funds and try again.');
+          setIsCalling(false);
+          return;
+        }
         console.log('First attempt failed, trying without From parameter:', firstError);
         try {
           // Try without the From parameter (let Twilio use the default)
@@ -210,15 +217,6 @@ const BrowserCallComponent = () => {
     setIsCalling(false);
     window.location.reload();
   };
-
-  // Mute functionality is no longer exposed in the UI; keep for potential future use
-  // const toggleMute = () => {
-  //   if (connection) {
-  //     const muted = !connection.isMuted();
-  //     connection.mute(muted);
-  //     setIsMuted(muted);
-  //   }
-  // };
 
   // Test call function for debugging
   const testCall = async () => {

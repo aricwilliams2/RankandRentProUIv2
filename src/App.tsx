@@ -23,6 +23,7 @@ import { LeadProvider } from "./contexts/LeadContext";
 import { WebsiteProvider } from "./contexts/WebsiteContext";
 import { UserPhoneNumbersProvider } from "./contexts/UserPhoneNumbersContext";
 import { CallForwardingProvider } from "./contexts/CallForwardingContext";
+import { BillingProvider } from "./contexts/BillingContext";
 import { Box, CircularProgress } from "@mui/material";
 import SerpResults from "./pages/SerpResults";
 import SuccessPage from "./pages/SuccessPage";
@@ -74,15 +75,17 @@ const ProtectedShell = () => (
     <ClientProvider>
       <LeadProvider>
         <WebsiteProvider>
-          <UserPhoneNumbersProvider>
-            <CallForwardingProvider>
-              <TaskProvider>
-                <Layout>
-                  <Outlet />
-                </Layout>
-              </TaskProvider>
-            </CallForwardingProvider>
-          </UserPhoneNumbersProvider>
+          <BillingProvider>
+            <UserPhoneNumbersProvider>
+              <CallForwardingProvider>
+                <TaskProvider>
+                  <Layout>
+                    <Outlet />
+                  </Layout>
+                </TaskProvider>
+              </CallForwardingProvider>
+            </UserPhoneNumbersProvider>
+          </BillingProvider>
         </WebsiteProvider>
       </LeadProvider>
     </ClientProvider>

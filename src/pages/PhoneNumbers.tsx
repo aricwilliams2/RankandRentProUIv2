@@ -52,6 +52,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { RecordingPlayer } from '../components/RecordingPlayer';
 import BrowserCallComponent from '../components/BrowserCallComponent';
 import CallForwardingComponent from '../components/CallForwardingComponent';
+import { useBilling } from '../contexts/BillingContext';
 
 // Mock data for websites - replace with actual API calls
 const mockWebsites: Website[] = [
@@ -103,6 +104,10 @@ interface AvailableNumber {
 export default function PhoneNumbers() {
   const { user } = useAuth();
   const userPhoneNumbers = useUserPhoneNumbers();
+  const { billing, canBuyNumbers, startTopUpProduct, startTopUpAmount, loading: billingLoading } = useBilling();
+
+  // Stripe price for $10 fixed top-up (product price ID)
+  const PRICE_10 = (import.meta as any).env?.VITE_STRIPE_PRICE_10 || 'price_10USD';
 
   // Debug logging
   console.log('PhoneNumbers component - User:', user);
@@ -135,6 +140,9 @@ export default function PhoneNumbers() {
     assignedNumber: string;
     isDifferent: boolean;
   } | null>(null);
+
+  const [topUpOpen, setTopUpOpen] = useState(false);
+  const [topUpBusy, setTopUpBusy] = useState(false);
 
   const {
     useAvailableNumbers,
@@ -178,8 +186,6 @@ export default function PhoneNumbers() {
     setSelectedNumber(null);
   };
 
-
-
   const handleRecordingsOpen = () => {
     console.log('handleRecordingsOpen called');
     setRecordingsOpen(true);
@@ -197,7 +203,6 @@ export default function PhoneNumbers() {
         areaCode: searchParams.areaCode,
       });
 
-      // Show detailed result
       setPurchaseResult({
         show: true,
         requestedNumber: response.requestedNumber || phoneNumber,
@@ -205,7 +210,6 @@ export default function PhoneNumbers() {
         isDifferent: response.isDifferentNumber
       });
 
-      // Also show snackbar notification
       if (response.isDifferentNumber) {
         setSnackbar({
           open: true,
@@ -220,16 +224,22 @@ export default function PhoneNumbers() {
         });
       }
       handleDialogClose();
-    } catch (error) {
-      setSnackbar({
-        open: true,
-        message: `Failed to purchase phone number: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        severity: 'error',
-      });
+    } catch (error: any) {
+      if (error?.response?.status === 402) {
+        setSnackbar({
+          open: true,
+          message: 'Insufficient balance. Please add at least $5 to purchase a number.',
+          severity: 'warning',
+        });
+      } else {
+        setSnackbar({
+          open: true,
+          message: `Failed to purchase phone number: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          severity: 'error',
+        });
+      }
     }
   };
-
-
 
   const handleDeletePhoneNumber = async (id: string) => {
     try {
@@ -247,8 +257,6 @@ export default function PhoneNumbers() {
       });
     }
   };
-
-
 
   const getCallStatusIcon = (status: Call['status']) => {
     switch (status) {
@@ -280,14 +288,13 @@ export default function PhoneNumbers() {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  // Use call history from context
   const callLogs = userPhoneNumbers.calls;
   const recordings = userPhoneNumbers.recordings;
 
   return (
     <Box>
       {/* User Info Section */}
-      <Card sx={{ mb: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
+      <Card sx={{ mb: 0, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
         <CardContent>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Box>
@@ -326,7 +333,23 @@ export default function PhoneNumbers() {
         </CardContent>
       </Card>
 
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+      {/* Sticky Billing Summary Bar */}
+      <Box sx={{ position: 'sticky', top: 0, zIndex: 5, bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider', py: 1.5, px: 1, mb: 2 }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
+            <Chip color="primary" variant="outlined" label={`Balance: $${billing ? billing.balance.toFixed(2) : '--'}`} />
+            <Chip color="secondary" variant="outlined" label={`Call hours: ${billing ? `${Math.floor(billing.freeMinutesRemaining / 60)}h ${billing.freeMinutesRemaining % 60}m` : '--'}`} />
+            {!billingLoading && billing && !billing.hasClaimedFreeNumber && (
+              <Chip color="success" variant="outlined" label="Free number available" />
+            )}
+          </Box>
+          <Button variant="contained" color="warning" onClick={() => setTopUpOpen(true)} disabled={billingLoading}>
+            Add Funds
+          </Button>
+        </Box>
+      </Box>
+
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" fontWeight="bold">
           My Phone Numbers
         </Typography>
@@ -342,8 +365,9 @@ export default function PhoneNumbers() {
             variant="contained"
             startIcon={<Plus size={20} />}
             onClick={handleDialogOpen}
+            disabled={!canBuyNumbers}
           >
-            Purchase Number
+            {billing && !billing.hasClaimedFreeNumber ? 'Get Free Number' : 'Purchase Number'}
           </Button>
         </Box>
       </Box>
@@ -365,11 +389,10 @@ export default function PhoneNumbers() {
             </Select>
           </FormControl>
         </Box>
-        
         {/* Desktop Tabs */}
         <Box sx={{ display: { xs: 'none', md: 'block' } }}>
-          <Tabs 
-            value={activeTab} 
+          <Tabs
+            value={activeTab}
             onChange={(_, newValue) => setActiveTab(newValue)}
             variant="scrollable"
             scrollButtons="auto"
@@ -397,6 +420,53 @@ export default function PhoneNumbers() {
         </Alert>
       )}
 
+      {/* Top Up Modal */}
+      <Dialog open={topUpOpen} onClose={() => !topUpBusy && setTopUpOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Add Funds</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            Choose a top-up amount. A new tab will open for secure checkout.
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <Button
+              variant="contained"
+              color="primary"
+              disabled={topUpBusy}
+              onClick={async () => {
+                try {
+                  setTopUpBusy(true);
+                  const url = await startTopUpAmount(5);
+                  if (url) window.open(url, '_blank');
+                } finally {
+                  setTopUpBusy(false);
+                }
+              }}
+            >
+              Add $5
+            </Button>
+            <Button
+              variant="outlined"
+              color="primary"
+              disabled={topUpBusy}
+              onClick={async () => {
+                try {
+                  setTopUpBusy(true);
+                  const url = await startTopUpProduct(PRICE_10);
+                  if (url) window.open(url, '_blank');
+                } finally {
+                  setTopUpBusy(false);
+                }
+              }}
+            >
+              Add $10
+            </Button>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setTopUpOpen(false)} disabled={topUpBusy}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
       {/* My Numbers Tab */}
       {activeTab === 0 && (
         <Grid container spacing={3}>
@@ -419,8 +489,9 @@ export default function PhoneNumbers() {
                     variant="contained"
                     startIcon={<Plus size={20} />}
                     onClick={handleDialogOpen}
+                    disabled={!canBuyNumbers}
                   >
-                    Purchase Number
+                    {billing && !billing.hasClaimedFreeNumber ? 'Get Free Number' : 'Purchase Number'}
                   </Button>
                 </CardContent>
               </Card>
@@ -598,7 +669,7 @@ export default function PhoneNumbers() {
                 </TableHead>
                 <TableBody>
                   {(callLogs || [])
-                    .filter(Boolean) // Remove null/undefined entries
+                    .filter(Boolean)
                     .sort((a, b) => new Date(b?.startTime || b?.createdAt || 0).getTime() - new Date(a?.startTime || a?.createdAt || 0).getTime())
                     .map((call, index) => (
                       <TableRow key={call.id || call.callSid || call.call_sid || `call-${index}`}>
@@ -645,11 +716,7 @@ export default function PhoneNumbers() {
                               callStatus={call.status}
                               createdAt={call.startTime || call.createdAt}
                               onError={(error) => {
-                                setSnackbar({
-                                  open: true,
-                                  message: error,
-                                  severity: 'error'
-                                });
+                                setSnackbar({ open: true, message: error, severity: 'error' });
                               }}
                             />
                           )}
@@ -701,12 +768,7 @@ export default function PhoneNumbers() {
       )}
 
       {/* Purchase Number Dialog */}
-      <Dialog
-        open={dialogOpen}
-        onClose={handleDialogClose}
-        maxWidth="md"
-        fullWidth
-      >
+      <Dialog open={dialogOpen} onClose={handleDialogClose} maxWidth="md" fullWidth>
         <DialogTitle>Purchase Phone Number</DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -736,12 +798,7 @@ export default function PhoneNumbers() {
               </Grid>
             </Grid>
 
-            <Button
-              variant="contained"
-              onClick={() => setSearchParams({ ...searchParams })}
-              disabled={availableNumbersLoading}
-              startIcon={<Search size={20} />}
-            >
+            <Button variant="contained" onClick={() => setSearchParams({ ...searchParams })} disabled={availableNumbersLoading} startIcon={<Search size={20} />}>
               {availableNumbersLoading ? 'Searching...' : 'Search Numbers'}
             </Button>
 
@@ -772,10 +829,20 @@ export default function PhoneNumbers() {
                           <Button
                             variant="contained"
                             size="small"
-                            onClick={() => handleBuyNumber(number.phoneNumber)}
-                            disabled={buyNumberMutation.isPending}
+                            onClick={async () => {
+                              try {
+                                await handleBuyNumber(number.phoneNumber);
+                              } catch (e: any) {
+                                if ((e?.response?.status || e?.status) === 402) {
+                                  setSnackbar({ open: true, message: 'Insufficient balance. Please add at least $5 to purchase a number.', severity: 'warning' });
+                                } else {
+                                  setSnackbar({ open: true, message: e?.message || 'Failed to purchase number', severity: 'error' });
+                                }
+                              }
+                            }}
+                            disabled={buyNumberMutation.isPending || (!canBuyNumbers && !(billing && !billing.hasClaimedFreeNumber))}
                           >
-                            {buyNumberMutation.isPending ? 'Purchasing...' : 'Buy Number'}
+                            {billing && !billing.hasClaimedFreeNumber ? 'Get Free Number' : (buyNumberMutation.isPending ? 'Purchasing...' : 'Buy Number')}
                           </Button>
                         </CardContent>
                       </Card>
@@ -791,15 +858,8 @@ export default function PhoneNumbers() {
         </DialogActions>
       </Dialog>
 
-
-
       {/* Recordings Dialog */}
-      <Dialog
-        open={recordingsOpen}
-        onClose={handleRecordingsClose}
-        maxWidth="lg"
-        fullWidth
-      >
+      <Dialog open={recordingsOpen} onClose={handleRecordingsClose} maxWidth="lg" fullWidth>
         <DialogTitle>Call Recordings</DialogTitle>
         <DialogContent>
           {userPhoneNumbers.loading ? (
@@ -852,19 +912,12 @@ export default function PhoneNumbers() {
                               Created: {new Date(recording.createdAt).toLocaleString()}
                             </Typography>
                           </Box>
-                          <Button
-                            variant="outlined"
-                            color="error"
-                            size="small"
-                            onClick={() => userPhoneNumbers.deleteRecording(recording.recordingSid)}
-                            disabled={userPhoneNumbers.loading}
-                          >
+                          <Button variant="outlined" color="error" size="small" onClick={() => userPhoneNumbers.deleteRecording(recording.recordingSid)} disabled={userPhoneNumbers.loading}>
                             {userPhoneNumbers.loading ? 'Deleting...' : 'Delete'}
                           </Button>
                         </Box>
 
                         <Box sx={{ mb: 2 }}>
-                          {/* Debug info */}
                           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
                             Debug - Media URL: {recording.mediaUrl || 'No URL'}
                           </Typography>
@@ -880,11 +933,7 @@ export default function PhoneNumbers() {
                             createdAt={recording.createdAt}
                             onError={(error) => {
                               console.error('RecordingPlayer error:', error);
-                              setSnackbar({
-                                open: true,
-                                message: error,
-                                severity: 'error'
-                              });
+                              setSnackbar({ open: true, message: error, severity: 'error' });
                             }}
                           />
                         </Box>
@@ -902,12 +951,7 @@ export default function PhoneNumbers() {
       </Dialog>
 
       {/* Call History Dialog */}
-      <Dialog
-        open={callHistoryOpen}
-        onClose={handleCallHistoryClose}
-        maxWidth="md"
-        fullWidth
-      >
+      <Dialog open={callHistoryOpen} onClose={handleCallHistoryClose} maxWidth="md" fullWidth>
         <DialogTitle>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <History size={20} />
@@ -932,7 +976,7 @@ export default function PhoneNumbers() {
               </TableHead>
               <TableBody>
                 {(callLogs || [])
-                  .filter(Boolean) // Remove null/undefined entries
+                  .filter(Boolean)
                   .filter(call => call && String(call.phoneNumberId) === String(selectedNumber?.id))
                   .sort((a, b) => new Date(b?.startTime || b?.createdAt || 0).getTime() - new Date(a?.startTime || a?.createdAt || 0).getTime())
                   .map((call, index) => (
@@ -971,13 +1015,7 @@ export default function PhoneNumbers() {
                               callDuration={call.duration}
                               callStatus={call.status}
                               createdAt={call.startTime || call.createdAt}
-                              onError={(error) => {
-                                setSnackbar({
-                                  open: true,
-                                  message: error,
-                                  severity: 'error'
-                                });
-                              }}
+                              onError={(error) => setSnackbar({ open: true, message: error, severity: 'error' })}
                             />
                           )}
                           {call.status === 'no-answer' && (
@@ -1002,12 +1040,7 @@ export default function PhoneNumbers() {
 
       {/* Purchase Result Dialog */}
       {purchaseResult && (
-        <Dialog
-          open={purchaseResult.show}
-          onClose={() => setPurchaseResult(null)}
-          maxWidth="sm"
-          fullWidth
-        >
+        <Dialog open={purchaseResult.show} onClose={() => setPurchaseResult(null)} maxWidth="sm" fullWidth>
           <DialogTitle>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               {purchaseResult.isDifferent ? (
@@ -1074,28 +1107,16 @@ export default function PhoneNumbers() {
             </Box>
           </DialogContent>
           <DialogActions>
-            <Button
-              onClick={() => setPurchaseResult(null)}
-              variant="contained"
-              color="primary"
-            >
+            <Button onClick={() => setPurchaseResult(null)} variant="contained" color="primary">
               Got it!
             </Button>
           </DialogActions>
         </Dialog>
       )}
 
-      {/* Snackbar for notifications */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-      >
-        <Alert
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          severity={snackbar.severity}
-          sx={{ width: '100%' }}
-        >
+      {/* Snackbar */}
+      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
+        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}
         </Alert>
       </Snackbar>

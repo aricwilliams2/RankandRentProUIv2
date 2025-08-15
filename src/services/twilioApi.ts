@@ -27,6 +27,10 @@ console.log("sss",API_BASE_URL);
 // Twilio API (all under API_BASE_URL)
 // ===============================
 export const twilioApi = {
+  // === BILLING (read-only here; write via apiClient directly or BillingContext) ===
+  getBillingMe: async () => (await apiClient.get('/api/billing/me')).data,
+  startTopUpAmount: async (amount: number) => (await apiClient.post('/stripe/top-up', { amount })).data,
+  startTopUpProduct: async (priceId: string) => (await apiClient.post('/stripe/top-up-product', { priceId })).data,
   // === AUTH ===
   getAccessToken: async (identity?: string) => {
     const effectiveIdentity = identity ?? `user_${Date.now()}`;
