@@ -337,9 +337,10 @@ const BrowserCallComponent = () => {
           <p>Selected Number: {selectedFromNumber || 'None selected'}</p>
           <p>Available Numbers: {userPhoneNumbers.phoneNumbers.length}</p>
         </div>
-      )}
       </div>
-      );
+
+    </div>
+  );
 };
 
-      export default BrowserCallComponent; 
+export default BrowserCallComponent; 
