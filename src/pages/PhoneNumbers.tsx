@@ -350,12 +350,44 @@ export default function PhoneNumbers() {
 
       {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)}>
-          <Tab label="My Numbers" />
-          <Tab label="Call History" />
-          <Tab label="Call Forwarding" />
-          <Tab label="Browser Call" />
-        </Tabs>
+        {/* Mobile Select Dropdown */}
+        <Box sx={{ display: { xs: 'block', md: 'none' }, mb: 2 }}>
+          <FormControl fullWidth>
+            <Select
+              value={activeTab}
+              onChange={(e) => setActiveTab(e.target.value as number)}
+              size="small"
+            >
+              <MenuItem value={0}>My Numbers</MenuItem>
+              <MenuItem value={1}>Call History</MenuItem>
+              <MenuItem value={2}>Call Forwarding</MenuItem>
+              <MenuItem value={3}>Browser Call</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+        
+        {/* Desktop Tabs */}
+        <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+          <Tabs 
+            value={activeTab} 
+            onChange={(_, newValue) => setActiveTab(newValue)}
+            variant="scrollable"
+            scrollButtons="auto"
+            allowScrollButtonsMobile
+            sx={{
+              '& .MuiTab-root': {
+                minWidth: 'auto',
+                padding: { xs: '12px 8px', sm: '12px 16px' },
+                fontSize: { xs: '0.75rem', sm: '0.875rem' }
+              }
+            }}
+          >
+            <Tab label="My Numbers" />
+            <Tab label="Call History" />
+            <Tab label="Call Forwarding" />
+            <Tab label="Browser Call" />
+          </Tabs>
+        </Box>
       </Box>
 
       {/* Error Alert */}

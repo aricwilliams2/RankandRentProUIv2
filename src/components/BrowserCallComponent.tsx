@@ -12,10 +12,19 @@ const BrowserCallComponent = () => {
   // const [isMuted, setIsMuted] = useState(false);
   const [error, setError] = useState('');
   const [toNumber, setToNumber] = useState('');
+  const [callStatus, setCallStatus] = useState('idle');
   const [selectedFromNumber, setSelectedFromNumber] = useState<string>('');
 
   // Get user's phone numbers
   const userPhoneNumbers = useUserPhoneNumbers();
+
+  // Set default selected number when phone numbers load
+  useEffect(() => {
+    if (userPhoneNumbers.phoneNumbers.length > 0 && !selectedFromNumber) {
+      const firstNumber = userPhoneNumbers.phoneNumbers[0];
+      setSelectedFromNumber(firstNumber.phone_number || firstNumber.number || '');
+    }
+  }, [userPhoneNumbers.phoneNumbers, selectedFromNumber]);
 
   // Initialize Twilio Device
   useEffect(() => {
@@ -49,41 +58,61 @@ const BrowserCallComponent = () => {
         // Set up event listeners
         dev.on('ready', () => {
           console.log('✅ Device ready');
-          setError(''); // Clear any previous errors
+          setCallStatus('ready');
+          setError('');
         });
+
         dev.on('connect', (conn) => {
           console.log('✅ Call connected');
           setConnection(conn);
           setIsConnected(true);
           setIsCalling(false);
-          setError(''); // Clear any previous errors
+          setCallStatus('connected');
+          setError('');
         });
+
         dev.on('disconnect', () => {
-          console.log('📞 Call disconnected');
+          console.log('📞 Call ended');
           setConnection(null);
           setIsConnected(false);
           setIsCalling(false);
+          setCallStatus('idle');
+          setError('');
         });
+
         dev.on('error', (error) => {
-          console.error('Device error:', error);
-          setError(`Device error: ${error.message}`);
-          setIsCalling(false);
+          console.log('❌ Device error:', error);
+          if (error.code === 31005 || error.message.includes('HANGUP')) {
+            console.log('📞 Call ended normally (person hung up or didn\'t answer)');
+            setConnection(null);
+            setIsConnected(false);
+            setIsCalling(false);
+            setCallStatus('idle');
+            setError('');
+          } else {
+            setError(`Device error: ${error.message}`);
+            setCallStatus('error');
+          }
         });
         dev.on('incoming', () => {
           console.log('📞 Incoming call');
         });
+
         dev.on('cancel', () => {
           console.log('📞 Call cancelled');
           setIsCalling(false);
         });
+
         dev.on('close', () => {
           console.log('📞 Device closed');
         });
 
+
         setDevice(dev);
       } catch (error) {
-        console.error('Access token error:', error);
+        console.error('❌ Failed to initialize:', error);
         setError(`Failed to initialize: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        setCallStatus('error');
       }
     };
 
@@ -109,13 +138,10 @@ const BrowserCallComponent = () => {
       setError('Please enter a phone number to call');
       return;
     }
-    if (!selectedFromNumber) {
-      setError('Please select a phone number to call from');
-      return;
-    }
 
     try {
       setIsCalling(true);
+      setCallStatus('calling');
       setError('');
 
       // Format the phone numbers properly
@@ -227,10 +253,10 @@ const BrowserCallComponent = () => {
       {!(isCalling || isConnected) ? (
         // Call Setup
         <div className="space-y-4">
-          {/* From Number Selection */}
+          {/* Call From Number Selection */}
           <div>
             <label htmlFor="fromNumber" className="block text-sm font-medium text-gray-700 mb-2">
-              Call From (Your Number)
+              Call From (Your Number):
             </label>
             <select
               id="fromNumber"
@@ -247,20 +273,18 @@ const BrowserCallComponent = () => {
                 </option>
               ))}
             </select>
-            {userPhoneNumbers.phoneNumbers.length === 0 && (
-              <p className="text-sm text-gray-500 mt-1">
-                No phone numbers available. Please purchase a number first.
-              </p>
-            )}
+            <p className="text-xs text-gray-500 mt-1">
+              Choose which of your phone numbers to display as the caller ID
+            </p>
           </div>
 
           {/* To Number Input */}
           <div>
-            <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">
-              Call To (Target Number)
+            <label htmlFor="toNumber" className="block text-sm font-medium text-gray-700 mb-2">
+              Phone Number to Call:
             </label>
             <input
-              id="phoneNumber"
+              id="toNumber"
               type="tel"
               value={toNumber}
               onChange={(e) => setToNumber(e.target.value)}
@@ -313,9 +337,9 @@ const BrowserCallComponent = () => {
           <p>Selected Number: {selectedFromNumber || 'None selected'}</p>
           <p>Available Numbers: {userPhoneNumbers.phoneNumbers.length}</p>
         </div>
+      )}
       </div>
-    </div>
-  );
+      );
 };
 
-export default BrowserCallComponent; 
+      export default BrowserCallComponent; 
