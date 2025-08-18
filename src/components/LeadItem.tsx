@@ -1,5 +1,5 @@
 import React, { forwardRef, useState } from "react";
-import { ExternalLink, Phone, Check, MessageSquare, Calendar, X, ChevronDown, ChevronUp, Clock, AlertTriangle, Edit, Save, MoreHorizontal, Trash2, Pencil, MapPin, BarChart3, UserPlus, Map } from "lucide-react";
+import { ExternalLink, Phone, Check, MessageSquare, Calendar, X, ChevronDown, ChevronUp, Clock, AlertTriangle, Edit, MoreHorizontal, Trash2, Pencil, MapPin, BarChart3, UserPlus, Map, Save } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tooltip } from "@mui/material";
 import StarRating from "./StarRating";
@@ -15,7 +15,7 @@ interface LeadItemProps {
 }
 
 const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }, ref) => {
-  const { setLastCalledIndex, toggleContactStatus, addCallLog, updateCallLog, deleteLead } = useLeadContext();
+  const { setLastCalledIndex, toggleContactStatus, addCallLog, updateCallLog, deleteLead, refreshLeads, deleteCallLog } = useLeadContext();
   const { createClient } = useClientContext();
   const navigate = useNavigate();
   const [showCallDialog, setShowCallDialog] = useState(false);
@@ -134,13 +134,19 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
       }
     }
   };
-  const handleSubmitCallLog = () => {
+  const handleSubmitCallLog = async () => {
     if (callNotes.trim()) {
-      addCallLog(lead.id, {
+      await addCallLog(lead.id, {
         outcome: callOutcome,
         notes: callNotes.trim(),
         nextFollowUp: null,
       });
+
+      // Refresh the list to reflect any server-side changes
+      try {
+        window.location.reload();
+
+      } catch { }
 
       setCallNotes("");
       setCallOutcome("follow_up_1_day");
@@ -160,15 +166,38 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
     setEditOutcome(log.outcome);
   };
 
-  const handleSaveEdit = () => {
+  const handleDeleteLog = async () => {
+    if (editingLogId) {
+      if (!window.confirm('Delete this call log?')) return;
+      try {
+        await deleteCallLog?.(lead.id, editingLogId);
+        await window.location.reload();
+
+      } catch (e) {
+        // ignore
+      } finally {
+        setEditingLogId(null);
+        setEditNotes("");
+        setEditOutcome("follow_up_1_day");
+      }
+    }
+  };
+
+  const handleSaveEdit = async () => {
     if (editingLogId && editNotes.trim()) {
-      updateCallLog(lead.id, editingLogId, {
-        outcome: editOutcome,
-        notes: editNotes.trim(),
-      });
-      setEditingLogId(null);
-      setEditNotes("");
-      setEditOutcome("follow_up_1_day");
+      try {
+        await updateCallLog(lead.id, editingLogId, {
+          outcome: editOutcome,
+          notes: editNotes.trim(),
+        });
+        window.location.reload();
+      } catch (e) {
+        // ignore
+      } finally {
+        setEditingLogId(null);
+        setEditNotes("");
+        setEditOutcome("follow_up_1_day");
+      }
     }
   };
 
@@ -403,9 +432,13 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
                         <Save className="w-3 h-3" />
                         Save
                       </button>
+                      <button onClick={handleDeleteLog} className="flex items-center gap-1 px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700">
+                        <Trash2 className="w-3 h-3" />
+                        Delete
+                      </button>
                       <button onClick={handleCancelEdit} className="flex items-center gap-1 px-2 py-1 bg-gray-300 text-gray-700 rounded text-xs hover:bg-gray-400">
                         <X className="w-3 h-3" />
-                        Cancel
+                        Close
                       </button>
                     </div>
                   </div>
@@ -611,9 +644,13 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
                               <Save className="w-4 h-4" />
                               Save
                             </button>
+                            <button onClick={handleDeleteLog} className="flex items-center gap-1 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700">
+                              <Trash2 className="w-4 h-4" />
+                              Delete
+                            </button>
                             <button onClick={handleCancelEdit} className="flex items-center gap-1 px-3 py-1 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
                               <X className="w-4 h-4" />
-                              Cancel
+                              Close
                             </button>
                           </div>
                         </div>

@@ -57,8 +57,9 @@ export interface LeadContextType {
   sortDirection: SortDirection;
   setSortDirection: React.Dispatch<React.SetStateAction<SortDirection>>;
   handleSort: (field: SortField) => void;
-  addCallLog: (leadId: string, callLog: Omit<CallLog, "id" | "leadId" | "callDate">) => void;
+  addCallLog: (leadId: string, callLog: Omit<CallLog, "id" | "leadId" | "callDate">) => Promise<void>;
   updateCallLog: (leadId: string, callLogId: string, updateData: Partial<Pick<CallLog, "outcome" | "notes">>) => void;
+  deleteCallLog?: (leadId: string, callLogId: string) => Promise<void>;
   loading: boolean;
   error: string | null;
   // New CRUD functions

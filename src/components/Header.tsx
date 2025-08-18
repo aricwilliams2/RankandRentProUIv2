@@ -36,21 +36,7 @@ const Header: React.FC = () => {
             )}
           </div>
           <div className="flex items-center gap-2 ml-2">
-            {billing && (
-              <div className="hidden sm:flex items-center gap-2 mr-2 text-xs sm:text-sm">
-                <span className="bg-white/10 rounded px-2 py-1 whitespace-nowrap">Balance: ${billing.balance.toFixed(2)}</span>
-                <span className="bg-white/10 rounded px-2 py-1 whitespace-nowrap">Free min: {billing.freeMinutesRemaining}</span>
-                {!billing.hasClaimedFreeNumber && (
-                  <span className="bg-green-500/20 text-white rounded px-2 py-1 whitespace-nowrap">Free number available</span>
-                )}
-                <button
-                  onClick={() => startTopUpProduct("price_5USD")}
-                  className="flex items-center px-2 sm:px-3 py-1.5 bg-yellow-500 hover:bg-yellow-600 rounded-lg text-xs sm:text-sm transition-colors whitespace-nowrap"
-                >
-                  <Wallet className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-1.5" /> Add Funds
-                </button>
-              </div>
-            )}
+
             <span className="hidden lg:inline mr-3 text-sm whitespace-nowrap">Your Sales Leads Dashboard</span>
             <button
               onClick={() => setShowAddLead(true)}

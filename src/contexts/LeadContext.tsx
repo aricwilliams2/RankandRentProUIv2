@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, useContext, useMemo } from "react";
 import { Lead, LeadContextType, Filters, AreaData, SortField, SortDirection, CallLog } from "../types";
-import { createCallLogAPI, updateCallLogAPI, fetchCallLogsAPI } from "../services/apiService";
+import { createCallLogAPI, updateCallLogAPI, fetchCallLogsAPI, deleteCallLogAPI } from "../services/apiService";
 import { apiCall } from '../config/api';
 
 const LeadContext = createContext<LeadContextType | undefined>(undefined);
@@ -363,7 +363,7 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Add call log function
-  const addCallLog = async (leadId: string, callLogData: Omit<CallLog, "id" | "leadId" | "callDate">) => {
+  const addCallLog = async (leadId: string, callLogData: Omit<CallLog, "id" | "leadId" | "callDate">): Promise<void> => {
     const lead = allLeads.find((l) => l.id === leadId);
     if (!lead) return;
 
@@ -450,6 +450,23 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error("Failed to update call log:", error);
       setError("Failed to update call log");
+    }
+  };
+
+  const removeCallLog = async (leadId: string, callLogId: string) => {
+    const lead = allLeads.find((l) => l.id === leadId);
+    if (!lead) return;
+    try {
+      await deleteCallLogAPI(callLogId);
+      const updatedLead = {
+        ...lead,
+        callLogs: (lead.callLogs || []).filter((log) => log.id !== callLogId),
+      };
+      setAllLeads((prevLeads) => prevLeads.map((l) => (l.id === leadId ? updatedLead : l)));
+    } catch (error) {
+      console.error("Failed to delete call log:", error);
+      setError("Failed to delete call log");
+      throw error;
     }
   };
 
@@ -659,6 +676,7 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
         handleSort,
         addCallLog,
         updateCallLog,
+        deleteCallLog: removeCallLog,
         loading,
         error,
         // New CRUD functions
