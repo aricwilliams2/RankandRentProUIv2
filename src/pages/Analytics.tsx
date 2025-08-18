@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -199,7 +199,6 @@ export default function Analytics() {
       document.head.appendChild(styleEl);
       const root = target as HTMLElement;
       root.classList.add('report-capture');
-      const prevPaddingBottom = root.style.paddingBottom;
       root.style.paddingBottom = '24px';
 
       const scale = Math.min(2, window.devicePixelRatio || 1);
@@ -447,7 +446,7 @@ export default function Analytics() {
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
         </Alert>
-        <Button variant="contained" onClick={fetchTrafficData}>
+        <Button variant="contained" onClick={() => fetchTrafficData()}>
           Retry Analysis
         </Button>
       </Box>
@@ -626,7 +625,7 @@ export default function Analytics() {
                         label={{ value: 'Organic Traffic', angle: -90, position: 'insideLeft' }}
                       />
                       <Tooltip
-                        formatter={(value, name) => [value, 'Organic Traffic']}
+                        formatter={(value) => [value, 'Organic Traffic']}
                         labelFormatter={(label: string) => {
                           const chartItem = chartData.find(item => item.month === label);
                           return chartItem ? chartItem.fullDate : label;
@@ -746,7 +745,7 @@ export default function Analytics() {
                         paddingAngle={2}
                         dataKey="share"
                       >
-                        {trafficData.top_countries.map((entry, index) => (
+                        {trafficData.top_countries.map((_entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
@@ -807,7 +806,10 @@ export default function Analytics() {
                       {trafficData.top_pages.map((page, index) => (
                         <TableRow key={index}>
                           <TableCell>
-                            <Typography variant="body2" sx={{ maxWidth: 400, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            <Typography
+                              variant="body2"
+                              sx={{ whiteSpace: 'normal', overflowWrap: 'anywhere', wordBreak: 'break-word' }}
+                            >
                               {page.url}
                             </Typography>
                           </TableCell>
@@ -855,14 +857,14 @@ interface AnalyticsSnapshotListItem {
   created_at: string;
 }
 
-interface AnalyticsSnapshotDetail {
-  id: number;
-  user_id: number;
-  url: string | null;
-  mode: string | null;
-  snapshot_json: string;
-  created_at: string;
-}
+// interface AnalyticsSnapshotDetail {
+//   id: number;
+//   user_id: number;
+//   url: string | null;
+//   mode: string | null;
+//   snapshot_json: string;
+//   created_at: string;
+// }
 
 interface AnalyticsPayload {
   history?: any[];
@@ -1219,7 +1221,12 @@ function AnalyticsHistorySection() {
                               {normalizedPages.map((p, i) => (
                                 <TableRow key={i}>
                                   <TableCell>
-                                    <Typography variant="body2" sx={{ maxWidth: 420, overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.url}</Typography>
+                                    <Typography
+                                      variant="body2"
+                                      sx={{ whiteSpace: 'normal', overflowWrap: 'anywhere', wordBreak: 'break-word' }}
+                                    >
+                                      {p.url}
+                                    </Typography>
                                   </TableCell>
                                   <TableCell align="right">{p.traffic.toLocaleString()}</TableCell>
                                 </TableRow>
