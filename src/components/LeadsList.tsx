@@ -66,9 +66,9 @@ const LeadsList: React.FC = () => {
               <th className="text-left p-3 lg:p-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 text-sm" onClick={() => handleSort("name")}>
                 <div className="flex items-center">Business {renderSortIndicator("name")}</div>
               </th>
-              <th className="text-left p-3 lg:p-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 text-sm" onClick={() => handleSort("reviews")}>
+              {/* <th className="text-left p-3 lg:p-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 text-sm" onClick={() => handleSort("reviews")}>
                 <div className="flex items-center">Reviews {renderSortIndicator("reviews")}</div>
-              </th>
+              </th> */}
               <th className="text-left p-3 lg:p-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 text-sm" onClick={() => handleSort("phone")}>
                 <div className="flex items-center">Phone {renderSortIndicator("phone")}</div>
               </th>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Button,
@@ -53,6 +53,7 @@ import { RecordingPlayer } from '../components/RecordingPlayer';
 import BrowserCallComponent from '../components/BrowserCallComponent';
 import CallForwardingComponent from '../components/CallForwardingComponent';
 import { useBilling } from '../contexts/BillingContext';
+import { twilioApi } from '../services/twilioApi';
 
 // Mock data for websites - replace with actual API calls
 const mockWebsites: Website[] = [
@@ -143,6 +144,32 @@ export default function PhoneNumbers() {
 
   const [topUpOpen, setTopUpOpen] = useState(false);
   const [topUpBusy, setTopUpBusy] = useState(false);
+
+  // Usage stats (totals)
+  const [usageLoading, setUsageLoading] = useState(true);
+  const [usageError, setUsageError] = useState<string | null>(null);
+  const [usage, setUsage] = useState<{ total_calls: number; total_duration_seconds: number; total_numbers: number } | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        setUsageLoading(true);
+        const res = await twilioApi.getUsageStats();
+        // API shape: { success, data: { total_calls, total_duration_seconds, total_numbers } }
+        const data = (res?.data ?? res) as any;
+        const parsed = data?.total_calls !== undefined ? data : res?.data;
+        if (isMounted) setUsage(parsed ?? null);
+      } catch (e: any) {
+        if (isMounted) setUsageError(e?.message ?? 'Failed to load usage stats');
+      } finally {
+        if (isMounted) setUsageLoading(false);
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const {
     useAvailableNumbers,
@@ -293,59 +320,43 @@ export default function PhoneNumbers() {
 
   return (
     <Box>
-      {/* User Info Section */}
-      <Card sx={{ mb: 0, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Box>
-              <Typography variant="h5" fontWeight="bold" sx={{ mb: 1 }}>
-                Welcome to Your Calling Platform, {user?.name}!
-              </Typography>
-              <Typography variant="body1" sx={{ opacity: 0.9 }}>
-                You own {userPhoneNumbers.phoneNumbers.length} phone numbers and have made {userPhoneNumbers.calls.length} calls
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', gap: 3, textAlign: 'center' }}>
-              <Box>
-                <Typography variant="h4" fontWeight="bold">
-                  {userPhoneNumbers.phoneNumberStats?.active_numbers || userPhoneNumbers.phoneNumbers.filter(n => n.status === 'active').length}
-                </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.8 }}>Active Numbers</Typography>
-              </Box>
-              <Box>
-                <Typography variant="h4" fontWeight="bold">
-                  {userPhoneNumbers.phoneNumberStats?.total_numbers || userPhoneNumbers.phoneNumbers.length}
-                </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.8 }}>Total Numbers</Typography>
-              </Box>
-              <Box>
-                <Typography variant="h4" fontWeight="bold">
-                  ${userPhoneNumbers.phoneNumberStats?.total_monthly_cost || '0.00'}
-                </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.8 }}>Monthly Cost</Typography>
-              </Box>
-              <Box>
-                <Typography variant="h4" fontWeight="bold">{userPhoneNumbers.calls.length}</Typography>
-                <Typography variant="body2" sx={{ opacity: 0.8 }}>Calls Made</Typography>
-              </Box>
-            </Box>
-          </Box>
-        </CardContent>
-      </Card>
 
-      {/* Sticky Billing Summary Bar */}
+
+      {/* Sticky Billing Summary Bar + Usage Totals */}
       <Box sx={{ position: 'sticky', top: 0, zIndex: 5, bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider', py: 1.5, px: 1, mb: 2 }}>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
             <Chip color="primary" variant="outlined" label={`Balance: $${billing ? billing.balance.toFixed(2) : '--'}`} />
-            <Chip color="secondary" variant="outlined" label={`Call hours: ${billing ? `${Math.floor(billing.freeMinutesRemaining / 60)}h ${billing.freeMinutesRemaining % 60}m` : '--'}`} />
+            <Chip
+              color="secondary"
+              variant="outlined"
+              label={
+                usage
+                  ? `Call duration: ${Math.floor(usage.total_duration_seconds / 3600)}h ${Math.floor((usage.total_duration_seconds % 3600) / 60)}m`
+                  : (usageLoading ? 'Call duration: …' : 'Call duration: --')
+              }
+            />
             {!billingLoading && billing && !billing.hasClaimedFreeNumber && (
               <Chip color="success" variant="outlined" label="Free number available" />
             )}
           </Box>
-          <Button variant="contained" color="warning" onClick={() => setTopUpOpen(true)} disabled={billingLoading}>
-            Add Funds
-          </Button>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+            {/* Usage totals */}
+            {usageLoading ? (
+              <Chip variant="outlined" label="Loading usage…" />
+            ) : usageError ? (
+              <Chip color="error" variant="outlined" label={`Usage error: ${usageError}`} />
+            ) : usage ? (
+              <>
+                <Chip variant="outlined" label={`Total calls: ${usage.total_calls}`} />
+                <Chip variant="outlined" label={`Total duration: ${Math.floor(usage.total_duration_seconds / 60)}m ${usage.total_duration_seconds % 60}s`} />
+                <Chip variant="outlined" label={`Owned numbers: ${usage.total_numbers}`} />
+              </>
+            ) : null}
+            <Button variant="contained" color="warning" onClick={() => setTopUpOpen(true)} disabled={billingLoading}>
+              Add Funds
+            </Button>
+          </Box>
         </Box>
       </Box>
 

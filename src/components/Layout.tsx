@@ -14,7 +14,7 @@ const navItems = [
   { icon: Phone, label: "Phone Numbers", path: "/phone-numbers" },
   // { icon: Calculator, label: "Revenue", path: "/revenue" },
   // { icon: Search, label: "Research", path: "/research" },
-  { icon: Settings, label: "Settings", path: "/settings" },
+  //{ icon: Settings, label: "Settings", path: "/settings" },
 ];
 
 const DRAWER_WIDTH = 240;

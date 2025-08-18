@@ -1,13 +1,12 @@
 import React from "react";
-import { Phone, RefreshCw, Menu, AlertCircle, Plus, Wallet } from "lucide-react";
+import { Phone, RefreshCw, AlertCircle, Plus, Music, ChevronDown, ChevronUp } from "lucide-react";
 import { useLeadContext } from "../contexts/LeadContext";
 import LeadFormDialog from "./LeadFormDialog";
-import { useBilling } from "../contexts/BillingContext";
 
 const Header: React.FC = () => {
   const { clearCache, currentArea, areas, loading, error } = useLeadContext();
-  const { billing, startTopUpProduct } = useBilling();
   const [showAddLead, setShowAddLead] = React.useState(false);
+  const [musicOpen, setMusicOpen] = React.useState(false);
   const currentAreaName = areas.find((area) => area.id === currentArea)?.name || "";
 
   return (
@@ -60,6 +59,39 @@ const Header: React.FC = () => {
           </div>
         </div>
       </header>
+
+      {/* Fixed top-right music control (300px width) */}
+      {/* <div className="fixed bottom-0 right-3 z-40 w-[400px]">
+        <div className="bg-white/95 backdrop-blur-sm border border-orange-300 text-orange-800 rounded-md shadow-sm">
+          <button
+            onClick={() => setMusicOpen((v) => !v)}
+            className="w-full px-3 py-2 flex items-center justify-between hover:bg-orange-50 transition-colors"
+            aria-expanded={musicOpen}
+            aria-controls="music-player-panel"
+          >
+            <span className="flex items-center gap-2">
+              <Music className="h-4 w-4 text-orange-600" />
+              <span className="text-sm">Play music?</span>
+            </span>
+            {musicOpen ? <ChevronUp className="h-4 w-4 text-orange-600" /> : <ChevronDown className="h-4 w-4 text-orange-600" />}
+          </button>
+          {musicOpen && (
+            <div id="music-player-panel" className="border-t border-orange-200">
+              <div className="p-2">
+                <div className="rounded-md overflow-hidden border border-orange-200 bg-white">
+                  <iframe
+                    title="Spotify Player"
+                    style={{ border: 0, width: '100%', height: 152 }}
+                    src="https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M?utm_source=generator"
+                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div> */}
 
       <LeadFormDialog
         open={showAddLead}

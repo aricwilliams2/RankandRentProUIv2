@@ -31,6 +31,8 @@ export const twilioApi = {
   getBillingMe: async () => (await apiClient.get('/api/billing/me')).data,
   startTopUpAmount: async (amount: number) => (await apiClient.post('/stripe/top-up', { amount })).data,
   startTopUpProduct: async (priceId: string) => (await apiClient.post('/stripe/top-up-product', { priceId })).data,
+  // === USAGE ===
+  getUsageStats: async () => (await apiClient.get('/api/twilio/usage-stats')).data,
   // === AUTH ===
   getAccessToken: async (identity?: string) => {
     const effectiveIdentity = identity ?? `user_${Date.now()}`;

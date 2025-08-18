@@ -2,7 +2,6 @@ import React, { forwardRef, useState } from "react";
 import { ExternalLink, Phone, Check, MessageSquare, Calendar, X, ChevronDown, ChevronUp, Clock, AlertTriangle, Edit, MoreHorizontal, Trash2, Pencil, MapPin, BarChart3, UserPlus, Map, Save } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tooltip } from "@mui/material";
-import StarRating from "./StarRating";
 import { Lead, CallLog } from "../types";
 import { useLeadContext } from "../contexts/LeadContext";
 import { useClientContext } from "../contexts/ClientContext";
@@ -300,7 +299,6 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
               {isFollowUpDue && <AlertTriangle className="w-4 h-4 text-orange-500" />}
             </div>
             <div className="mt-1 flex items-center gap-2 flex-wrap">
-              <StarRating reviews={lead.reviews} />
               {lead.status && <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(lead.status)}`}>{lead.status}</span>}
               {lead.city && lead.city !== "Unknown" && (
                 <div className="flex items-center gap-1 text-xs text-gray-600">
@@ -496,12 +494,7 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
           </div>
         </td>
 
-        {/* Reviews (hide on small desktop widths via CSS in header) */}
-        <td className="hidden md:table-cell p-3 lg:p-4">
-          <div className="mt-1">
-            <StarRating reviews={lead.reviews} />
-          </div>
-        </td>
+
 
         {/* Phone */}
         <td className="p-3 lg:p-4">
@@ -530,7 +523,7 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
 
       {/* Under-row: Call Log, Call History, Actions */}
       <tr className="hidden sm:table-row">
-        <td colSpan={4} className="p-3 pt-0 lg:p-4 lg:pt-0">
+        <td colSpan={3} className="p-3 pt-0 lg:p-4 lg:pt-0">
           <div className={`flex flex-col gap-3 rounded-md bg-white ring-1 shadow-sm ring-gray-200 border-l-4 ${getStatusAccentBorder(lead.status)} px-3 py-3`}>
             {/* Actions row */}
             <div className="flex items-center gap-1 flex-wrap">
@@ -674,7 +667,7 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
 
       {/* Spacer row for visual separation */}
       <tr className="hidden sm:table-row">
-        <td colSpan={4} className="py-1"></td>
+        <td colSpan={3} className="py-1"></td>
       </tr>
 
       {/* Call Logging Dialog */}
