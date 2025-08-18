@@ -516,24 +516,9 @@ export const LeadProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       setError(null);
 
-      // Load call logs from localStorage
-      const savedCallLogs = localStorage.getItem("callLogs");
-      const callLogsMap = savedCallLogs ? JSON.parse(savedCallLogs) : {};
-
+      // Always use fresh data from the API, which already includes call logs
       const apiLeads = await fetchLeadsAPI();
-
-      // Merge with saved call logs
-      const leadsWithCallLogs = apiLeads.map((lead) => ({
-        ...lead,
-        callLogs:
-          callLogsMap[lead.id]?.map((log: any) => ({
-            ...log,
-            callDate: new Date(log.callDate),
-            nextFollowUp: log.nextFollowUp ? new Date(log.nextFollowUp) : undefined,
-          })) || [],
-      }));
-
-      setAllLeads(leadsWithCallLogs);
+      setAllLeads(apiLeads);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to refresh leads");
     } finally {

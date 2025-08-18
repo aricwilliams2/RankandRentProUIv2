@@ -215,7 +215,7 @@ const BrowserCallComponent = () => {
     setConnection(null);
     setIsConnected(false);
     setIsCalling(false);
-    window.location.reload();
+    // No full page reload; UI state is already updated above
   };
 
   // Test call function for debugging

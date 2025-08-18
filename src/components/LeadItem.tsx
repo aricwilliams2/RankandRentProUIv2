@@ -142,10 +142,9 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
         nextFollowUp: null,
       });
 
-      // Refresh the list to reflect any server-side changes
+      // Optionally refresh leads; local state already updated by context
       try {
-        window.location.reload();
-
+        await refreshLeads();
       } catch { }
 
       setCallNotes("");
@@ -171,8 +170,7 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
       if (!window.confirm('Delete this call log?')) return;
       try {
         await deleteCallLog?.(lead.id, editingLogId);
-        await window.location.reload();
-
+        await refreshLeads();
       } catch (e) {
         // ignore
       } finally {
@@ -190,7 +188,7 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
           outcome: editOutcome,
           notes: editNotes.trim(),
         });
-        window.location.reload();
+        await refreshLeads();
       } catch (e) {
         // ignore
       } finally {
