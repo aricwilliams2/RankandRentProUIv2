@@ -107,7 +107,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             textAlign: "center", // fallback for non-flex parents
           }}
         >
-          v 1.0
+          v 1.1
         </Typography>
       </List>
     </Box>

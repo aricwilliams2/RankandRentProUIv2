@@ -144,8 +144,8 @@ const LeadFormDialog: React.FC<LeadFormDialogProps> = ({ open, onClose, onSucces
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-              <input type="text" name="city" value={formData.city} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Greensboro, Miami, Orlando" />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tag Name</label>
+              <input type="text" name="city" value={formData.city} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Green, neeed to do video, etc." />
             </div>
 
             <div>
