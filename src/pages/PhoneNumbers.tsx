@@ -149,6 +149,17 @@ export default function PhoneNumbers() {
   const [usageLoading, setUsageLoading] = useState(true);
   const [usageError, setUsageError] = useState<string | null>(null);
   const [usage, setUsage] = useState<{ total_calls: number; total_duration_seconds: number; total_numbers: number } | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState<{
+    period_start: string;
+    used_recording_seconds: number;
+    free_minutes_remaining: number;
+    free_seconds_remaining: number;
+    balance_usd: number;
+    call_rate_per_minute_usd: number;
+    paid_seconds_available: number;
+    total_seconds_available: number;
+    total_minutes_available: number;
+  } | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -156,10 +167,17 @@ export default function PhoneNumbers() {
       try {
         setUsageLoading(true);
         const res = await twilioApi.getUsageStats();
-        // API shape: { success, data: { total_calls, total_duration_seconds, total_numbers } }
         const data = (res?.data ?? res) as any;
         const parsed = data?.total_calls !== undefined ? data : res?.data;
         if (isMounted) setUsage(parsed ?? null);
+        // Also load time remaining
+        try {
+          const tr = await twilioApi.getTimeRemaining();
+          const trData = tr?.data ?? tr;
+          if (isMounted) setTimeRemaining(trData ?? null);
+        } catch (e) {
+          // non-fatal
+        }
       } catch (e: any) {
         if (isMounted) setUsageError(e?.message ?? 'Failed to load usage stats');
       } finally {
@@ -327,15 +345,7 @@ export default function PhoneNumbers() {
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
             <Chip color="primary" variant="outlined" label={`Balance: $${billing ? billing.balance.toFixed(2) : '--'}`} />
-            <Chip
-              color="secondary"
-              variant="outlined"
-              label={
-                usage
-                  ? `Call duration: ${Math.floor(usage.total_duration_seconds / 3600)}h ${Math.floor((usage.total_duration_seconds % 3600) / 60)}m`
-                  : (usageLoading ? 'Call duration: …' : 'Call duration: --')
-              }
-            />
+
             {!billingLoading && billing && !billing.hasClaimedFreeNumber && (
               <Chip color="success" variant="outlined" label="Free number available" />
             )}
@@ -349,8 +359,19 @@ export default function PhoneNumbers() {
             ) : usage ? (
               <>
                 <Chip variant="outlined" label={`Total calls: ${usage.total_calls}`} />
-                <Chip variant="outlined" label={`Total duration: ${Math.floor(usage.total_duration_seconds / 60)}m ${usage.total_duration_seconds % 60}s`} />
+                {/* Duration this month */}
+                {timeRemaining && (<Chip color="secondary" variant="outlined" label={`Total Phone Time: ${Math.floor(timeRemaining?.used_recording_seconds / 60)}m ${timeRemaining?.used_recording_seconds % 60}s`} />)}
                 <Chip variant="outlined" label={`Owned numbers: ${usage.total_numbers}`} />
+                {/* Time left badges from /api/twilio/time-remaining */}
+                {timeRemaining && (
+                  (() => {
+                    const totalSec = Math.max(0, timeRemaining.total_seconds_available || 0);
+                    const h = Math.floor(totalSec / 3600);
+                    const m = Math.floor((totalSec % 3600) / 60);
+                    const s = totalSec % 60;
+                    return <Chip variant="outlined" color={totalSec <= 300 ? 'warning' : 'default'} label={`Time left: ${h}h ${m}m ${s}s`} />;
+                  })()
+                )}
               </>
             ) : null}
             <Button variant="contained" color="warning" onClick={() => setTopUpOpen(true)} disabled={billingLoading}>

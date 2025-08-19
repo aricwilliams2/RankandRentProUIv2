@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Device } from '@twilio/voice-sdk';
 import { twilioApi } from '../services/twilioApi';
 import { useBilling } from '../contexts/BillingContext';
@@ -14,7 +14,41 @@ const BrowserCallComponent = () => {
   const [error, setError] = useState('');
   const [toNumber, setToNumber] = useState('');
   const [selectedFromNumber, setSelectedFromNumber] = useState<string>('');
-  const { billing } = useBilling();
+  const { billing, refresh: refreshBilling } = useBilling();
+
+  // Live call timer
+  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
+  const callTimerIntervalRef = useRef<number | null>(null);
+
+  const startCallTimer = (startMs: number) => {
+    setElapsedSeconds(0);
+    if (callTimerIntervalRef.current) {
+      window.clearInterval(callTimerIntervalRef.current);
+    }
+    callTimerIntervalRef.current = window.setInterval(() => {
+      setElapsedSeconds(Math.max(0, Math.floor((Date.now() - startMs) / 1000)));
+    }, 1000);
+  };
+
+  const stopCallTimer = () => {
+    if (callTimerIntervalRef.current) {
+      window.clearInterval(callTimerIntervalRef.current);
+      callTimerIntervalRef.current = null;
+    }
+    setElapsedSeconds(0);
+  };
+
+  const formatElapsedForDisplay = (totalSeconds: number): string => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds
+        .toString()
+        .padStart(2, '0')}`;
+    }
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
 
   // Get user's phone numbers
   const userPhoneNumbers = useUserPhoneNumbers();
@@ -57,8 +91,13 @@ const BrowserCallComponent = () => {
           throw new Error('Failed to get access token - no token in response');
         }
 
-        // Initialize device
-        const dev = new Device(token);
+        // Initialize device per guide (set minimal logs, register)
+        const dev = new Device(token, { logLevel: 'error' as any });
+        try {
+          await (dev as any).register?.();
+        } catch (e) {
+          console.warn('Device register failed or not required:', e);
+        }
 
         // Set up event listeners
         dev.on('ready', () => {
@@ -72,6 +111,7 @@ const BrowserCallComponent = () => {
           setIsConnected(true);
           setIsCalling(false);
           setError('');
+          startCallTimer(Date.now());
         });
 
         dev.on('disconnect', () => {
@@ -80,6 +120,12 @@ const BrowserCallComponent = () => {
           setIsConnected(false);
           setIsCalling(false);
           setError('');
+          stopCallTimer();
+          // Refresh billing and history after call ends
+          try {
+            refreshBilling?.();
+            userPhoneNumbers.getCallHistory();
+          } catch { }
         });
 
         dev.on('error', (error) => {
@@ -90,6 +136,11 @@ const BrowserCallComponent = () => {
             setIsConnected(false);
             setIsCalling(false);
             setError('');
+            stopCallTimer();
+            try {
+              refreshBilling?.();
+              userPhoneNumbers.getCallHistory();
+            } catch { }
           } else {
             setError(`Device error: ${error.message}`);
           }
@@ -115,6 +166,10 @@ const BrowserCallComponent = () => {
     };
 
     initDevice();
+    return () => {
+      // Cleanup on unmount
+      stopCallTimer();
+    };
   }, [billing]);
 
   // Helper function to format phone numbers
@@ -144,6 +199,8 @@ const BrowserCallComponent = () => {
     try {
       setIsCalling(true);
       setError('');
+      // Start timer immediately so user sees live time while dialing
+      startCallTimer(Date.now());
 
       // Format the phone numbers properly
       const formattedToNumber = formatPhoneNumber(toNumber.trim());
@@ -159,41 +216,13 @@ const BrowserCallComponent = () => {
         From: formattedFromNumber
       });
 
-      // Try different call configurations
-      let conn;
-      try {
-        // First try with both To and From parameters
-        conn = await device.connect({
-          params: {
-            To: formattedToNumber,
-            From: formattedFromNumber
-          }
-        });
-      } catch (firstError) {
-        // If the backend rejects with 402 via access-token step, surface friendly message
-        if ((firstError as any)?.code === 31205 || (firstError as any)?.status === 402) {
-          setError('Payment required. Please add funds and try again.');
-          setIsCalling(false);
-          return;
-        }
-        console.log('First attempt failed, trying without From parameter:', firstError);
-        try {
-          // Try without the From parameter (let Twilio use the default)
-          conn = await device.connect({
-            params: {
-              To: formattedToNumber
-            }
-          });
-        } catch (secondError) {
-          console.log('Second attempt failed, trying with minimal params:', secondError);
-          // Try with minimal parameters
-          conn = await device.connect({
-            params: {
-              To: formattedToNumber
-            }
-          });
-        }
-      }
+      // Always send BOTH To and From so backend can associate the call
+      const conn = await device.connect({
+        params: {
+          To: formattedToNumber,
+          From: formattedFromNumber,
+        },
+      });
 
       setConnection(conn);
 
@@ -201,6 +230,7 @@ const BrowserCallComponent = () => {
       console.error('Call error details:', error);
       setError(`Call failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setIsCalling(false);
+      stopCallTimer();
     }
   };
 
@@ -216,6 +246,11 @@ const BrowserCallComponent = () => {
     setIsConnected(false);
     setIsCalling(false);
     // No full page reload; UI state is already updated above
+    stopCallTimer();
+    try {
+      refreshBilling?.();
+      userPhoneNumbers.getCallHistory();
+    } catch { }
   };
 
   // Test call function for debugging
@@ -313,11 +348,14 @@ const BrowserCallComponent = () => {
           </button>
         </div>
       ) : (
-        // Active/Dialing - show only Hang Up
+        // Active/Dialing
         <div className="space-y-4">
           <p className="text-lg font-medium">
             {isConnected ? '📞 Call in progress' : '📲 Dialing...'}
           </p>
+          <div className="text-2xl font-semibold text-gray-800">
+            {formatElapsedForDisplay(elapsedSeconds)}
+          </div>
           <button
             onClick={hangUp}
             className="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700"
