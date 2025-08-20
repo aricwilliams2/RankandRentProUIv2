@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Box, Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, useTheme, useMediaQuery, AppBar, Toolbar, IconButton, Avatar, Menu, MenuItem } from "@mui/material";
-import { LayoutDashboard, Users, Phone, LineChart, Settings, Menu as MenuIcon, X, LogOut, User } from "lucide-react";
+import { LayoutDashboard, Users, Phone, LineChart, Settings, Menu as MenuIcon, X, LogOut, User, Video } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
 const navItems = [
@@ -12,6 +12,7 @@ const navItems = [
   { icon: LineChart, label: "Analytics", path: "/analytics" },
   // { icon: Globe, label: "Websites", path: "/websites" },
   { icon: Phone, label: "Phone Numbers", path: "/phone-numbers" },
+  { icon: Video, label: "Video Recording", path: "/video-recording" },
   // { icon: Calculator, label: "Revenue", path: "/revenue" },
   // { icon: Search, label: "Research", path: "/research" },
   //{ icon: Settings, label: "Settings", path: "/settings" },

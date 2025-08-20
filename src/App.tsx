@@ -29,6 +29,7 @@ import SerpResults from "./pages/SerpResults";
 import SuccessPage from "./pages/SuccessPage";
 import CancelPage from "./pages/CancelPage";
 import CallForwardingPage from "./pages/CallForwarding";
+import VideoRecording from "./pages/VideoRecording";
 import "./styles/twilio.css";
 
 // Create a theme instance
@@ -104,6 +105,7 @@ const AppContent = () => {
             <Route path="/clients" element={<Clients />} />
             <Route path="/websites" element={<Websites />} />
             <Route path="/phone-numbers" element={<PhoneNumbers />} />
+            <Route path="/video-recording" element={<VideoRecording />} />
             <Route path="/call-forwarding" element={<CallForwardingPage />} />
             <Route path="/checklists" element={<ClientChecklistPage />} />
             <Route path="/client-checklist/:clientId" element={<IndividualClientChecklistPage />} />
