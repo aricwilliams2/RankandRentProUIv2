@@ -48,11 +48,31 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onRecordingComplete, onEr
     // Track individual streams for proper cleanup
     const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
     const [webcamStream, setWebcamStream] = useState<MediaStream | null>(null);
+    const [micStream, setMicStream] = useState<MediaStream | null>(null);
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const timeIntervalRef = useRef<number | null>(null);
     const animationFrameRef = useRef<number | null>(null);
+
+    // Helper to build a mixed audio stream
+    const buildMixedAudioStream = (opts: { screen?: MediaStream; mic?: MediaStream }) => {
+        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const destination = ctx.createMediaStreamDestination();
+
+        const sources: MediaStreamAudioSourceNode[] = [];
+        if (opts.screen && opts.screen.getAudioTracks().length) {
+            sources.push(ctx.createMediaStreamSource(opts.screen));
+        }
+        if (opts.mic && opts.mic.getAudioTracks().length) {
+            sources.push(ctx.createMediaStreamSource(opts.mic));
+        }
+
+        // Optional: let's keep default gains; you can add GainNodes to balance levels
+        sources.forEach(s => s.connect(destination));
+
+        return destination.stream; // contains ONE mixed audio track
+    };
 
     // Cleanup on unmount
     useEffect(() => {
@@ -65,6 +85,9 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onRecordingComplete, onEr
             }
             if (webcamStream) {
                 webcamStream.getTracks().forEach(track => track.stop());
+            }
+            if (micStream) {
+                micStream.getTracks().forEach(track => track.stop());
             }
             if (timeIntervalRef.current) {
                 clearInterval(timeIntervalRef.current);
@@ -87,41 +110,67 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onRecordingComplete, onEr
             // Reset individual stream states
             setScreenStream(null);
             setWebcamStream(null);
+            setMicStream(null);
 
             let mediaStream: MediaStream;
 
             if (recordingType === 'screen') {
                 setDebugInfo('Getting screen stream...');
-                mediaStream = await navigator.mediaDevices.getDisplayMedia({
-                    video: { frameRate: 15 }, // Reduced from 30 to 15 fps
-                    audio: true
+                const scr = await navigator.mediaDevices.getDisplayMedia({
+                    video: { frameRate: 15 },
+                    audio: true // system/tab audio if user checks the box in Chrome
                 });
-                setScreenStream(mediaStream); // Store for cleanup
+                setScreenStream(scr);
+
+                setDebugInfo('Getting mic...');
+                const mic = await navigator.mediaDevices.getUserMedia({
+                    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+                });
+                setMicStream(mic);
+
+                const mixed = buildMixedAudioStream({ screen: scr, mic });
+
+                mediaStream = new MediaStream([
+                    ...scr.getVideoTracks(),
+                    ...mixed.getAudioTracks() // exactly one mixed audio track
+                ]);
                 setDebugInfo('Screen stream obtained');
             } else if (recordingType === 'webcam') {
                 setDebugInfo('Getting webcam stream...');
-                mediaStream = await navigator.mediaDevices.getUserMedia({
-                    video: { width: 1280, height: 720, frameRate: 15 }, // Reduced from 30 to 15 fps
-                    audio: true
+                const cam = await navigator.mediaDevices.getUserMedia({
+                    video: { width: 1280, height: 720, frameRate: 15 },
+                    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
                 });
-                setWebcamStream(mediaStream); // Store for cleanup
+                setWebcamStream(cam);
+                setMicStream(cam); // mic is inside this stream
+
+                // Optional but consistent:
+                const mixed = buildMixedAudioStream({ mic: cam });
+
+                mediaStream = new MediaStream([
+                    ...cam.getVideoTracks(),
+                    ...(mixed.getAudioTracks().length ? mixed.getAudioTracks() : cam.getAudioTracks())
+                ]);
                 setDebugInfo('Webcam stream obtained');
             } else {
                 // Screen + Webcam mode
                 setDebugInfo('Getting screen and webcam streams...');
-                const screenStream = await navigator.mediaDevices.getDisplayMedia({
-                    video: { frameRate: 15 }, // Reduced from 30 to 15 fps
+                const scr = await navigator.mediaDevices.getDisplayMedia({
+                    video: { frameRate: 15 },
                     audio: true
                 });
-
-                const webcamStream = await navigator.mediaDevices.getUserMedia({
-                    video: { width: 1280, height: 720, frameRate: 15 }, // Reduced from 30 to 15 fps
-                    audio: false // avoid echo; we'll use screen audio
+                const cam = await navigator.mediaDevices.getUserMedia({
+                    video: { width: 1280, height: 720, frameRate: 15 },
+                    audio: false // keep webcam silent to avoid echo
                 });
+                setScreenStream(scr);
+                setWebcamStream(cam);
 
-                // Store individual streams for cleanup
-                setScreenStream(screenStream);
-                setWebcamStream(webcamStream);
+                setDebugInfo('Getting mic...');
+                const mic = await navigator.mediaDevices.getUserMedia({
+                    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+                });
+                setMicStream(mic);
 
                 setDebugInfo('Creating composite stream...');
 
@@ -129,7 +178,7 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onRecordingComplete, onEr
                 const ctx = canvas.getContext('2d')!;
 
                 // Get the actual screen dimensions from the screen stream
-                const screenTrack = screenStream.getVideoTracks()[0];
+                const screenTrack = scr.getVideoTracks()[0];
                 const screenSettings = screenTrack.getSettings();
                 const screenWidth = screenSettings.width || 1920;
                 const screenHeight = screenSettings.height || 1080;
@@ -145,8 +194,8 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onRecordingComplete, onEr
                 Object.assign(screenVideo, { muted: true, playsInline: true, autoplay: true });
                 Object.assign(webcamVideo, { muted: true, playsInline: true, autoplay: true });
 
-                screenVideo.srcObject = screenStream;
-                webcamVideo.srcObject = webcamStream;
+                screenVideo.srcObject = scr;
+                webcamVideo.srcObject = cam;
 
                 // Wait until both can render real frames
                 await Promise.all([waitForCanPlay(screenVideo), waitForCanPlay(webcamVideo)]);
@@ -181,24 +230,29 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onRecordingComplete, onEr
                 drawFrame();
                 animationFrameRef.current = rafId;
 
-                // Build the captured media stream (video from canvas + audio from screen)
-                const canvasStream = canvas.captureStream(15); // Reduced from 30 to 15 fps
-                const audioTrack = screenStream.getAudioTracks()[0];
-                if (audioTrack) canvasStream.addTrack(audioTrack);
+                // Build the captured media stream (video from canvas + mixed audio)
+                const canvasStream = canvas.captureStream(15);
+
+                // Mix system audio (if present) + mic
+                const mixed = buildMixedAudioStream({ screen: scr, mic });
+
+                // Add ONE mixed audio track to the canvas stream
+                const mixedTrack = mixed.getAudioTracks()[0];
+                if (mixedTrack) canvasStream.addTrack(mixedTrack);
 
                 mediaStream = new MediaStream([
                     ...canvasStream.getVideoTracks(),
-                    ...(audioTrack ? [audioTrack] : [])
+                    ...(mixedTrack ? [mixedTrack] : [])
                 ]);
 
                 // Monitor for track interruptions
-                screenStream.getVideoTracks().forEach(t => {
+                scr.getVideoTracks().forEach(t => {
                     t.addEventListener('ended', () => {
                         setDebugInfo('Screen share ended by user');
                         stopRecording();
                     });
                 });
-                webcamStream.getVideoTracks().forEach(t => {
+                cam.getVideoTracks().forEach(t => {
                     t.addEventListener('ended', () => setDebugInfo('Webcam track ended'));
                 });
 
@@ -353,6 +407,14 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onRecordingComplete, onEr
                     track.stop();
                 });
                 setWebcamStream(null);
+            }
+
+            if (micStream) {
+                micStream.getTracks().forEach(track => {
+                    console.log('Stopping mic track:', track.kind, track.label);
+                    track.stop();
+                });
+                setMicStream(null);
             }
 
             // Clear video preview
