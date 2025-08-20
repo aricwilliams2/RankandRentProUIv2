@@ -12,12 +12,52 @@ import {
     Chip,
     Alert,
     Grid,
+    Tabs,
+    Tab,
+    List,
+    ListItem,
+    ListItemText,
+    ListItemSecondaryAction,
+    IconButton,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    TextField,
+    CircularProgress,
+    Divider,
 } from '@mui/material';
-import { Video, Square, Play, Download } from 'lucide-react';
+import { Video, Square, Play, Download, Upload, Eye, Trash2, Share, BarChart3, Clock, FileVideo } from 'lucide-react';
+import { apiCall } from '../config/api';
 
 interface VideoRecorderProps {
     onRecordingComplete: (blob: Blob, metadata: any) => void;
     onError: (error: string) => void;
+}
+
+interface VideoRecording {
+    id: string;
+    title: string;
+    description?: string;
+    duration: number;
+    file_size: number;
+    recording_type: 'screen' | 'webcam' | 'both';
+    shareable_url: string;
+    view_count: number;
+    created_at: string;
+    is_public: boolean;
+}
+
+interface VideoAnalytics {
+    total_views: number;
+    unique_viewers: number;
+    average_watch_time: number;
+    completion_rate: number;
+    top_viewers: Array<{
+        ip_address: string;
+        views: number;
+        last_viewed: string;
+    }>;
 }
 
 // Robust video readiness helpers
@@ -528,15 +568,508 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onRecordingComplete, onEr
     );
 };
 
+const VideoLibrary: React.FC = () => {
+    const [recordings, setRecordings] = useState<VideoRecording[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [selectedRecording, setSelectedRecording] = useState<VideoRecording | null>(null);
+    const [analytics, setAnalytics] = useState<VideoAnalytics | null>(null);
+    const [analyticsLoading, setAnalyticsLoading] = useState(false);
+    const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+    const [uploadTitle, setUploadTitle] = useState('');
+    const [uploadDescription, setUploadDescription] = useState('');
+    const [uploading, setUploading] = useState(false);
+
+    useEffect(() => {
+        fetchRecordings();
+    }, []);
+
+    const fetchRecordings = async () => {
+        try {
+            setLoading(true);
+            const response = await apiCall('api/videos/recordings');
+
+            if (!response.ok) {
+                throw new Error(`API Error: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            setRecordings(data.recordings || []);
+        } catch (error: any) {
+            setError(error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchAnalytics = async (recordingId: string) => {
+        try {
+            setAnalyticsLoading(true);
+            const response = await apiCall(`api/videos/recordings/${recordingId}/analytics`);
+
+            if (!response.ok) {
+                throw new Error(`API Error: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            setAnalytics(data);
+        } catch (error: any) {
+            console.error('Failed to fetch analytics:', error);
+        } finally {
+            setAnalyticsLoading(false);
+        }
+    };
+
+    const handleUploadVideo = async (blob: Blob, metadata: any) => {
+        setUploadDialogOpen(true);
+        // Store the blob temporarily
+        (window as any).tempVideoBlob = blob;
+        (window as any).tempVideoMetadata = metadata;
+    };
+
+    const confirmUpload = async () => {
+        const blob = (window as any).tempVideoBlob;
+        const metadata = (window as any).tempVideoMetadata;
+
+        if (!blob) return;
+
+        try {
+            setUploading(true);
+            const formData = new FormData();
+            formData.append('video', blob, `recording-${Date.now()}.webm`);
+            formData.append('title', uploadTitle || 'Untitled Recording');
+            formData.append('description', uploadDescription);
+            formData.append('is_public', 'true');
+            formData.append('recording_type', metadata.recordingType);
+
+            const response = await apiCall('api/videos/upload', {
+                method: 'POST',
+                body: formData,
+                headers: {} // Let browser set Content-Type for FormData
+            });
+
+            if (!response.ok) {
+                throw new Error(`API Error: ${response.status} ${response.statusText}`);
+            }
+
+            setUploadDialogOpen(false);
+            setUploadTitle('');
+            setUploadDescription('');
+            fetchRecordings(); // Refresh the list
+
+            // Clean up temp data
+            delete (window as any).tempVideoBlob;
+            delete (window as any).tempVideoMetadata;
+        } catch (error: any) {
+            setError('Upload failed: ' + error.message);
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const deleteRecording = async (recordingId: string) => {
+        if (!window.confirm('Are you sure you want to delete this recording?')) return;
+
+        try {
+            const response = await apiCall(`api/videos/recordings/${recordingId}`, { method: 'DELETE' });
+
+            if (!response.ok) {
+                throw new Error(`API Error: ${response.status} ${response.statusText}`);
+            }
+
+            fetchRecordings(); // Refresh the list
+        } catch (error: any) {
+            setError('Delete failed: ' + error.message);
+        }
+    };
+
+    const formatFileSize = (bytes: number) => {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
+
+    const formatDuration = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    if (loading) {
+        return (
+            <Card>
+                <CardContent sx={{ textAlign: 'center', py: 4 }}>
+                    <CircularProgress />
+                    <Typography sx={{ mt: 2 }}>Loading recordings...</Typography>
+                </CardContent>
+            </Card>
+        );
+    }
+
+    return (
+        <Card>
+            <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                    <Typography variant="h5">
+                        <FileVideo size={24} style={{ marginRight: 8, verticalAlign: 'middle' }} />
+                        Video Library
+                    </Typography>
+                    <Button
+                        variant="outlined"
+                        startIcon={<Upload />}
+                        onClick={() => setUploadDialogOpen(true)}
+                    >
+                        Upload Video
+                    </Button>
+                </Box>
+
+                {error && (
+                    <Alert severity="error" sx={{ mb: 2 }}>
+                        {error}
+                    </Alert>
+                )}
+
+                {recordings.length === 0 ? (
+                    <Box sx={{ textAlign: 'center', py: 4 }}>
+                        <FileVideo size={48} style={{ opacity: 0.5, marginBottom: 16 }} />
+                        <Typography variant="h6" color="text.secondary" gutterBottom>
+                            No recordings yet
+                        </Typography>
+                        <Typography color="text.secondary">
+                            Start recording or upload a video to see it here
+                        </Typography>
+                    </Box>
+                ) : (
+                    <List>
+                        {recordings.map((recording) => (
+                            <React.Fragment key={recording.id}>
+                                <ListItem>
+                                    <ListItemText
+                                        primary={
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                <Typography variant="h6">{recording.title}</Typography>
+                                                <Chip
+                                                    label={recording.recording_type}
+                                                    size="small"
+                                                    color="primary"
+                                                    variant="outlined"
+                                                />
+                                                {recording.is_public && (
+                                                    <Chip
+                                                        label="Public"
+                                                        size="small"
+                                                        color="success"
+                                                        variant="outlined"
+                                                    />
+                                                )}
+                                            </Box>
+                                        }
+                                        secondary={
+                                            <Box>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    {recording.description || 'No description'}
+                                                </Typography>
+                                                <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
+                                                    <Chip
+                                                        icon={<Clock size={14} />}
+                                                        label={formatDuration(recording.duration)}
+                                                        size="small"
+                                                        variant="outlined"
+                                                    />
+                                                    <Chip
+                                                        icon={<Eye size={14} />}
+                                                        label={`${recording.view_count} views`}
+                                                        size="small"
+                                                        variant="outlined"
+                                                    />
+                                                    <Chip
+                                                        label={formatFileSize(recording.file_size)}
+                                                        size="small"
+                                                        variant="outlined"
+                                                    />
+                                                </Box>
+                                            </Box>
+                                        }
+                                    />
+                                    <ListItemSecondaryAction>
+                                        <Box sx={{ display: 'flex', gap: 1 }}>
+                                            <IconButton
+                                                onClick={() => {
+                                                    setSelectedRecording(recording);
+                                                    fetchAnalytics(recording.id);
+                                                }}
+                                                title="View Analytics"
+                                            >
+                                                <BarChart3 size={20} />
+                                            </IconButton>
+                                            <IconButton
+                                                onClick={() => window.open(recording.shareable_url, '_blank')}
+                                                title="View Video"
+                                            >
+                                                <Play size={20} />
+                                            </IconButton>
+                                            <IconButton
+                                                onClick={() => {
+                                                    const a = document.createElement('a');
+                                                    a.href = recording.shareable_url;
+                                                    a.download = `${recording.title}.webm`;
+                                                    a.click();
+                                                }}
+                                                title="Download"
+                                            >
+                                                <Download size={20} />
+                                            </IconButton>
+                                            <IconButton
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(recording.shareable_url);
+                                                }}
+                                                title="Copy Share Link"
+                                            >
+                                                <Share size={20} />
+                                            </IconButton>
+                                            <IconButton
+                                                onClick={() => deleteRecording(recording.id)}
+                                                title="Delete"
+                                                color="error"
+                                            >
+                                                <Trash2 size={20} />
+                                            </IconButton>
+                                        </Box>
+                                    </ListItemSecondaryAction>
+                                </ListItem>
+                                <Divider />
+                            </React.Fragment>
+                        ))}
+                    </List>
+                )}
+
+                {/* Analytics Dialog */}
+                <Dialog
+                    open={!!selectedRecording}
+                    onClose={() => setSelectedRecording(null)}
+                    maxWidth="md"
+                    fullWidth
+                >
+                    <DialogTitle>
+                        Analytics: {selectedRecording?.title}
+                    </DialogTitle>
+                    <DialogContent>
+                        {analyticsLoading ? (
+                            <Box sx={{ textAlign: 'center', py: 4 }}>
+                                <CircularProgress />
+                            </Box>
+                        ) : analytics ? (
+                            <Grid container spacing={3}>
+                                <Grid item xs={6}>
+                                    <Card>
+                                        <CardContent>
+                                            <Typography variant="h4" color="primary">
+                                                {analytics.total_views}
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                Total Views
+                                            </Typography>
+                                        </CardContent>
+                                    </Card>
+                                </Grid>
+                                <Grid item xs={6}>
+                                    <Card>
+                                        <CardContent>
+                                            <Typography variant="h4" color="secondary">
+                                                {analytics.unique_viewers}
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                Unique Viewers
+                                            </Typography>
+                                        </CardContent>
+                                    </Card>
+                                </Grid>
+                                <Grid item xs={6}>
+                                    <Card>
+                                        <CardContent>
+                                            <Typography variant="h4" color="info.main">
+                                                {formatDuration(analytics.average_watch_time)}
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                Avg Watch Time
+                                            </Typography>
+                                        </CardContent>
+                                    </Card>
+                                </Grid>
+                                <Grid item xs={6}>
+                                    <Card>
+                                        <CardContent>
+                                            <Typography variant="h4" color="success.main">
+                                                {analytics.completion_rate.toFixed(1)}%
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                Completion Rate
+                                            </Typography>
+                                        </CardContent>
+                                    </Card>
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <Typography variant="h6" gutterBottom>
+                                        Top Viewers
+                                    </Typography>
+                                    <List dense>
+                                        {analytics.top_viewers.map((viewer, index) => (
+                                            <ListItem key={index}>
+                                                <ListItemText
+                                                    primary={`${viewer.ip_address} (${viewer.views} views)`}
+                                                    secondary={new Date(viewer.last_viewed).toLocaleString()}
+                                                />
+                                            </ListItem>
+                                        ))}
+                                    </List>
+                                </Grid>
+                            </Grid>
+                        ) : (
+                            <Typography color="text.secondary">
+                                No analytics data available
+                            </Typography>
+                        )}
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setSelectedRecording(null)}>Close</Button>
+                    </DialogActions>
+                </Dialog>
+
+                {/* Upload Dialog */}
+                <Dialog
+                    open={uploadDialogOpen}
+                    onClose={() => setUploadDialogOpen(false)}
+                    maxWidth="sm"
+                    fullWidth
+                >
+                    <DialogTitle>Upload Video</DialogTitle>
+                    <DialogContent>
+                        <TextField
+                            fullWidth
+                            label="Title"
+                            value={uploadTitle}
+                            onChange={(e) => setUploadTitle(e.target.value)}
+                            margin="normal"
+                        />
+                        <TextField
+                            fullWidth
+                            label="Description"
+                            value={uploadDescription}
+                            onChange={(e) => setUploadDescription(e.target.value)}
+                            margin="normal"
+                            multiline
+                            rows={3}
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setUploadDialogOpen(false)}>Cancel</Button>
+                        <Button
+                            onClick={confirmUpload}
+                            variant="contained"
+                            disabled={uploading}
+                        >
+                            {uploading ? <CircularProgress size={20} /> : 'Upload'}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+            </CardContent>
+        </Card>
+    );
+};
+
 const VideoRecording: React.FC = () => {
     const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
     const [recordingMetadata, setRecordingMetadata] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState(0);
+    const [uploading, setUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [uploadedRecording, setUploadedRecording] = useState<any>(null);
 
-    const handleRecordingComplete = (blob: Blob, metadata: any) => {
+    const handleRecordingComplete = async (blob: Blob, metadata: any) => {
         setRecordingBlob(blob);
         setRecordingMetadata(metadata);
         setError(null);
+
+        // Automatically upload to cloud storage
+        await uploadToCloud(blob, metadata);
+    };
+
+    const uploadToCloud = async (blob: Blob, metadata: any) => {
+        try {
+            setUploading(true);
+            setUploadProgress(0);
+
+            // Get title from user
+            const title = prompt('Enter a title for your recording:') || 'My Recording';
+            const description = prompt('Enter a description (optional):') || '';
+
+            // Create FormData for upload
+            const formData = new FormData();
+            formData.append('video', blob, `recording-${Date.now()}.webm`);
+            formData.append('title', title);
+            formData.append('description', description);
+            formData.append('is_public', 'true');
+            formData.append('recording_type', metadata.recordingType);
+
+            // Simulate upload progress
+            const progressInterval = setInterval(() => {
+                setUploadProgress(prev => {
+                    if (prev >= 90) {
+                        clearInterval(progressInterval);
+                        return 90;
+                    }
+                    return prev + 10;
+                });
+            }, 200);
+
+            // Upload to API
+            const response = await apiCall('/api/videos/upload', {
+                method: 'POST',
+                body: formData,
+                headers: {} // Let browser set Content-Type for FormData
+            });
+
+            if (!response.ok) {
+                throw new Error(`API Error: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            clearInterval(progressInterval);
+            setUploadProgress(100);
+
+            // Store uploaded recording data
+            setUploadedRecording(data.recording);
+
+            // Show success message
+            const successMessage = `
+🎉 Video uploaded successfully!
+
+Title: ${data.recording.title}
+Duration: ${data.recording.duration}s
+Share URL: ${data.recording.shareable_url}
+
+Click OK to open the video in a new tab.
+            `;
+
+            if (window.confirm(successMessage)) {
+                window.open(data.recording.shareable_url, '_blank');
+            }
+
+            // Switch to library tab to show the uploaded video
+            setTimeout(() => {
+                setActiveTab(1);
+            }, 1000);
+
+        } catch (error: any) {
+            setError('Upload failed: ' + error.message);
+            console.error('Upload error:', error);
+        } finally {
+            setUploading(false);
+            setUploadProgress(0);
+        }
     };
 
     const handleError = (error: string) => {
@@ -547,6 +1080,7 @@ const VideoRecording: React.FC = () => {
         setRecordingBlob(null);
         setRecordingMetadata(null);
         setError(null);
+        setUploadedRecording(null);
     };
 
     return (
@@ -556,8 +1090,13 @@ const VideoRecording: React.FC = () => {
             </Typography>
 
             <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-                Record your screen or webcam. Create shareable videos with analytics.
+                Record your screen or webcam. Videos are automatically uploaded to cloud storage with analytics.
             </Typography>
+
+            <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)} sx={{ mb: 3 }}>
+                <Tab label="Record" />
+                <Tab label="Library" />
+            </Tabs>
 
             {error && (
                 <Alert severity="error" sx={{ mb: 3 }}>
@@ -565,70 +1104,139 @@ const VideoRecording: React.FC = () => {
                 </Alert>
             )}
 
-            {!recordingBlob ? (
-                <VideoRecorder
-                    onRecordingComplete={handleRecordingComplete}
-                    onError={handleError}
-                />
-            ) : (
-                <Card>
-                    <CardContent>
-                        <Typography variant="h6" gutterBottom>
-                            Recording Complete!
-                        </Typography>
-
-                        <video
-                            src={URL.createObjectURL(recordingBlob)}
-                            controls
-                            style={{ width: '100%', maxHeight: '400px', marginBottom: 16 }}
+            {activeTab === 0 && (
+                <>
+                    {!recordingBlob ? (
+                        <VideoRecorder
+                            onRecordingComplete={handleRecordingComplete}
+                            onError={handleError}
                         />
+                    ) : (
+                        <Card>
+                            <CardContent>
+                                <Typography variant="h6" gutterBottom>
+                                    Recording Complete!
+                                </Typography>
 
-                        <Box sx={{ mb: 2 }}>
-                            <Chip
-                                label={`Duration: ${Math.floor(recordingMetadata.duration / 60)}:${(recordingMetadata.duration % 60).toString().padStart(2, '0')}`}
-                                color="primary"
-                                sx={{ mr: 1 }}
-                            />
-                            <Chip
-                                label={`Type: ${recordingMetadata.recordingType}`}
-                                color="secondary"
-                                sx={{ mr: 1 }}
-                            />
-                            <Chip
-                                label={`Size: ${(recordingBlob.size / 1024 / 1024).toFixed(1)} MB`}
-                                color="info"
-                            />
-                        </Box>
+                                {uploading ? (
+                                    <Box sx={{ textAlign: 'center', py: 4 }}>
+                                        <CircularProgress sx={{ mb: 2 }} />
+                                        <Typography variant="h6" gutterBottom>
+                                            Uploading to Cloud Storage...
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                                            {uploadProgress}% Complete
+                                        </Typography>
+                                        <Box sx={{ width: '100%', bgcolor: 'grey.200', borderRadius: 1, overflow: 'hidden' }}>
+                                            <Box
+                                                sx={{
+                                                    width: `${uploadProgress}%`,
+                                                    height: 8,
+                                                    bgcolor: 'primary.main',
+                                                    transition: 'width 0.3s ease'
+                                                }}
+                                            />
+                                        </Box>
+                                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                                            Your video will be available in the Library tab once upload completes.
+                                        </Typography>
+                                    </Box>
+                                ) : uploadedRecording ? (
+                                    <Box sx={{ textAlign: 'center', py: 4 }}>
+                                        <Alert severity="success" sx={{ mb: 3 }}>
+                                            ✅ Video uploaded successfully to cloud storage!
+                                        </Alert>
 
-                        <Grid container spacing={2}>
-                            <Grid item>
-                                <Button
-                                    variant="contained"
-                                    color="primary"
-                                    startIcon={<Download />}
-                                    onClick={() => {
-                                        const url = URL.createObjectURL(recordingBlob);
-                                        const a = document.createElement('a');
-                                        a.href = url;
-                                        a.download = `recording-${Date.now()}.webm`;
-                                        a.click();
-                                        URL.revokeObjectURL(url);
-                                    }}
-                                >
-                                    Download Video
-                                </Button>
-                            </Grid>
-                            <Grid item>
-                                <Button
-                                    variant="outlined"
-                                    onClick={handleNewRecording}
-                                >
-                                    Record Another
-                                </Button>
-                            </Grid>
-                        </Grid>
-                    </CardContent>
-                </Card>
+                                        <video
+                                            src={URL.createObjectURL(recordingBlob)}
+                                            controls
+                                            style={{ width: '100%', maxHeight: '400px', marginBottom: 16 }}
+                                        />
+
+                                        <Box sx={{ mb: 2 }}>
+                                            <Chip
+                                                label={`Duration: ${Math.floor(recordingMetadata.duration / 60)}:${(recordingMetadata.duration % 60).toString().padStart(2, '0')}`}
+                                                color="primary"
+                                                sx={{ mr: 1 }}
+                                            />
+                                            <Chip
+                                                label={`Type: ${recordingMetadata.recordingType}`}
+                                                color="secondary"
+                                                sx={{ mr: 1 }}
+                                            />
+                                            <Chip
+                                                label={`Size: ${(recordingBlob.size / 1024 / 1024).toFixed(1)} MB`}
+                                                color="info"
+                                            />
+                                        </Box>
+
+                                        <Box sx={{ mb: 3 }}>
+                                            <Typography variant="h6" gutterBottom>
+                                                Video Details
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                <strong>Title:</strong> {uploadedRecording.title}
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                <strong>Share URL:</strong> {uploadedRecording.shareable_url}
+                                            </Typography>
+                                        </Box>
+
+                                        <Grid container spacing={2} justifyContent="center">
+                                            <Grid item>
+                                                <Button
+                                                    variant="contained"
+                                                    color="primary"
+                                                    startIcon={<Download />}
+                                                    onClick={() => {
+                                                        const url = URL.createObjectURL(recordingBlob);
+                                                        const a = document.createElement('a');
+                                                        a.href = url;
+                                                        a.download = `recording-${Date.now()}.webm`;
+                                                        a.click();
+                                                        URL.revokeObjectURL(url);
+                                                    }}
+                                                >
+                                                    Download Local Copy
+                                                </Button>
+                                            </Grid>
+                                            <Grid item>
+                                                <Button
+                                                    variant="outlined"
+                                                    onClick={() => window.open(uploadedRecording.shareable_url, '_blank')}
+                                                >
+                                                    View in Cloud
+                                                </Button>
+                                            </Grid>
+                                            <Grid item>
+                                                <Button
+                                                    variant="outlined"
+                                                    onClick={handleNewRecording}
+                                                >
+                                                    Record Another
+                                                </Button>
+                                            </Grid>
+                                        </Grid>
+                                    </Box>
+                                ) : (
+                                    <Box sx={{ textAlign: 'center', py: 4 }}>
+                                        <CircularProgress sx={{ mb: 2 }} />
+                                        <Typography variant="h6" gutterBottom>
+                                            Processing Recording...
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                            Preparing your video for cloud upload...
+                                        </Typography>
+                                    </Box>
+                                )}
+                            </CardContent>
+                        </Card>
+                    )}
+                </>
+            )}
+
+            {activeTab === 1 && (
+                <VideoLibrary />
             )}
         </Box>
     );
