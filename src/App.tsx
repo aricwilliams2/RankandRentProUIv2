@@ -1,4 +1,4 @@
-import { HashRouter as Router, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { CssBaseline } from "@mui/material";
@@ -30,6 +30,7 @@ import SuccessPage from "./pages/SuccessPage";
 import CancelPage from "./pages/CancelPage";
 import CallForwardingPage from "./pages/CallForwarding";
 import VideoRecording from "./pages/VideoRecording";
+import VideoPlayer from "./components/VideoPlayer";
 import "./styles/twilio.css";
 
 // Create a theme instance
@@ -98,6 +99,8 @@ const AppContent = () => {
     <Router>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        {/* Add the shareable video route - accessible without authentication */}
+        <Route path="/v/:shareableId" element={<VideoPlayer />} />
         <Route element={<RequireAuth />}>
           <Route element={<ProtectedShell />}>
             <Route path="/" element={<Dashboard />} />

@@ -29,6 +29,7 @@ import {
 } from '@mui/material';
 import { Video, Square, Play, Download, Upload, Eye, Trash2, Share, BarChart3, Clock, FileVideo } from 'lucide-react';
 import { apiCall } from '../config/api';
+import { toLocalShareUrl, generateShareableUrl } from '../utils/url';
 
 interface VideoRecorderProps {
     onRecordingComplete: (blob: Blob, metadata: any) => void;
@@ -43,6 +44,8 @@ interface VideoRecording {
     file_size: number;
     recording_type: 'screen' | 'webcam' | 'both';
     shareable_url: string;
+    shareable_id?: string;
+    video_url?: string;
     view_count: number;
     created_at: string;
     is_public: boolean;
@@ -805,7 +808,7 @@ const VideoLibrary: React.FC = () => {
                                                 <BarChart3 size={20} />
                                             </IconButton>
                                             <IconButton
-                                                onClick={() => window.open(recording.shareable_url, '_blank')}
+                                                onClick={() => window.open(generateShareableUrl(recording.shareable_id || ''), '_blank')}
                                                 title="View Video"
                                             >
                                                 <Play size={20} />
@@ -813,7 +816,7 @@ const VideoLibrary: React.FC = () => {
                                             <IconButton
                                                 onClick={() => {
                                                     const a = document.createElement('a');
-                                                    a.href = recording.shareable_url;
+                                                    a.href = recording.video_url || recording.shareable_url;
                                                     a.download = `${recording.title}.webm`;
                                                     a.click();
                                                 }}
@@ -823,7 +826,8 @@ const VideoLibrary: React.FC = () => {
                                             </IconButton>
                                             <IconButton
                                                 onClick={() => {
-                                                    navigator.clipboard.writeText(recording.shareable_url);
+                                                    const shareableUrl = generateShareableUrl(recording.shareable_id || '');
+                                                    navigator.clipboard.writeText(shareableUrl);
                                                 }}
                                                 title="Copy Share Link"
                                             >
@@ -1049,13 +1053,13 @@ const VideoRecording: React.FC = () => {
 
 Title: ${data.recording.title}
 Duration: ${data.recording.duration}s
-Share URL: ${data.recording.shareable_url}
+Share URL: ${generateShareableUrl(data.recording.shareable_id || '')}
 
 Click OK to open the video in a new tab.
-            `;
+             `;
 
             if (window.confirm(successMessage)) {
-                window.open(data.recording.shareable_url, '_blank');
+                window.open(generateShareableUrl(data.recording.shareable_id || ''), '_blank');
             }
 
             // Switch to library tab to show the uploaded video
@@ -1178,7 +1182,7 @@ Click OK to open the video in a new tab.
                                                 <strong>Title:</strong> {uploadedRecording.title}
                                             </Typography>
                                             <Typography variant="body2" color="text.secondary">
-                                                <strong>Share URL:</strong> {uploadedRecording.shareable_url}
+                                                <strong>Share URL:</strong> {generateShareableUrl(uploadedRecording.shareable_id || '')}
                                             </Typography>
                                         </Box>
 
@@ -1203,7 +1207,7 @@ Click OK to open the video in a new tab.
                                             <Grid item>
                                                 <Button
                                                     variant="outlined"
-                                                    onClick={() => window.open(uploadedRecording.shareable_url, '_blank')}
+                                                    onClick={() => window.open(generateShareableUrl(uploadedRecording.shareable_id || ''), '_blank')}
                                                 >
                                                     View in Cloud
                                                 </Button>

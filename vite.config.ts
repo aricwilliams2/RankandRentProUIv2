@@ -8,6 +8,19 @@ export default defineConfig(({ mode }) => {
   
   return {
     plugins: [react()],
+    server: {
+      port: 5173, // your current dev port
+      proxy: {
+        '/api': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+        },
+        '/videos': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+        },
+      },
+    },
     optimizeDeps: {
       exclude: ['lucide-react'],
     },
