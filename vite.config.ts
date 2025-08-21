@@ -21,6 +21,13 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    build: {
+      rollupOptions: {
+        input: {
+          main: 'index.html',
+        },
+      },
+    },
     optimizeDeps: {
       exclude: ['lucide-react'],
     },
