@@ -28,6 +28,9 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
   const [callNotes, setCallNotes] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [convertingToClient, setConvertingToClient] = useState(false);
+  const [savingCallLog, setSavingCallLog] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deletingLog, setDeletingLog] = useState(false);
 
   // Function to open Google Maps search for GMB
   const openGoogleMapsSearch = (domain: string) => {
@@ -134,28 +137,38 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
     }
   };
   const handleSubmitCallLog = async () => {
-    if (callNotes.trim()) {
-      await addCallLog(lead.id, {
-        outcome: callOutcome,
-        notes: callNotes.trim(),
-        nextFollowUp: null,
-      });
-
-      // Optionally refresh leads; local state already updated by context
+    if (callNotes.trim() && !savingCallLog) {
+      setSavingCallLog(true);
       try {
-        await refreshLeads();
-      } catch { }
+        await addCallLog(lead.id, {
+          outcome: callOutcome,
+          notes: callNotes.trim(),
+          nextFollowUp: null,
+        });
 
-      setCallNotes("");
-      setCallOutcome("follow_up_1_day");
-      setShowCallDialog(false);
+        // Optionally refresh leads; local state already updated by context
+        try {
+          await refreshLeads();
+        } catch { }
+
+        setCallNotes("");
+        setCallOutcome("follow_up_1_day");
+        setShowCallDialog(false);
+      } catch (error) {
+        console.error("Failed to save call log:", error);
+        alert("Failed to save call log. Please try again.");
+      } finally {
+        setSavingCallLog(false);
+      }
     }
   };
 
   const handleCloseDialog = () => {
-    setShowCallDialog(false);
-    setCallNotes("");
-    setCallOutcome("follow_up_1_day");
+    if (!savingCallLog) {
+      setShowCallDialog(false);
+      setCallNotes("");
+      setCallOutcome("follow_up_1_day");
+    }
   };
 
   const handleEditLog = (log: CallLog) => {
@@ -165,14 +178,17 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
   };
 
   const handleDeleteLog = async () => {
-    if (editingLogId) {
+    if (editingLogId && !deletingLog) {
       if (!window.confirm('Delete this call log?')) return;
+      setDeletingLog(true);
       try {
         await deleteCallLog?.(lead.id, editingLogId);
         await refreshLeads();
       } catch (e) {
-        // ignore
+        console.error("Failed to delete call log:", e);
+        alert("Failed to delete call log. Please try again.");
       } finally {
+        setDeletingLog(false);
         setEditingLogId(null);
         setEditNotes("");
         setEditOutcome("follow_up_1_day");
@@ -181,7 +197,8 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
   };
 
   const handleSaveEdit = async () => {
-    if (editingLogId && editNotes.trim()) {
+    if (editingLogId && editNotes.trim() && !savingEdit) {
+      setSavingEdit(true);
       try {
         await updateCallLog(lead.id, editingLogId, {
           outcome: editOutcome,
@@ -189,8 +206,10 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
         });
         await refreshLeads();
       } catch (e) {
-        // ignore
+        console.error("Failed to update call log:", e);
+        alert("Failed to update call log. Please try again.");
       } finally {
+        setSavingEdit(false);
         setEditingLogId(null);
         setEditNotes("");
         setEditOutcome("follow_up_1_day");
@@ -424,13 +443,39 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
                     </select>
                     <textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)} className="w-full p-1 text-xs border border-gray-300 rounded resize-none" rows={3} style={{ direction: "ltr" }} dir="ltr" />
                     <div className="flex gap-1">
-                      <button onClick={handleSaveEdit} className="flex items-center gap-1 px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700">
-                        <Save className="w-3 h-3" />
-                        Save
+                      <button
+                        onClick={handleSaveEdit}
+                        disabled={savingEdit}
+                        className="flex items-center gap-1 px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      >
+                        {savingEdit ? (
+                          <>
+                            <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-3 h-3" />
+                            Save
+                          </>
+                        )}
                       </button>
-                      <button onClick={handleDeleteLog} className="flex items-center gap-1 px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700">
-                        <Trash2 className="w-3 h-3" />
-                        Delete
+                      <button
+                        onClick={handleDeleteLog}
+                        disabled={deletingLog}
+                        className="flex items-center gap-1 px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      >
+                        {deletingLog ? (
+                          <>
+                            <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            Deleting...
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 className="w-3 h-3" />
+                            Delete
+                          </>
+                        )}
                       </button>
                       <button onClick={handleCancelEdit} className="flex items-center gap-1 px-2 py-1 bg-gray-300 text-gray-700 rounded text-xs hover:bg-gray-400">
                         <X className="w-3 h-3" />
@@ -631,13 +676,39 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
                           </select>
                           <textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)} className="w-full p-2 border border-gray-300 rounded resize-none" rows={3} style={{ direction: "ltr" }} dir="ltr" />
                           <div className="flex gap-2">
-                            <button onClick={handleSaveEdit} className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">
-                              <Save className="w-4 h-4" />
-                              Save
+                            <button
+                              onClick={handleSaveEdit}
+                              disabled={savingEdit}
+                              className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                            >
+                              {savingEdit ? (
+                                <>
+                                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                  Saving...
+                                </>
+                              ) : (
+                                <>
+                                  <Save className="w-4 h-4" />
+                                  Save
+                                </>
+                              )}
                             </button>
-                            <button onClick={handleDeleteLog} className="flex items-center gap-1 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700">
-                              <Trash2 className="w-4 h-4" />
-                              Delete
+                            <button
+                              onClick={handleDeleteLog}
+                              disabled={deletingLog}
+                              className="flex items-center gap-1 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                            >
+                              {deletingLog ? (
+                                <>
+                                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                  Deleting...
+                                </>
+                              ) : (
+                                <>
+                                  <Trash2 className="w-4 h-4" />
+                                  Delete
+                                </>
+                              )}
                             </button>
                             <button onClick={handleCancelEdit} className="flex items-center gap-1 px-3 py-1 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
                               <X className="w-4 h-4" />
@@ -676,7 +747,11 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
           <div className="bg-white rounded-lg p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">Log Call - {lead.name}</h3>
-              <button onClick={handleCloseDialog} className="text-gray-400 hover:text-gray-600">
+              <button
+                onClick={handleCloseDialog}
+                disabled={savingCallLog}
+                className="text-gray-400 hover:text-gray-600 disabled:text-gray-300 disabled:cursor-not-allowed"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -709,11 +784,26 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
             </div>
 
             <div className="flex gap-2 mt-6">
-              <button onClick={handleCloseDialog} className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">
+              <button
+                onClick={handleCloseDialog}
+                disabled={savingCallLog}
+                className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
+              >
                 Cancel
               </button>
-              <button onClick={handleSubmitCallLog} className="flex-1 px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed" disabled={!callNotes.trim()}>
-                Save Notes
+              <button
+                onClick={handleSubmitCallLog}
+                disabled={!callNotes.trim() || savingCallLog}
+                className="flex-1 px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {savingCallLog ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Saving...
+                  </>
+                ) : (
+                  'Save Notes'
+                )}
               </button>
             </div>
           </div>
