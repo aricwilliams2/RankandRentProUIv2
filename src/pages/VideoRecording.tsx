@@ -986,20 +986,6 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onRecordingComplete, onEr
                 )}
 
                 <Box sx={{ mb: 3 }}>
-                    <FormControl fullWidth sx={{ mb: 2 }}>
-                        <InputLabel>Recording Type</InputLabel>
-                        <Select
-                            value={recordingType}
-                            label="Recording Type"
-                            onChange={(e) => setRecordingType(e.target.value as any)}
-                            disabled={isRecording}
-                        >
-                            <MenuItem value="screen">Screen Only</MenuItem>
-                            <MenuItem value="webcam">Webcam Only</MenuItem>
-                            <MenuItem value="both">Screen + Webcam</MenuItem>
-                        </Select>
-                    </FormControl>
-
                     <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                         {!isRecording ? (
                             <Button
@@ -1054,70 +1040,17 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onRecordingComplete, onEr
                         style={{ width: '100%', maxHeight: '400px', objectFit: 'contain' }}
                     />
 
-                    {/* Preview bubble to match camBox */}
-                    {recordingType === 'both' && (
-                        <video
-                            ref={webcamPreviewRef}
-                            autoPlay
-                            muted
-                            playsInline
-                            onMouseDown={(e) => {
-                                const startX = e.clientX, startY = e.clientY;
-                                const startBox = { ...camBox };
-                                const move = (ev: MouseEvent) => {
-                                    const dx = ev.clientX - startX, dy = ev.clientY - startY;
-                                    setCamBox(b => ({
-                                        ...b,
-                                        x: Math.max(8, Math.min(startBox.x + dx, (videoRef.current?.clientWidth || 0) - b.w - 8)),
-                                        y: Math.max(8, Math.min(startBox.y + dy, (videoRef.current?.clientHeight || 0) - b.h - 8))
-                                    }));
-                                };
-                                const up = () => {
-                                    window.removeEventListener('mousemove', move);
-                                    window.removeEventListener('mouseup', up);
-                                };
-                                window.addEventListener('mousemove', move);
-                                window.addEventListener('mouseup', up);
-                            }}
-                            style={{
-                                position: 'absolute',
-                                left: camBox.x, top: camBox.y, width: camBox.w, height: camBox.h,
-                                borderRadius: '9999px', objectFit: 'cover', background: 'black',
-                                boxShadow: '0 8px 24px rgba(0,0,0,0.35)', cursor: 'grab', zIndex: 2,
-                                display: webcamStream && !hudActive ? 'block' : 'none' // show only when ready and HUD not active
-                            }}
-                        // srcObject set in code
-                        />
-                    )}
                 </Box>
-
-                {/* Loom-style compositing info */}
-                {recordingType === 'both' && (
-                    <Box sx={{ mt: 1, p: 1, bgcolor: 'info.light', borderRadius: 1 }}>
-                        <Typography variant="body2" color="info.contrastText">
-                            💡 A floating webcam bubble will appear when recording starts. Drag it to reposition, scroll to resize. The bubble is burned into the recording and stays visible even when switching tabs.
-                        </Typography>
-                    </Box>
-                )}
 
                 <Box sx={{ mt: 2 }}>
                     <Typography variant="body2" color="text.secondary">
-                        {recordingType === 'screen' && 'Recording your screen with audio. Select "Entire Screen" when prompted for best window switching support.'}
-                        {recordingType === 'webcam' && 'Recording your webcam with audio'}
-                        {recordingType === 'both' && 'Recording screen with audio + webcam overlay. Select "Entire Screen" when prompted for best window switching support.'}
+                        Recording your screen with audio. Select "Entire Screen" when prompted for best window switching support.
                     </Typography>
-                    {(recordingType === 'screen' || recordingType === 'both') && (
-                        <Alert severity="info" sx={{ mt: 2 }}>
-                            <Typography variant="body2">
-                                <strong>Tip:</strong> When the screen selection dialog appears, choose "Entire Screen" instead of "Application Window" or "Browser Tab" to capture all windows and applications when you switch between them. The recording will continue even when you switch to other windows.
-                            </Typography>
-                            {recordingType === 'both' && (
-                                <Typography variant="body2" sx={{ mt: 1 }}>
-                                    <strong>Monitor Switching:</strong> Click the screen-share banner's "Change" button to switch monitors while recording.
-                                </Typography>
-                            )}
-                        </Alert>
-                    )}
+                    <Alert severity="info" sx={{ mt: 2 }}>
+                        <Typography variant="body2">
+                            <strong>Tip:</strong> When the screen selection dialog appears, choose "Entire Screen" instead of "Application Window" or "Browser Tab" to capture all windows and applications when you switch between them. The recording will continue even when you switch to other windows.
+                        </Typography>
+                    </Alert>
                 </Box>
             </CardContent>
         </Card>
