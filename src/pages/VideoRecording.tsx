@@ -108,24 +108,28 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onRecordingComplete, onEr
     const [webcamStream, setWebcamStream] = useState<MediaStream | null>(null);
     const [micStream, setMicStream] = useState<MediaStream | null>(null);
 
-        const videoRef = useRef<HTMLVideoElement>(null);
+    const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const webcamPreviewRef = useRef<HTMLVideoElement | null>(null);
     const timeIntervalRef = useRef<number | null>(null);
     const animationFrameRef = useRef<number | null>(null);
     const [pipActive, setPipActive] = useState(false);
-    
+
     // Keep a handle to PiP windows so you can close/cleanup later
     const pipWinRef = useRef<Window | null>(null);
-    
+
     // Loom-style compositing refs
     const screenVidRef = useRef<HTMLVideoElement>(document.createElement('video'));
     const camVidRef = useRef<HTMLVideoElement>(document.createElement('video'));
     const composeCanvasRef = useRef<HTMLCanvasElement>(document.createElement('canvas'));
     const composedStreamRef = useRef<MediaStream | null>(null);
-    
+
     // Draggable bubble box (canvas coordinates)
     const [camBox, setCamBox] = useState({ x: 24, y: 24, w: 240, h: 240 }); // square → circle mask
+
+    // Track whether the HUD/PiP is active
+    const [hudActive, setHudActive] = useState(false); // true = show only the floating HUD
+    const hiddenPiPRef = useRef<HTMLVideoElement | null>(null); // classic PiP shim
 
     // PiP helper functions
     const enterPiP = async () => {
@@ -217,105 +221,122 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onRecordingComplete, onEr
             pipWinRef.current.close();
             pipWinRef.current = null;
         }
-        await exitPiP();
+        // Classic PiP exit if needed
+        // @ts-ignore
+        if (document.pictureInPictureElement) {
+            // @ts-ignore
+            await document.exitPictureInPicture().catch(() => { });
+        }
+        setHudActive(false);
     };
 
     // DPiP HUD for always-on-top bubble
     const openFloatingCamHUD = async (camStream: MediaStream) => {
         const anyWin = window as any;
-        // Prefer DPiP (Chrome/Edge). Fallback to classic PiP if not available.
-        if (!anyWin.documentPictureInPicture) {
-            // classic PiP fallback – visible but NOT draggable; still helpful
-            const el = webcamPreviewRef.current;
-            if (el && !document.pictureInPictureElement) {
-                el.srcObject = camStream;
-                await el.requestPictureInPicture().catch(() => { });
+
+        // Prefer DPiP (Chrome/Edge)
+        if (anyWin.documentPictureInPicture) {
+            if (pipWinRef.current && !pipWinRef.current.closed) {
+                pipWinRef.current.focus();
+                return;
             }
-            return;
-        }
 
-        // If already open, focus
-        if (pipWinRef.current && !pipWinRef.current.closed) {
-            pipWinRef.current.focus();
-            return;
-        }
+            const pipWindow: Window = await anyWin.documentPictureInPicture.requestWindow({
+                width: 32,
+                height: 32
+            });
+            pipWinRef.current = pipWindow;
+            setHudActive(true); // hide the page bubble now
 
-        const pipWindow: Window = await anyWin.documentPictureInPicture.requestWindow({
-            width: 240, height: 240
-        });
-        pipWinRef.current = pipWindow;
+            const doc = pipWindow.document;
+            doc.body.style.margin = '0';
+            doc.body.style.background = 'transparent';
+            doc.body.style.userSelect = 'none';
 
-        // Build HUD document
-        const doc = pipWindow.document;
-        doc.body.style.margin = '0';
-        doc.body.style.background = 'transparent';
-        doc.body.style.userSelect = 'none';
+            const wrap = doc.createElement('div');
+            wrap.style.cssText = `
+                width:100%;height:100%;
+                display:flex;align-items:center;justify-content:center;
+                background:transparent;
+            `;
+            const v = doc.createElement('video');
+            v.autoplay = true; v.muted = true; v.playsInline = true;
+            // @ts-ignore
+            v.srcObject = camStream;
+            v.style.cssText = `
+                width:100%;height:100%;
+                object-fit:cover;
+                border-radius:9999px;
+                box-shadow:0 8px 24px rgba(0,0,0,0.35);
+                cursor:grab;
+                background:black;
+                opacity:0.02;                /* nearly invisible by default */
+                transition:opacity .12s ease, width .12s ease, height .12s ease;
+            `;
+            wrap.appendChild(v);
+            doc.body.appendChild(wrap);
 
-        const wrap = doc.createElement('div');
-        wrap.style.cssText = `
-            width:100%;height:100%;
-            display:flex;align-items:center;justify-content:center;
-            background:transparent;
-        `;
-        const v = doc.createElement('video');
-        v.autoplay = true;
-        v.muted = true;        // allow autoplay
-        v.playsInline = true;
-        // @ts-ignore
-        v.srcObject = camStream;
-        v.style.cssText = `
-            width: 100%; height: 100%;
-            object-fit: cover;
-            border-radius: 9999px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.35);
-            cursor: grab;
-            background:black;
-        `;
-        wrap.appendChild(v);
-        doc.body.appendChild(wrap);
+            // reveal on hover/drag
+            wrap.addEventListener('mouseenter', () => { v.style.opacity = '1'; });
+            wrap.addEventListener('mouseleave', () => { if (!dragging) v.style.opacity = '0.02'; });
 
-        // --- Drag inside the HUD; report position back to the main page ---
-        // We'll send normalized center coords + size (0..1), so main page can map to canvas.
-        let dragging = false, startX = 0, startY = 0, cx = 0.85, cy = 0.15, size = 0.25; // initial pos/size
-        const send = () => {
-            pipWindow.opener?.postMessage(
-                { type: 'pip-drag', cx, cy, size }, '*'
-            );
-        };
-        send();
-
-        const onDown = (e: MouseEvent) => { dragging = true; startX = e.clientX; startY = e.clientY; v.style.cursor = 'grabbing'; };
-        const onMove = (e: MouseEvent) => {
-            if (!dragging) return;
-            const dx = e.clientX - startX, dy = e.clientY - startY;
-            startX = e.clientX; startY = e.clientY;
-            const W = doc.documentElement.clientWidth, H = doc.documentElement.clientHeight;
-            // move center by delta normalized to window size
-            cx = Math.min(0.98, Math.max(0.02, cx + dx / W));
-            cy = Math.min(0.98, Math.max(0.02, cy + dy / H));
-            wrap.style.justifyContent = cx < 0.5 ? 'flex-start' : (cx > 0.5 ? 'flex-end' : 'center');
-            wrap.style.alignItems = cy < 0.5 ? 'flex-start' : (cy > 0.5 ? 'flex-end' : 'center');
-            send();
-        };
-        const onUp = () => { dragging = false; v.style.cursor = 'grab'; };
-
-        v.addEventListener('mousedown', onDown);
-        doc.addEventListener('mousemove', onMove);
-        doc.addEventListener('mouseup', onUp);
-
-        // Optional: scroll to resize bubble
-        doc.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            size = Math.min(0.6, Math.max(0.12, size + (e.deltaY < 0 ? 0.03 : -0.03)));
+            // --- Drag inside the HUD; report position back to the main page ---
+            // We'll send normalized center coords + size (0..1), so main page can map to canvas.
+            let dragging = false, startX = 0, startY = 0;
+            let cx = 0.98, cy = 0.05, size = 0.18;    // small default
             v.style.width = v.style.height = `${Math.round(size * 100)}%`;
+
+            const send = () => pipWindow.opener?.postMessage({ type: 'pip-drag', cx, cy, size }, '*');
             send();
-        }, { passive: false });
 
-        // Keep some initial size
-        v.style.width = v.style.height = `${Math.round(size * 100)}%`;
+            const onDown = (e: MouseEvent) => { dragging = true; startX = e.clientX; startY = e.clientY; v.style.cursor = 'grabbing'; v.style.opacity = '1'; };
+            const onUp = () => { dragging = false; v.style.cursor = 'grab'; v.style.opacity = '0.02'; };
 
-        // Cleanup
-        pipWindow.addEventListener('pagehide', () => { pipWinRef.current = null; });
+            v.addEventListener('mousedown', onDown);
+            doc.addEventListener('mouseup', onUp);
+
+            doc.addEventListener('mousemove', (e) => {
+                if (!dragging) return;
+                const dx = e.clientX - startX, dy = e.clientY - startY;
+                startX = e.clientX; startY = e.clientY;
+                const W = doc.documentElement.clientWidth, H = doc.documentElement.clientHeight;
+                cx = Math.min(0.995, Math.max(0.005, cx + dx / W));
+                cy = Math.min(0.995, Math.max(0.005, cy + dy / H));
+                wrap.style.justifyContent = cx < 0.5 ? 'flex-start' : (cx > 0.5 ? 'flex-end' : 'center');
+                wrap.style.alignItems = cy < 0.5 ? 'flex-start' : (cy > 0.5 ? 'flex-end' : 'center');
+                send();
+            });
+
+            // scroll to resize; brief reveal
+            doc.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                size = Math.min(0.6, Math.max(0.12, size + (e.deltaY < 0 ? 0.03 : -0.03)));
+                v.style.width = v.style.height = `${Math.round(size * 100)}%`;
+                v.style.opacity = '1';
+                clearTimeout((v as any)._hideT);
+                (v as any)._hideT = setTimeout(() => { if (!dragging) v.style.opacity = '0.02'; }, 600);
+                send();
+            }, { passive: false });
+
+            // Cleanup
+            pipWindow.addEventListener('pagehide', () => {
+                pipWinRef.current = null;
+                setHudActive(false); // show page bubble again if needed
+            });
+            return;
+        }
+
+        // --- Classic PiP fallback ---
+        const el = hiddenPiPRef.current;
+        if (el) {
+            // @ts-ignore
+            el.srcObject = camStream;
+            try {
+                await el.requestPictureInPicture();
+                setHudActive(true); // hide page bubble while classic PiP is showing
+                el.addEventListener('leavepictureinpicture', () => setHudActive(false), { once: true });
+            } catch { }
+        }
     };
 
     // Loom-style compositor
@@ -787,6 +808,8 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onRecordingComplete, onEr
         }
     };
 
+
+
     const stopRecording = async () => {
         const rec: any = recorder; // may hold {screenRecorder, webcamRecorder} in "both" mode
 
@@ -945,6 +968,23 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onRecordingComplete, onEr
 
                 {/* Hidden canvas for compositing - no longer used in dual-stream mode */}
 
+                {/* Hidden PiP shim (classic PiP only) */}
+                <video
+                    ref={hiddenPiPRef}
+                    muted
+                    playsInline
+                    style={{
+                        position: 'fixed',
+                        left: -99999,
+                        top: 0,
+                        width: 1,
+                        height: 1,
+                        opacity: 0,
+                        pointerEvents: 'none',
+                        zIndex: -1
+                    }}
+                />
+
                 {/* Video Preview */}
                 <Box sx={{ position: 'relative', bgcolor: 'black', borderRadius: 2, overflow: 'hidden' }}>
                     <video
@@ -985,7 +1025,7 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onRecordingComplete, onEr
                                 left: camBox.x, top: camBox.y, width: camBox.w, height: camBox.h,
                                 borderRadius: '9999px', objectFit: 'cover', background: 'black',
                                 boxShadow: '0 8px 24px rgba(0,0,0,0.35)', cursor: 'grab', zIndex: 2,
-                                display: webcamStream ? 'block' : 'none' // show only when ready
+                                display: webcamStream && !hudActive ? 'block' : 'none' // show only when ready and HUD not active
                             }}
                         // srcObject set in code
                         />
@@ -1007,18 +1047,18 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onRecordingComplete, onEr
                         {recordingType === 'webcam' && 'Recording your webcam with audio'}
                         {recordingType === 'both' && 'Recording screen with audio + webcam overlay. Select "Entire Screen" when prompted for best window switching support.'}
                     </Typography>
-                                         {(recordingType === 'screen' || recordingType === 'both') && (
-                         <Alert severity="info" sx={{ mt: 2 }}>
-                             <Typography variant="body2">
-                                 <strong>Tip:</strong> When the screen selection dialog appears, choose "Entire Screen" instead of "Application Window" or "Browser Tab" to capture all windows and applications when you switch between them. The recording will continue even when you switch to other windows.
-                             </Typography>
-                             {recordingType === 'both' && (
-                                 <Typography variant="body2" sx={{ mt: 1 }}>
-                                     <strong>Monitor Switching:</strong> Click the screen-share banner's "Change" button to switch monitors while recording.
-                                 </Typography>
-                             )}
-                         </Alert>
-                     )}
+                    {(recordingType === 'screen' || recordingType === 'both') && (
+                        <Alert severity="info" sx={{ mt: 2 }}>
+                            <Typography variant="body2">
+                                <strong>Tip:</strong> When the screen selection dialog appears, choose "Entire Screen" instead of "Application Window" or "Browser Tab" to capture all windows and applications when you switch between them. The recording will continue even when you switch to other windows.
+                            </Typography>
+                            {recordingType === 'both' && (
+                                <Typography variant="body2" sx={{ mt: 1 }}>
+                                    <strong>Monitor Switching:</strong> Click the screen-share banner's "Change" button to switch monitors while recording.
+                                </Typography>
+                            )}
+                        </Alert>
+                    )}
                 </Box>
             </CardContent>
         </Card>
