@@ -26,6 +26,10 @@ import {
   DialogContent,
   DialogActions,
   IconButton,
+  FormControl,
+  Select,
+  InputLabel,
+  FormHelperText,
 } from '@mui/material';
 import {
   LineChart,
@@ -92,10 +96,12 @@ export default function Analytics() {
   const [error, setError] = useState<string | null>(null);
   const [websiteInput, setWebsiteInput] = useState('');
   const [pdfGenerating, setPdfGenerating] = useState(false);
+  const [analysisMode, setAnalysisMode] = useState<'subdomains' | 'exact'>('subdomains');
+  const [isCachedData, setIsCachedData] = useState(false);
 
-
-  // Get domain from location state or URL params
+  // Get domain and mode from location state or URL params
   const domain = location.state?.domain || new URLSearchParams(location.search).get('domain');
+  const urlMode = new URLSearchParams(location.search).get('mode') as 'subdomains' | 'exact' | null;
 
   // Function to open Google Maps search for GMB
   const openGoogleMapsSearch = (domain: string) => {
@@ -110,13 +116,12 @@ export default function Analytics() {
     window.open(mapsSearchUrl, '_blank');
   };
 
-  // Cache utilities
-  const MODE = 'subdomains';
+  // Cache utilities - now includes mode in cache key
   const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
-  const getCacheKey = (d: string, m: string = MODE) => `analytics:${m}:${d}`;
-  const getCachedTraffic = (d: string) => {
+  const getCacheKey = (d: string, m: string) => `analytics:${m}:${d}`;
+  const getCachedTraffic = (d: string, m: string) => {
     try {
-      const raw = localStorage.getItem(getCacheKey(d));
+      const raw = localStorage.getItem(getCacheKey(d, m));
       if (!raw) return null;
       const parsed = JSON.parse(raw);
       if (!parsed || !parsed.data) return null;
@@ -125,27 +130,32 @@ export default function Analytics() {
       return null;
     }
   };
-  const setCachedTraffic = (d: string, data: TrafficData) => {
+  const setCachedTraffic = (d: string, m: string, data: TrafficData) => {
     try {
-      localStorage.setItem(getCacheKey(d), JSON.stringify({ data, timestamp: Date.now() }));
+      localStorage.setItem(getCacheKey(d, m), JSON.stringify({ data, timestamp: Date.now() }));
     } catch { }
   };
 
   useEffect(() => {
     if (domain) {
-      const cached = getCachedTraffic(domain);
+      // Use mode from URL if available, otherwise default to subdomains
+      const mode = urlMode || 'subdomains';
+      setAnalysisMode(mode);
+
+      const cached = getCachedTraffic(domain, mode);
       if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
         setTrafficData(cached.data);
+        setIsCachedData(true);
         setLoading(false);
         return;
       }
-      fetchTrafficData(false);
+      fetchTrafficData(false, mode);
     } else {
       setLoading(false);
     }
-  }, [domain]);
+  }, [domain, urlMode]);
 
-  const fetchTrafficData = async (forceRefresh: boolean = false) => {
+  const fetchTrafficData = async (forceRefresh: boolean = false, mode: string = analysisMode) => {
     if (!domain) return;
 
     setLoading(true);
@@ -153,14 +163,20 @@ export default function Analytics() {
 
     try {
       if (!forceRefresh) {
-        const cached = getCachedTraffic(domain);
+        const cached = getCachedTraffic(domain, mode);
         if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
           setTrafficData(cached.data);
+          setIsCachedData(true);
           return;
         }
       }
 
-      const response = await apiCall(`/api/website-traffic?url=${encodeURIComponent(domain)}&mode=${MODE}`);
+      // Handle URL encoding - use encodeURI for URLs with protocol, encodeURIComponent for domains only
+      const encodedUrl = domain.startsWith('http://') || domain.startsWith('https://')
+        ? encodeURI(domain)  // Use encodeURI for full URLs to preserve protocol
+        : encodeURIComponent(domain);  // Use encodeURIComponent for domains only
+
+      const response = await apiCall(`/api/website-traffic?url=${encodedUrl}&mode=${mode}`);
 
       if (!response.ok) {
         throw new Error(`API Error: ${response.status} ${response.statusText}`);
@@ -168,7 +184,8 @@ export default function Analytics() {
 
       const data = await response.json();
       setTrafficData(data);
-      setCachedTraffic(domain, data);
+      setIsCachedData(false);
+      setCachedTraffic(domain, mode, data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch traffic data');
     } finally {
@@ -317,18 +334,42 @@ export default function Analytics() {
 
   const handleWebsiteSubmit = () => {
     if (websiteInput.trim()) {
-      // Clean the input and navigate with the domain
       let cleanDomain = websiteInput.trim();
-      if (cleanDomain.startsWith('http://') || cleanDomain.startsWith('https://')) {
+
+      if (analysisMode === 'subdomains') {
+        // For subdomains mode, preserve protocol and hostname, strip everything after .com
+        if (cleanDomain.startsWith('http://') || cleanDomain.startsWith('https://')) {
+          try {
+            const url = new URL(cleanDomain);
+            cleanDomain = url.protocol + '//' + url.hostname;
+          } catch {
+            // If URL parsing fails, just remove the protocol
+            cleanDomain = cleanDomain.replace(/^https?:\/\//, '');
+          }
+        } else {
+          // If no protocol, just get the domain part before any path
+          cleanDomain = cleanDomain.split('/')[0];
+        }
+      } else {
+        // For exact mode, preserve the full URL with protocol
+        if (!cleanDomain.startsWith('http://') && !cleanDomain.startsWith('https://')) {
+          cleanDomain = `https://${cleanDomain}`;
+        }
         try {
-          cleanDomain = new URL(cleanDomain).hostname;
+          const url = new URL(cleanDomain);
+          cleanDomain = url.protocol + '//' + url.hostname + url.pathname;
         } catch {
-          // If URL parsing fails, just remove the protocol
-          cleanDomain = cleanDomain.replace(/^https?:\/\//, '');
+          // If URL parsing fails, use as-is
         }
       }
 
-      navigate(`/analytics?domain=${encodeURIComponent(cleanDomain)}`);
+      // Navigate with both domain and mode parameters
+      // Handle URL encoding - use encodeURI for URLs with protocol, encodeURIComponent for domains only
+      const encodedDomain = cleanDomain.startsWith('http://') || cleanDomain.startsWith('https://')
+        ? encodeURI(cleanDomain)  // Use encodeURI for full URLs to preserve protocol
+        : encodeURIComponent(cleanDomain);  // Use encodeURIComponent for domains only
+
+      navigate(`/analytics?domain=${encodedDomain}&mode=${analysisMode}`);
       // Update the current domain and fetch data
     }
   };
@@ -358,7 +399,10 @@ export default function Analytics() {
               <TextField
                 fullWidth
                 label="Website URL or Domain"
-                placeholder="e.g., example.com or https://example.com"
+                placeholder={analysisMode === 'subdomains'
+                  ? "e.g., example.com or https://example.com"
+                  : "e.g., https://blog.example.com/posts or example.com/specific-page"
+                }
                 value={websiteInput}
                 onChange={(e) => setWebsiteInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleWebsiteSubmit()}
@@ -375,6 +419,39 @@ export default function Analytics() {
                   }
                 }}
               />
+
+              <FormControl fullWidth>
+                <InputLabel>Analysis Mode</InputLabel>
+                <Select
+                  value={analysisMode}
+                  onChange={(e) => setAnalysisMode(e.target.value as 'subdomains' | 'exact')}
+                  label="Analysis Mode"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                    }
+                  }}
+                >
+                  <MenuItem value="subdomains">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Globe size={16} />
+                      Include Subdomains (Default)
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="exact">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Target size={16} />
+                      Exact Domain Only
+                    </Box>
+                  </MenuItem>
+                </Select>
+                <FormHelperText>
+                  {analysisMode === 'subdomains'
+                    ? 'Analyzes the main domain and all its subdomains. Enter any URL and it will analyze the root domain (e.g., example.com from https://blog.example.com/posts)'
+                    : 'Analyzes only the exact URL specified. Enter the full URL including protocol and path to analyze that specific page (e.g., https://blog.example.com/posts)'
+                  }
+                </FormHelperText>
+              </FormControl>
 
               <Button
                 variant="contained"
@@ -485,6 +562,12 @@ export default function Analytics() {
               color="success"
               size="small"
             />
+            <Chip
+              label={analysisMode === 'subdomains' ? 'Include Subdomains' : 'Exact Domain'}
+              color={analysisMode === 'subdomains' ? 'primary' : 'secondary'}
+              size="small"
+              icon={analysisMode === 'subdomains' ? <Globe size={14} /> : <Target size={14} />}
+            />
             {trafficData.url && (
               <Button
                 variant="outlined"
@@ -509,6 +592,19 @@ export default function Analytics() {
             >
               Refresh Data
             </Button>
+            {isCachedData && (
+              <Typography
+                variant="body2"
+                sx={{
+                  ml: 1,
+                  fontWeight: 'bold',
+                  color: 'error.main',
+                  fontSize: '0.875rem',
+                }}
+              >
+                (This is cached data)
+              </Typography>
+            )}
             <Button
               className="no-report"
               variant="contained"

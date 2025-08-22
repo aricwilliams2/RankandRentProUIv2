@@ -175,17 +175,20 @@ export default function Clients() {
 
   const handleViewAnalytics = (client: Client) => {
     if (client.website) {
-      // Extract domain from website URL
+      // Extract domain from website URL, preserving https://www.
       let domain = client.website;
       try {
         const url = new URL(client.website.startsWith("http") ? client.website : `https://${client.website}`);
-        domain = url.hostname.replace("www.", "");
+        domain = url.protocol + '//' + url.hostname;
       } catch {
         // If URL parsing fails, use the website string as is
         domain = client.website
           .replace(/^https?:\/\//, "")
-          .replace("www.", "")
           .split("/")[0];
+        // Add https:// back if it was stripped
+        if (!client.website.startsWith("http")) {
+          domain = `https://${domain}`;
+        }
       }
 
       navigate("/analytics", {

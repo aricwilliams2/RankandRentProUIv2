@@ -77,17 +77,20 @@ const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }
   const handleViewAnalytics = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (lead.website) {
-      // Extract domain from website URL
+      // Extract domain from website URL, preserving https://www.
       let domain = lead.website;
       try {
         const url = new URL(lead.website.startsWith("http") ? lead.website : `https://${lead.website}`);
-        domain = url.hostname.replace("www.", "");
+        domain = url.protocol + '//' + url.hostname;
       } catch {
         // If URL parsing fails, use the website string as is
         domain = lead.website
           .replace(/^https?:\/\//, "")
-          .replace("www.", "")
           .split("/")[0];
+        // Add https:// back if it was stripped
+        if (!lead.website.startsWith("http")) {
+          domain = `https://${domain}`;
+        }
       }
 
       navigate("/analytics", {
