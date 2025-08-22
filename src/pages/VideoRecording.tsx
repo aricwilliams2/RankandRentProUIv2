@@ -175,7 +175,7 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onRecordingComplete, onEr
 
             const pipWindow: Window = await anyWin.documentPictureInPicture.requestWindow({
                 width: 240,
-                height: 160
+                height: 60
             });
 
             pipWinRef.current = pipWindow;
@@ -231,109 +231,168 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onRecordingComplete, onEr
     };
 
     // DPiP HUD for always-on-top bubble
+    // --- Ghost DPiP (tiny, auto-hide, peek-on-hover, hold-Alt-to-interact) ---
     const openFloatingCamHUD = async (camStream: MediaStream) => {
         const anyWin = window as any;
 
-        // Prefer DPiP (Chrome/Edge)
+        // Prefer DPiP (Chromium)
         if (anyWin.documentPictureInPicture) {
             if (pipWinRef.current && !pipWinRef.current.closed) {
                 pipWinRef.current.focus();
                 return;
             }
 
+            // Start very small
             const pipWindow: Window = await anyWin.documentPictureInPicture.requestWindow({
-                width: 32,
-                height: 32
+                width: 28,
+                height: 28
             });
+
             pipWinRef.current = pipWindow;
-            setHudActive(true); // hide the page bubble now
+            setHudActive(true);
 
             const doc = pipWindow.document;
             doc.body.style.margin = '0';
             doc.body.style.background = 'transparent';
             doc.body.style.userSelect = 'none';
+            doc.documentElement.style.overflow = 'hidden';
 
+            // container
             const wrap = doc.createElement('div');
             wrap.style.cssText = `
-                width:100%;height:100%;
-                display:flex;align-items:center;justify-content:center;
-                background:transparent;
-            `;
+        width:100%;height:100%;
+        display:flex;align-items:center;justify-content:center;
+        background:transparent;
+      `;
+
             const v = doc.createElement('video');
-            v.autoplay = true; v.muted = true; v.playsInline = true;
+            v.autoplay = true;
+            v.muted = true;
+            v.playsInline = true;
             // @ts-ignore
             v.srcObject = camStream;
+
+            // fill the tiny window, circular, with a soft shadow
             v.style.cssText = `
-                width:100%;height:100%;
-                object-fit:cover;
-                border-radius:9999px;
-                box-shadow:0 8px 24px rgba(0,0,0,0.35);
-                cursor:grab;
-                background:black;
-                opacity:0.02;                /* nearly invisible by default */
-                transition:opacity .12s ease, width .12s ease, height .12s ease;
-            `;
+        width:100%;height:100%;
+        object-fit:cover;
+        border-radius:9999px;
+        box-shadow:0 8px 24px rgba(0,0,0,.35);
+        background:black;
+        transition:opacity .12s ease;
+        opacity:.04;                 /* almost invisible by default */
+        cursor:default;
+      `;
+
             wrap.appendChild(v);
             doc.body.appendChild(wrap);
 
-            // reveal on hover/drag
-            wrap.addEventListener('mouseenter', () => { v.style.opacity = '1'; });
-            wrap.addEventListener('mouseleave', () => { if (!dragging) v.style.opacity = '0.02'; });
-
-            // --- Drag inside the HUD; report position back to the main page ---
-            // We'll send normalized center coords + size (0..1), so main page can map to canvas.
+            // ---- Behavior knobs ----
             let dragging = false, startX = 0, startY = 0;
-            let cx = 0.98, cy = 0.05, size = 0.18;    // small default
-            v.style.width = v.style.height = `${Math.round(size * 100)}%`;
+            let cx = 0.98, cy = 0.05, size = 0.18;   // normalized position + relative size (0..1)
+            const reveal = (ms = 900) => {
+                v.style.opacity = '1';
+                clearTimeout((v as any)._hideT);
+                (v as any)._hideT = setTimeout(() => { if (!dragging) v.style.opacity = '.04'; }, ms);
+            };
 
+            // Send normalized position/size to the opener so the canvas overlay moves
             const send = () => pipWindow.opener?.postMessage({ type: 'pip-drag', cx, cy, size }, '*');
-            send();
 
-            const onDown = (e: MouseEvent) => { dragging = true; startX = e.clientX; startY = e.clientY; v.style.cursor = 'grabbing'; v.style.opacity = '1'; };
-            const onUp = () => { dragging = false; v.style.cursor = 'grab'; v.style.opacity = '0.02'; };
+            // Hover to “peek”
+            wrap.addEventListener('mouseenter', () => reveal(1400));
+            wrap.addEventListener('mouseleave', () => { if (!dragging) v.style.opacity = '.04'; });
 
+            // Hold Alt to interact (makes it feel "ghosted" unless the user intends to move it)
+            let interact = false;
+            const setInteract = (on: boolean) => {
+                interact = on;
+                v.style.cursor = on ? 'grab' : 'default';
+                reveal(1600);
+            };
+            doc.addEventListener('keydown', (e) => {
+                if (e.altKey) setInteract(true);
+                if (e.key === 'Escape') try { pipWindow.close(); } catch { }
+            });
+            doc.addEventListener('keyup', (e) => {
+                if (!e.altKey) setInteract(false);
+            });
+
+            // Drag inside the tiny window only while holding Alt (prevents accidental drags)
+            const onDown = (e: MouseEvent) => {
+                if (!interact) return;
+                dragging = true; startX = e.clientX; startY = e.clientY;
+                v.style.cursor = 'grabbing';
+                reveal(2000);
+            };
+            const onUp = () => { if (!dragging) return; dragging = false; v.style.cursor = 'grab'; };
             v.addEventListener('mousedown', onDown);
             doc.addEventListener('mouseup', onUp);
-
             doc.addEventListener('mousemove', (e) => {
                 if (!dragging) return;
                 const dx = e.clientX - startX, dy = e.clientY - startY;
                 startX = e.clientX; startY = e.clientY;
+
                 const W = doc.documentElement.clientWidth, H = doc.documentElement.clientHeight;
                 cx = Math.min(0.995, Math.max(0.005, cx + dx / W));
                 cy = Math.min(0.995, Math.max(0.005, cy + dy / H));
-                wrap.style.justifyContent = cx < 0.5 ? 'flex-start' : (cx > 0.5 ? 'flex-end' : 'center');
-                wrap.style.alignItems = cy < 0.5 ? 'flex-start' : (cy > 0.5 ? 'flex-end' : 'center');
+
+                // inside the tiny window, keep the video centered relative to cx/cy
+                (wrap.style as any).justifyContent = cx < 0.5 ? 'flex-start' : (cx > 0.5 ? 'flex-end' : 'center');
+                (wrap.style as any).alignItems = cy < 0.5 ? 'flex-start' : (cy > 0.5 ? 'flex-end' : 'center');
                 send();
             });
 
-            // scroll to resize; brief reveal
+            // Wheel to resize (also while holding Alt)
             doc.addEventListener('wheel', (e) => {
+                if (!interact) return; // avoid surprise resizes
                 e.preventDefault();
-                size = Math.min(0.6, Math.max(0.12, size + (e.deltaY < 0 ? 0.03 : -0.03)));
-                v.style.width = v.style.height = `${Math.round(size * 100)}%`;
-                v.style.opacity = '1';
-                clearTimeout((v as any)._hideT);
-                (v as any)._hideT = setTimeout(() => { if (!dragging) v.style.opacity = '0.02'; }, 600);
+                const clamp = (n: number, a: number, b: number) => Math.min(b, Math.max(a, n));
+                size = clamp(size + (e.deltaY < 0 ? 0.04 : -0.04), 0.12, 0.60);
+
+                // Try to physically shrink the window so it “feels minimized”
+                try {
+                    const px = Math.round(20 + size * 100); // 32..80ish
+                    // Note: resizeTo may be ignored by some builds — fallback to visual scaling
+                    (pipWindow as any).resizeTo?.(px, px);
+                } catch { }
+                reveal(1200);
                 send();
             }, { passive: false });
 
-            // Cleanup
+            // Double-click toggles dot mode (super tiny)
+            v.addEventListener('dblclick', () => {
+                if (size > 0.14) {
+                    size = 0.12;
+                    try { (pipWindow as any).resizeTo?.(22, 22); } catch { }
+                    v.style.opacity = '.04';
+                } else {
+                    size = 0.2;
+                    try { (pipWindow as any).resizeTo?.(36, 36); } catch { }
+                    reveal(1500);
+                }
+                send();
+            });
+
+            // Cleanup when user closes the window
             pipWindow.addEventListener('pagehide', () => {
                 pipWinRef.current = null;
-                setHudActive(false); // show page bubble again if needed
+                setHudActive(false);
             });
+
+            // initial post so the compositor positions the bubble
+            send();
             return;
         }
 
-        // --- Classic PiP fallback ---
+        // --- Classic PiP fallback (Safari/older Chromium) ---
         const el = hiddenPiPRef.current;
         if (el) {
             // @ts-ignore
             el.srcObject = camStream;
             try {
                 await el.requestPictureInPicture();
-                setHudActive(true); // hide page bubble while classic PiP is showing
+                setHudActive(true);
                 el.addEventListener('leavepictureinpicture', () => setHudActive(false), { once: true });
             } catch { }
         }
