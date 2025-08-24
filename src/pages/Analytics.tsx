@@ -322,14 +322,10 @@ export default function Analytics() {
   ];
 
   const handleKeywordClick = (keyword: string, traffic: number) => {
-    // Navigate to SERP results page
-    navigate('/serp-results', {
-      state: {
-        keyword: keyword,
-        website: domain,
-        traffic: traffic
-      }
-    });
+    // Open Google search results in a new tab
+    const searchQuery = encodeURIComponent(keyword);
+    const googleSearchUrl = `https://www.google.com/search?q=${searchQuery}`;
+    window.open(googleSearchUrl, '_blank');
   };
 
   const handleWebsiteSubmit = () => {

@@ -31,6 +31,8 @@ import CancelPage from "./pages/CancelPage";
 import CallForwardingPage from "./pages/CallForwarding";
 import VideoRecording from "./pages/VideoRecording";
 import VideoPlayer from "./components/VideoPlayer";
+import KeywordResearch from "./pages/KeywordResearch";
+import SavedKeywords from "./pages/SavedKeywords";
 import "./styles/twilio.css";
 
 // Create a theme instance
@@ -115,6 +117,8 @@ const AppContent = () => {
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/revenue" element={<Revenue />} />
             <Route path="/research" element={<Research />} />
+            <Route path="/keyword-research" element={<KeywordResearch />} />
+            <Route path="/saved-keywords" element={<SavedKeywords />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/serp-results" element={<SerpResults />} />
             <Route path="/success" element={<SuccessPage />} />
