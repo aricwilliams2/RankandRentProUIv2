@@ -297,9 +297,26 @@ export default function Clients() {
                 {client.reviews || 0} reviews
               </Typography>
               <Box sx={{ display: "flex", gap: 1 }}>
-                <IconButton size="small" color="primary" onClick={() => handleOpenChecklist(client)}>
-                  <CheckSquare size={16} />
-                </IconButton>
+                <Button
+                  size="small"
+                  variant="contained"
+                  onClick={() => handleOpenChecklist(client)}
+                  sx={{
+                    backgroundColor: '#4caf50',
+                    color: 'white',
+                    '&:hover': {
+                      backgroundColor: '#45a049',
+                    },
+                    fontSize: '0.75rem',
+                    px: 1,
+                    py: 0.5,
+                    minWidth: 'auto',
+                    textTransform: 'none',
+                  }}
+                  startIcon={<CheckSquare size={14} />}
+                >
+                  SEO Checklist 💰
+                </Button>
                 {client.website && (
                   <IconButton size="small" color="info" onClick={() => handleViewAnalytics(client)}>
                     <BarChart3 size={16} />
@@ -394,10 +411,27 @@ export default function Clients() {
                 </TableCell>
                 <TableCell align="right">
                   <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
-                    <Tooltip title="Client Checklist">
-                      <IconButton size="small" color="primary" onClick={() => handleOpenChecklist(client)}>
-                        <CheckSquare size={18} />
-                      </IconButton>
+                    <Tooltip title="SEO Checklist">
+                      <Button
+                        size="small"
+                        variant="contained"
+                        onClick={() => handleOpenChecklist(client)}
+                        sx={{
+                          backgroundColor: '#4caf50',
+                          color: 'white',
+                          '&:hover': {
+                            backgroundColor: '#45a049',
+                          },
+                          fontSize: '0.75rem',
+                          px: 1.5,
+                          py: 0.5,
+                          minWidth: 'auto',
+                          textTransform: 'none',
+                        }}
+                        startIcon={<CheckSquare size={14} />}
+                      >
+                        SEO Checklist 💰
+                      </Button>
                     </Tooltip>
                     {client.website && (
                       <Tooltip title="View Analytics">

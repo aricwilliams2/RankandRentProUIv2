@@ -159,14 +159,14 @@ const VideoPlayer: React.FC = () => {
                             </Typography>
                         )}
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-                            {video.user_name && (
+                            {/* {video.user_name && (
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <User size={16} />
                                     <Typography variant="body2" color="text.secondary">
                                         {video.user_name}
                                     </Typography>
                                 </Box>
-                            )}
+                            )} */}
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <Calendar size={16} />
                                 <Typography variant="body2" color="text.secondary">
@@ -181,12 +181,12 @@ const VideoPlayer: React.FC = () => {
                                     </Typography>
                                 </Box>
                             )}
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            {/* <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <Eye size={16} />
                                 <Typography variant="body2" color="text.secondary">
                                     {video.view_count} views
                                 </Typography>
-                            </Box>
+                            </Box> */}
                         </Box>
                     </CardContent>
                 </Card>
@@ -217,7 +217,7 @@ const VideoPlayer: React.FC = () => {
                 </Card>
 
                 {/* Video Information */}
-                <Card>
+                {/* <Card>
                     <CardContent>
                         <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <Play size={24} />
@@ -284,7 +284,7 @@ const VideoPlayer: React.FC = () => {
                             )}
                         </Grid>
                     </CardContent>
-                </Card>
+                </Card> */}
             </Box>
         </Box>
     );

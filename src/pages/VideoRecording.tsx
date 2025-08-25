@@ -1210,7 +1210,7 @@ const VideoLibrary: React.FC = () => {
     return (
         <Card>
             <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                {/* <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                     <Typography variant="h5">
                         <FileVideo size={24} style={{ marginRight: 8, verticalAlign: 'middle' }} />
                         Video Library
@@ -1222,7 +1222,7 @@ const VideoLibrary: React.FC = () => {
                     >
                         Upload Video
                     </Button>
-                </Box>
+                </Box> */}
 
                 {error && (
                     <Alert severity="error" sx={{ mb: 2 }}>
@@ -1249,19 +1249,20 @@ const VideoLibrary: React.FC = () => {
                                         primary={
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                                 <Typography variant="h6">{recording.title}</Typography>
-                                                <Chip
+                                                {/* <Chip
                                                     label={recording.recording_type}
                                                     size="small"
                                                     color="primary"
                                                     variant="outlined"
-                                                />
+                                                /> */}
                                                 {recording.is_public && (
-                                                    <Chip
-                                                        label="Public"
-                                                        size="small"
-                                                        color="success"
-                                                        variant="outlined"
-                                                    />
+                                                    // <Chip
+                                                    //     label="Public"
+                                                    //     size="small"
+                                                    //     color="success"
+                                                    //     variant="outlined"
+                                                    // />
+                                                    <div></div>
                                                 )}
                                             </Box>
                                         }
@@ -1271,23 +1272,23 @@ const VideoLibrary: React.FC = () => {
                                                     {recording.description || 'No description'}
                                                 </Typography>
                                                 <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
-                                                    <Chip
+                                                    {/* <Chip
                                                         icon={<Clock size={14} />}
                                                         label={formatDuration(recording.duration)}
                                                         size="small"
                                                         variant="outlined"
-                                                    />
+                                                    /> */}
                                                     <Chip
                                                         icon={<Eye size={14} />}
                                                         label={`${recording.view_count} views`}
                                                         size="small"
                                                         variant="outlined"
                                                     />
-                                                    <Chip
+                                                    {/* <Chip
                                                         label={formatFileSize(recording.file_size)}
                                                         size="small"
                                                         variant="outlined"
-                                                    />
+                                                    /> */}
                                                 </Box>
                                             </Box>
                                         }
