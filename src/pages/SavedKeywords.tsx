@@ -22,7 +22,7 @@ import {
     DialogActions,
     Pagination,
 } from '@mui/material';
-import { Delete, Edit, Search, Filter, Bookmark } from 'lucide-react';
+import { Delete, Edit, Search, Filter, Bookmark, Youtube } from 'lucide-react';
 import { useSavedKeywords } from '../hooks/useSavedKeywords';
 import { useAuth } from '../contexts/AuthContext';
 import posthog from 'posthog-js';
@@ -86,6 +86,12 @@ const SavedKeywords: React.FC = () => {
         } catch (error) {
             console.error('Failed to edit keyword:', error);
         }
+    };
+
+    const handleYouTubeSearch = (keyword: string) => {
+        const searchQuery = encodeURIComponent(keyword);
+        const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${searchQuery}`;
+        window.open(youtubeSearchUrl, '_blank');
     };
 
     if (!isAuthenticated) {
@@ -174,6 +180,14 @@ const SavedKeywords: React.FC = () => {
                                                     {keyword.keyword}
                                                 </Typography>
                                                 <Box>
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => handleYouTubeSearch(keyword.keyword)}
+                                                        title="Search on YouTube"
+                                                        color="error"
+                                                    >
+                                                        <Youtube size={16} />
+                                                    </IconButton>
                                                     <IconButton
                                                         size="small"
                                                         onClick={() => handleEdit(keyword)}

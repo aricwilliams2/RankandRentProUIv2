@@ -27,7 +27,7 @@ import {
     DialogActions,
     Tooltip,
 } from '@mui/material';
-import { Search, TrendingUp, Target, Calendar, Bookmark, BookmarkPlus, Save, X } from 'lucide-react';
+import { Search, TrendingUp, Target, Calendar, Bookmark, BookmarkPlus, Save, X, Youtube } from 'lucide-react';
 import posthog from 'posthog-js';
 import { useAuth } from '../contexts/AuthContext';
 import { useSavedKeywords } from '../hooks/useSavedKeywords';
@@ -244,6 +244,12 @@ const KeywordResearch: React.FC = () => {
         setActiveTab(newValue);
     };
 
+    const handleYouTubeSearch = (keyword: string) => {
+        const searchQuery = encodeURIComponent(keyword);
+        const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${searchQuery}`;
+        window.open(youtubeSearchUrl, '_blank');
+    };
+
     const renderSuggestionCard = (suggestion: KeywordSuggestion, index: number, category: 'idea' | 'question') => (
         <Grid item xs={12} sm={6} md={4} key={index}>
             <Card
@@ -273,15 +279,26 @@ const KeywordResearch: React.FC = () => {
                             {suggestion.keyword}
                         </Typography>
 
-                        <Tooltip title={savedStatus[suggestion.keyword] ? 'Already saved' : 'Save keyword'}>
-                            <IconButton
-                                onClick={() => handleSaveKeyword(suggestion, category)}
-                                color={savedStatus[suggestion.keyword] ? 'primary' : 'default'}
-                                size="small"
-                            >
-                                {savedStatus[suggestion.keyword] ? <Bookmark size={16} /> : <BookmarkPlus size={16} />}
-                            </IconButton>
-                        </Tooltip>
+                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                            <Tooltip title="Search on YouTube">
+                                <IconButton
+                                    onClick={() => handleYouTubeSearch(suggestion.keyword)}
+                                    color="error"
+                                    size="small"
+                                >
+                                    <Youtube size={16} />
+                                </IconButton>
+                            </Tooltip>
+                            <Tooltip title={savedStatus[suggestion.keyword] ? 'Already saved' : 'Save keyword'}>
+                                <IconButton
+                                    onClick={() => handleSaveKeyword(suggestion, category)}
+                                    color={savedStatus[suggestion.keyword] ? 'primary' : 'default'}
+                                    size="small"
+                                >
+                                    {savedStatus[suggestion.keyword] ? <Bookmark size={16} /> : <BookmarkPlus size={16} />}
+                                </IconButton>
+                            </Tooltip>
+                        </Box>
                     </Box>
 
                     <Divider sx={{ my: 2 }} />
