@@ -33,6 +33,7 @@ import VideoRecording from "./pages/VideoRecording";
 import VideoPlayer from "./components/VideoPlayer";
 import KeywordResearch from "./pages/KeywordResearch";
 import SavedKeywords from "./pages/SavedKeywords";
+import Tasks from "./pages/Tasks";
 import "./styles/twilio.css";
 
 // Create a theme instance
@@ -119,6 +120,7 @@ const AppContent = () => {
             <Route path="/research" element={<Research />} />
             <Route path="/keyword-research" element={<KeywordResearch />} />
             <Route path="/saved-keywords" element={<SavedKeywords />} />
+            <Route path="/tasks" element={<Tasks />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/serp-results" element={<SerpResults />} />
             <Route path="/success" element={<SuccessPage />} />

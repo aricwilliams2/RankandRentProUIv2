@@ -22,17 +22,17 @@ export const useAnalyticsApi = () => {
     }
   }, []);
 
-  const getWebsiteBacklinks = useCallback(async (websiteId: string): Promise<any[]> => {
+  const getWebsiteBacklinks = useCallback(async (websiteUrl: string): Promise<any> => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await apiCall(`/api/analytics/websites/${websiteId}/backlinks`);
+      const response = await apiCall(`/api/website-backlinks?url=${encodeURIComponent(websiteUrl)}&mode=subdomains`);
       const data = await response.json();
       return data;
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred");
-      return [];
+      return { backlinksList: [] };
     } finally {
       setLoading(false);
     }

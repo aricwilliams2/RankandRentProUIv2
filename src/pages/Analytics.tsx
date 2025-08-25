@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useApiContext } from '../contexts/ApiContext';
 import {
   Box,
   Card,
@@ -30,6 +31,7 @@ import {
   Select,
   InputLabel,
   FormHelperText,
+  Stack,
 } from '@mui/material';
 import {
   LineChart,
@@ -55,6 +57,9 @@ import {
   ExternalLink,
   Map,
   X,
+  Star,
+  Link,
+  Users,
 } from 'lucide-react';
 
 interface TrafficData {
@@ -90,8 +95,12 @@ export default function Analytics() {
   const location = useLocation();
   const navigate = useNavigate();
   const theme = useTheme();
+  const { getWebsiteBacklinks } = useApiContext();
 
   const [trafficData, setTrafficData] = useState<TrafficData | null>(null);
+  const [backlinksData, setBacklinksData] = useState<any[]>([]);
+  const [backlinksMetrics, setBacklinksMetrics] = useState<any>(null);
+  const [backlinksLoading, setBacklinksLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [websiteInput, setWebsiteInput] = useState('');
@@ -179,17 +188,70 @@ export default function Analytics() {
       const response = await apiCall(`/api/website-traffic?url=${encodedUrl}&mode=${mode}`);
 
       if (!response.ok) {
-        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch traffic data');
       }
 
       const data = await response.json();
       setTrafficData(data);
-      setIsCachedData(false);
       setCachedTraffic(domain, mode, data);
+      setIsCachedData(false);
+
+      // Fetch backlinks data after traffic data is loaded
+      await fetchBacklinksData(domain);
+
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch traffic data');
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchBacklinksData = async (websiteUrl: string, setLoadingState: boolean = false) => {
+    if (!websiteUrl) return;
+
+    if (setLoadingState) {
+      setBacklinksLoading(true);
+    }
+
+    try {
+      // Ensure we have a full URL with protocol for the backlinks API
+      let fullUrl = websiteUrl;
+      if (!websiteUrl.startsWith('http://') && !websiteUrl.startsWith('https://')) {
+        // If no protocol provided, assume https://
+        fullUrl = `https://${websiteUrl}`;
+      }
+
+      const response = await getWebsiteBacklinks(fullUrl);
+
+      // The API returns an object with backlinksList property
+      if (response && typeof response === 'object' && 'backlinksList' in response && Array.isArray((response as any).backlinksList)) {
+        setBacklinksData((response as any).backlinksList);
+        // Store the metrics data
+        setBacklinksMetrics({
+          domainRating: (response as any).domainRating,
+          urlRating: (response as any).urlRating,
+          backlinks: (response as any).backlinks,
+          refdomains: (response as any).refdomains,
+          dofollowBacklinks: (response as any).dofollowBacklinks,
+          dofollowRefdomains: (response as any).dofollowRefdomains,
+        });
+      } else if (Array.isArray(response)) {
+        // Fallback for direct array response
+        setBacklinksData(response);
+        setBacklinksMetrics(null);
+      } else {
+        setBacklinksData([]);
+        setBacklinksMetrics(null);
+      }
+    } catch (err) {
+      console.error('Failed to fetch backlinks:', err);
+      setBacklinksData([]);
+      setBacklinksMetrics(null);
+    } finally {
+      if (setLoadingState) {
+        setBacklinksLoading(false);
+      }
     }
   };
 
@@ -311,6 +373,25 @@ export default function Analytics() {
     if (position <= 3) return theme.palette.success.main;
     if (position <= 10) return theme.palette.warning.main;
     return theme.palette.error.main;
+  };
+
+  const getDomainRatingColor = (dr: number | string) => {
+    if (typeof dr === 'string') {
+      const numDr = parseFloat(dr);
+      if (isNaN(numDr)) return 'default';
+      dr = numDr;
+    }
+
+    if (dr >= 70) return 'success';
+    if (dr >= 50) return 'warning';
+    if (dr >= 30) return 'info';
+    return 'error';
+  };
+
+  const handleBacklinkClick = (url: string) => {
+    if (url && url !== 'N/A') {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
   };
 
   const COLORS = [
@@ -497,13 +578,13 @@ export default function Analytics() {
   }
 
 
-  if (loading) {
+  if (loading || backlinksLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
         <Box sx={{ textAlign: 'center' }}>
           <CircularProgress size={60} />
           <Typography variant="h6" sx={{ mt: 2 }}>
-            Analyzing website traffic...
+            Analyzing website traffic and backlinks...
           </Typography>
           <Typography variant="body2" color="text.secondary">
             {domain}
@@ -616,7 +697,7 @@ export default function Analytics() {
 
         {/* Key Metrics */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={2}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
@@ -626,7 +707,7 @@ export default function Analytics() {
                   </Typography>
                 </Box>
                 <Typography variant="h4" fontWeight="bold">
-                  {trafficData.trafficMonthlyAvg}
+                  {trafficData?.trafficMonthlyAvg || 'N/A'}
                 </Typography>
                 <Typography color="text.secondary" variant="body2">
                   Organic Traffic
@@ -635,45 +716,108 @@ export default function Analytics() {
             </Card>
           </Grid>
 
-          <Grid item xs={12} sm={6} md={3}>
+          {/* Domain Rating */}
+          <Grid item xs={12} sm={6} md={2}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                  <DollarSign size={24} color={theme.palette.success.main} />
+                  <Star size={24} color={theme.palette.warning.main} />
                   <Typography color="text.secondary" variant="body2">
-                    Monthly Value
+                    Domain Rating
                   </Typography>
                 </Box>
                 <Typography variant="h4" fontWeight="bold">
-                  ${trafficData.costMonthlyAvg.toFixed(2)}
+                  {backlinksMetrics?.domainRating || 0}
                 </Typography>
                 <Typography color="text.secondary" variant="body2">
-                  Traffic Value
+                  DR Score
                 </Typography>
               </CardContent>
             </Card>
           </Grid>
 
-          <Grid item xs={12} sm={6} md={3}>
+          {/* URL Rating */}
+          <Grid item xs={12} sm={6} md={2}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                  <Activity size={24} color={theme.palette.warning.main} />
+                  <Star size={24} color={theme.palette.info.main} />
                   <Typography color="text.secondary" variant="body2">
-                    Period Avg
+                    URL Rating
                   </Typography>
                 </Box>
                 <Typography variant="h4" fontWeight="bold">
-                  {avgTraffic}
+                  {backlinksMetrics?.urlRating || 'N/A'}
                 </Typography>
                 <Typography color="text.secondary" variant="body2">
-                  Visits/Month
+                  URL Score
                 </Typography>
               </CardContent>
             </Card>
           </Grid>
 
-          <Grid item xs={12} sm={6} md={3}>
+          {/* Total Backlinks */}
+          <Grid item xs={12} sm={6} md={2}>
+            <Card>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                  <Link size={24} color={theme.palette.primary.main} />
+                  <Typography color="text.secondary" variant="body2">
+                    Total Backlinks
+                  </Typography>
+                </Box>
+                <Typography variant="h4" fontWeight="bold">
+                  {backlinksMetrics?.backlinks || 'N/A'}
+                </Typography>
+                <Typography color="text.secondary" variant="body2">
+                  Total links pointing to your site from other pages.                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Referring Domains */}
+          <Grid item xs={12} sm={6} md={2}>
+            <Card>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                  <Globe size={24} color={theme.palette.success.main} />
+                  <Typography color="text.secondary" variant="body2">
+                    Referring Domains
+                  </Typography>
+                </Box>
+                <Typography variant="h4" fontWeight="bold">
+                  {backlinksMetrics?.refdomains || 'N/A'}
+                </Typography>
+                <Typography color="text.secondary" variant="body2">
+                  Unique websites that link to you.
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Dofollow Backlinks */}
+          <Grid item xs={12} sm={6} md={2}>
+            <Card>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                  <Link size={24} color={theme.palette.error.main} />
+                  <Typography color="text.secondary" variant="body2">
+                    Dofollow Links
+                  </Typography>
+                </Box>
+                <Typography variant="h4" fontWeight="bold">
+                  {backlinksMetrics?.dofollowBacklinks || 'N/A'}
+                </Typography>
+                <Typography color="text.secondary" variant="body2">
+                  Links that pass ranking power to your site.                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+
+
+
+
+          <Grid item xs={12} sm={6} md={2}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
@@ -683,7 +827,7 @@ export default function Analytics() {
                   </Typography>
                 </Box>
                 <Typography variant="h4" fontWeight="bold">
-                  {trafficData.top_keywords.length}
+                  {trafficData?.top_keywords?.length || 'N/A'}
                 </Typography>
                 <Typography color="text.secondary" variant="body2">
                   Ranking Keywords
@@ -819,12 +963,16 @@ export default function Analytics() {
           <Grid item xs={12} md={4}>
             <Card>
               <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-                  <MapPin size={24} />
-                  <Typography variant="h6" fontWeight="medium">
-                    Traffic by Country
+                <Stack spacing={0.5} sx={{ mb: 3 }}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <MapPin size={24} />
+                    <Typography variant="h6" fontWeight="medium">Traffic by Country</Typography>
+                  </Stack>
+                  <Typography color="text.secondary" variant="body2">
+                    For small sites, non-US visits are usually bots/scrapers—spam, not customers.
                   </Typography>
-                </Box>
+                </Stack>
+
                 <Box sx={{ height: 200, mb: 2 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -935,6 +1083,98 @@ export default function Analytics() {
             </Card>
           </Grid>
         </Grid>
+
+        {/* Backlinks Section */}
+        <Grid container spacing={3} sx={{ mt: 3 }}>
+          <Grid item xs={12}>
+            <Card>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+                  <Activity size={24} />
+                  <Typography variant="h6" fontWeight="medium">
+                    Backlinks
+                  </Typography>
+                  {backlinksLoading && (
+                    <CircularProgress size={20} sx={{ ml: 1 }} />
+                  )}
+                </Box>
+                {backlinksLoading ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                    <CircularProgress />
+                  </Box>
+                ) : backlinksData.length > 0 ? (
+                  <TableContainer>
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Referring Domain</TableCell>
+                          <TableCell>Page URL</TableCell>
+                          <TableCell align="center">Domain Rating</TableCell>
+                          <TableCell align="center">Actions</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {backlinksData.map((backlink, index) => (
+                          <TableRow
+                            key={index}
+                            onClick={() => handleBacklinkClick(backlink.url)}
+                            sx={{ cursor: 'pointer', '&:hover': { backgroundColor: 'action.hover' } }}
+                          >
+                            <TableCell>
+                              <Typography variant="body2" fontWeight="medium">
+                                {backlink.url ? new URL(backlink.url).hostname : 'N/A'}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  whiteSpace: 'normal',
+                                  overflowWrap: 'anywhere',
+                                  wordBreak: 'break-word',
+                                  maxWidth: 300
+                                }}
+                              >
+                                {backlink.url || 'N/A'}
+                              </Typography>
+                            </TableCell>
+                            <TableCell align="center">
+                              <Chip
+                                label={backlink.domain_rating || 'N/A'}
+                                size="small"
+                                color={getDomainRatingColor(backlink.domain_rating)}
+                                variant="outlined"
+                              />
+                            </TableCell>
+                            <TableCell align="center">
+                              <Button
+                                size="small"
+                                startIcon={<ExternalLink size={16} />}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleBacklinkClick(backlink.url);
+                                }}
+                                disabled={!backlink.url}
+                              >
+                                Visit
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                ) : (
+                  <Box sx={{ textAlign: 'center', py: 4 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      No backlinks data available
+                    </Typography>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
       </Box>
       <AnalyticsHistorySection />
     </Box>
@@ -962,6 +1202,8 @@ interface AnalyticsPayload {
   history?: any[];
   top_keywords?: any[];
   top_pages?: any[];
+  backlinksList?: any[];
+  backlinksMetrics?: any;
   [k: string]: any;
 }
 
@@ -1068,11 +1310,15 @@ function AnalyticsHistorySection() {
       const histories = details.map(d => (d as any).history || (d as any).traffic_history || []);
       const keywords = details.map(d => (d as any).top_keywords || []);
       const pages = details.map(d => (d as any).top_pages || []);
+      const backlinks = details.map(d => (d as any).backlinksList || []);
+      const backlinksMetrics = details.map(d => (d as any).backlinksMetrics || {});
 
       const mergedPayload: AnalyticsPayload = {
         history: mergeArrays(histories, (x) => String(x.date ?? x.label ?? x.month ?? x.period ?? JSON.stringify(x))),
         top_keywords: mergeArrays(keywords, (x) => String(typeof x === 'string' ? x : (x.keyword ?? x.term ?? x.query ?? JSON.stringify(x)))),
         top_pages: mergeArrays(pages, (x) => String(typeof x === 'string' ? x : (x.url ?? x.page ?? x.path ?? JSON.stringify(x)))),
+        backlinksList: mergeArrays(backlinks, (x) => String(x.url ?? x.page_url ?? JSON.stringify(x))),
+        backlinksMetrics: backlinksMetrics.length > 0 ? backlinksMetrics[0] : {},
       };
       setPayload(mergedPayload);
     } catch (e: any) {
@@ -1191,6 +1437,16 @@ function AnalyticsHistorySection() {
 
               {/* Normalize helpers */}
               {(() => {
+                // Helper function for domain rating color coding
+                const getDomainRatingColor = (rating: number | string | null | undefined) => {
+                  if (!rating || rating === 'N/A') return 'default';
+                  const numRating = typeof rating === 'string' ? parseFloat(rating) : rating;
+                  if (numRating >= 70) return 'success';
+                  if (numRating >= 50) return 'warning';
+                  if (numRating >= 30) return 'info';
+                  return 'error';
+                };
+
                 const normalizeNumber = (val: any): number => {
                   if (typeof val === 'number') return val;
                   if (typeof val !== 'string') return 0;
@@ -1295,7 +1551,7 @@ function AnalyticsHistorySection() {
                     </Card>
 
                     {/* Top Pages */}
-                    <Card>
+                    <Card sx={{ mb: 3 }}>
                       <CardContent>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                           <Globe size={20} />
@@ -1333,6 +1589,125 @@ function AnalyticsHistorySection() {
                         </TableContainer>
                       </CardContent>
                     </Card>
+
+                    {/* Backlinks Metrics */}
+                    {(payload as any).backlinksMetrics && Object.keys((payload as any).backlinksMetrics).length > 0 && (
+                      <Card sx={{ mb: 3 }}>
+                        <CardContent>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                            <Link size={20} />
+                            <Typography variant="subtitle1">Backlinks Overview</Typography>
+                          </Box>
+                          <Grid container spacing={2}>
+                            <Grid item xs={6} sm={3}>
+                              <Box sx={{ textAlign: 'center', p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                                <Typography variant="h6" fontWeight="bold">
+                                  {(payload as any).backlinksMetrics.domainRating || 'N/A'}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                  Domain Rating
+                                </Typography>
+                              </Box>
+                            </Grid>
+                            <Grid item xs={6} sm={3}>
+                              <Box sx={{ textAlign: 'center', p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                                <Typography variant="h6" fontWeight="bold">
+                                  {(payload as any).backlinksMetrics.urlRating || 'N/A'}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                  URL Rating
+                                </Typography>
+                              </Box>
+                            </Grid>
+                            <Grid item xs={6} sm={3}>
+                              <Box sx={{ textAlign: 'center', p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                                <Typography variant="h6" fontWeight="bold">
+                                  {(payload as any).backlinksMetrics.backlinks || 'N/A'}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                  Total Backlinks
+                                </Typography>
+                              </Box>
+                            </Grid>
+                            <Grid item xs={6} sm={3}>
+                              <Box sx={{ textAlign: 'center', p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                                <Typography variant="h6" fontWeight="bold">
+                                  {(payload as any).backlinksMetrics.refdomains || 'N/A'}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                  Ref Domains
+                                </Typography>
+                              </Box>
+                            </Grid>
+                          </Grid>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Backlinks List */}
+                    {(payload as any).backlinksList && (payload as any).backlinksList.length > 0 && (
+                      <Card>
+                        <CardContent>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                            <Link size={20} />
+                            <Typography variant="subtitle1">Backlinks</Typography>
+                          </Box>
+                          <TableContainer>
+                            <Table>
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell>Referring Domain</TableCell>
+                                  <TableCell>Page URL</TableCell>
+                                  <TableCell align="center">Domain Rating</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {(payload as any).backlinksList.slice(0, 20).map((backlink: any, i: number) => (
+                                  <TableRow key={i}>
+                                    <TableCell>
+                                      <Typography variant="body2" fontWeight="medium">
+                                        {backlink.url ? new URL(backlink.url).hostname : 'N/A'}
+                                      </Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Typography
+                                        variant="body2"
+                                        sx={{
+                                          whiteSpace: 'normal',
+                                          overflowWrap: 'anywhere',
+                                          wordBreak: 'break-word',
+                                          maxWidth: 300
+                                        }}
+                                      >
+                                        {backlink.url || 'N/A'}
+                                      </Typography>
+                                    </TableCell>
+                                    <TableCell align="center">
+                                      <Chip
+                                        label={backlink.domain_rating || 'N/A'}
+                                        size="small"
+                                        color={getDomainRatingColor(backlink.domain_rating)}
+                                        variant="outlined"
+                                      />
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                                {(payload as any).backlinksList.length === 0 && (
+                                  <TableRow>
+                                    <TableCell colSpan={3}><Typography variant="body2" color="text.secondary">No backlinks data.</Typography></TableCell>
+                                  </TableRow>
+                                )}
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
+                          {(payload as any).backlinksList.length > 20 && (
+                            <Typography variant="body2" color="text.secondary" sx={{ mt: 2, textAlign: 'center' }}>
+                              Showing first 20 of {(payload as any).backlinksList.length} backlinks
+                            </Typography>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )}
                   </Box>
                 );
               })()}

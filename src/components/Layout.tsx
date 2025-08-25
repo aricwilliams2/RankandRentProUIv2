@@ -1,21 +1,22 @@
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Box, Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, useTheme, useMediaQuery, AppBar, Toolbar, IconButton, Avatar, Menu, MenuItem } from "@mui/material";
-import { LayoutDashboard, Users, Phone, LineChart, Settings, Menu as MenuIcon, X, LogOut, User, Video, Search, Bookmark } from "lucide-react";
+import { LayoutDashboard, Users, Phone, LineChart, Settings, Menu as MenuIcon, X, LogOut, User, Video, Search, Bookmark, CheckSquare } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import posthog from 'posthog-js';
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+  { icon: CheckSquare, label: "Tasks", path: "/tasks" },
+  { icon: Search, label: "Keyword Research", path: "/keyword-research" },
+  { icon: Bookmark, label: "Saved Keywords", path: "/saved-keywords" },
   { icon: Users, label: "Leads", path: "/Leads" },
-  { icon: Users, label: "Clients", path: "/clients" },
+  { icon: Users, label: "Rank-to-Revenue", path: "/clients" },
   // { icon: CheckSquare, label: "Checklists", path: "/checklists" },
   { icon: LineChart, label: "Analytics", path: "/analytics" },
   // { icon: Globe, label: "Websites", path: "/websites" },
   { icon: Phone, label: "Phone Numbers", path: "/phone-numbers" },
   { icon: Video, label: "Video Recording", path: "/video-recording" },
-  { icon: Search, label: "Keyword Research", path: "/keyword-research" },
-  { icon: Bookmark, label: "Saved Keywords", path: "/saved-keywords" },
   // { icon: Calculator, label: "Revenue", path: "/revenue" },
   // { icon: Search, label: "Research", path: "/research" },
   //{ icon: Settings, label: "Settings", path: "/settings" },
