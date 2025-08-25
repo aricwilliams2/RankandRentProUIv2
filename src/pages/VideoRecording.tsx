@@ -1295,7 +1295,7 @@ const VideoLibrary: React.FC = () => {
                                     />
                                     <ListItemSecondaryAction>
                                         <Box sx={{ display: 'flex', gap: 1 }}>
-                                            <IconButton
+                                            {/* <IconButton
                                                 onClick={() => {
                                                     setSelectedRecording(recording);
                                                     fetchAnalytics(recording.id);
@@ -1303,7 +1303,7 @@ const VideoLibrary: React.FC = () => {
                                                 title="View Analytics"
                                             >
                                                 <BarChart3 size={20} />
-                                            </IconButton>
+                                            </IconButton> */}
                                             <IconButton
                                                 onClick={() => window.open(generateShareableUrl(recording.shareable_id || ''), '_blank')}
                                                 title="View Video"
