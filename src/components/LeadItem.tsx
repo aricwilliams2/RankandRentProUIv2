@@ -11,9 +11,11 @@ import LeadFormDialog from "./LeadFormDialog";
 interface LeadItemProps {
   lead: Lead;
   index: number;
+  isSelected?: boolean;
+  onSelectionChange?: (leadId: string) => void;
 }
 
-const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index }, ref) => {
+const LeadItem = forwardRef<HTMLTableRowElement, LeadItemProps>(({ lead, index, isSelected, onSelectionChange }, ref) => {
   const { setLastCalledIndex, toggleContactStatus, addCallLog, updateCallLog, deleteLead, refreshLeads, deleteCallLog } = useLeadContext();
   const { createClient } = useClientContext();
   const { user } = useAuth();
@@ -610,9 +612,20 @@ I recorded a quick video that shows how your business shows up (or doesn't) in v
 
   // Mobile card layout
   const MobileCard = () => (
-    <div className={`cursor-pointer transition-colors ${lead.contacted ? "bg-green-50/50" : "bg-white"} ${isFollowUpDue ? "border-l-4 border-orange-400" : ""} ${deleting ? "opacity-50" : ""}`} onClick={handleRowClick}>
+    <div className={`cursor-pointer transition-colors ${lead.contacted ? "bg-green-50/50" : "bg-white"} ${isFollowUpDue ? "border-l-4 border-orange-400" : ""} ${deleting ? "opacity-50" : ""} ${isSelected ? "bg-blue-50" : ""}`} onClick={handleRowClick}>
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-start gap-2 flex-1 min-w-0">
+          {onSelectionChange && (
+            <input
+              type="checkbox"
+              checked={isSelected || false}
+              onChange={(e) => {
+                e.stopPropagation();
+                onSelectionChange(lead.id);
+              }}
+              className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+            />
+          )}
           <div className={`mt-1 flex-shrink-0 w-4 h-4 rounded-full border ${lead.contacted ? "bg-green-500 border-green-600" : "border-gray-300"} flex items-center justify-center`}>{lead.contacted && <Check className="w-3 h-3 text-white" />}</div>
           <div className="min-w-0 flex-1">
             <div className="font-medium text-sm truncate flex items-center gap-2">
@@ -832,7 +845,21 @@ I recorded a quick video that shows how your business shows up (or doesn't) in v
       </div>
 
       {/* Desktop Table Row (compact) */}
-      <tr ref={ref} className={`hidden sm:table-row border-b transition-colors cursor-pointer hover:bg-blue-50 even:bg-gray-50 ${lead.contacted ? "bg-green-50/50" : ""} ${isFollowUpDue ? "border-l-4 border-orange-400" : ""} ${deleting ? "opacity-50" : ""}`} onClick={handleRowClick}>
+      <tr ref={ref} className={`hidden sm:table-row border-b transition-colors cursor-pointer hover:bg-blue-50 even:bg-gray-50 ${lead.contacted ? "bg-green-50/50" : ""} ${isFollowUpDue ? "border-l-4 border-orange-400" : ""} ${deleting ? "opacity-50" : ""} ${isSelected ? "bg-blue-50" : ""}`} onClick={handleRowClick}>
+        {/* Checkbox */}
+        <td className="p-3 lg:p-4">
+          {onSelectionChange && (
+            <input
+              type="checkbox"
+              checked={isSelected || false}
+              onChange={(e) => {
+                e.stopPropagation();
+                onSelectionChange(lead.id);
+              }}
+              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+            />
+          )}
+        </td>
         {/* Business */}
         <td className="p-3 lg:p-4">
           <div className="flex items-start gap-2">
@@ -882,7 +909,7 @@ I recorded a quick video that shows how your business shows up (or doesn't) in v
 
       {/* Under-row: Call Log, Call History, Actions */}
       <tr className="hidden sm:table-row">
-        <td colSpan={3} className="p-3 pt-0 lg:p-4 lg:pt-0">
+        <td colSpan={4} className="p-3 pt-0 lg:p-4 lg:pt-0">
           <div className={`flex flex-col gap-3 rounded-md bg-white ring-1 shadow-sm ring-gray-200 border-l-4 ${getStatusAccentBorder(lead.status)} px-3 py-3`}>
             {/* Actions row */}
             <div className="flex items-center gap-1 flex-wrap">
@@ -1064,7 +1091,7 @@ I recorded a quick video that shows how your business shows up (or doesn't) in v
 
       {/* Spacer row for visual separation */}
       <tr className="hidden sm:table-row">
-        <td colSpan={3} className="py-1"></td>
+        <td colSpan={4} className="py-1"></td>
       </tr>
 
       {/* Call Logging Dialog */}
