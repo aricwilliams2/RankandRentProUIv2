@@ -623,7 +623,7 @@ I recorded a quick video that shows how your business shows up (or doesn't) in v
                 e.stopPropagation();
                 onSelectionChange(lead.id);
               }}
-              className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+              className="mt-0 w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-1"
             />
           )}
           <div className={`mt-1 flex-shrink-0 w-4 h-4 rounded-full border ${lead.contacted ? "bg-green-500 border-green-600" : "border-gray-300"} flex items-center justify-center`}>{lead.contacted && <Check className="w-3 h-3 text-white" />}</div>
@@ -847,7 +847,7 @@ I recorded a quick video that shows how your business shows up (or doesn't) in v
       {/* Desktop Table Row (compact) */}
       <tr ref={ref} className={`hidden sm:table-row border-b transition-colors cursor-pointer hover:bg-blue-50 even:bg-gray-50 ${lead.contacted ? "bg-green-50/50" : ""} ${isFollowUpDue ? "border-l-4 border-orange-400" : ""} ${deleting ? "opacity-50" : ""} ${isSelected ? "bg-blue-50" : ""}`} onClick={handleRowClick}>
         {/* Checkbox */}
-        <td className="p-3 lg:p-4">
+        <td className="p-1 lg:p-2">
           {onSelectionChange && (
             <input
               type="checkbox"
@@ -856,7 +856,7 @@ I recorded a quick video that shows how your business shows up (or doesn't) in v
                 e.stopPropagation();
                 onSelectionChange(lead.id);
               }}
-              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+              className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-1"
             />
           )}
         </td>
