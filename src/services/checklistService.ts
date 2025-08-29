@@ -1,5 +1,7 @@
 import axios from 'axios';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://newrankandrentapi.onrender.com';
+
 export interface ChecklistCompletion {
   id: number;
   user_id: number;
@@ -28,7 +30,7 @@ class ChecklistService {
 
   // Get all checklist completion status for a client
   async getClientChecklist(clientId: number): Promise<Record<string, ChecklistCompletion>> {
-    const response = await axios.get(`/api/checklist/client/${clientId}`, {
+    const response = await axios.get(`${API_BASE_URL}/api/checklist/client/${clientId}`, {
       headers: this.getHeaders()
     });
     return response.data.data;
@@ -36,7 +38,7 @@ class ChecklistService {
 
   // Toggle completion status of a checklist item
   async toggleChecklistItem(clientId: number, itemId: string, isCompleted?: boolean): Promise<ChecklistCompletion> {
-    const response = await axios.put(`/api/checklist/client/${clientId}/item/${itemId}/toggle`, 
+    const response = await axios.put(`${API_BASE_URL}/api/checklist/client/${clientId}/item/${itemId}/toggle`, 
       { isCompleted }, 
       { headers: this.getHeaders() }
     );
@@ -45,7 +47,7 @@ class ChecklistService {
 
   // Mark a checklist item as completed
   async markAsCompleted(clientId: number, itemId: string): Promise<ChecklistCompletion> {
-    const response = await axios.put(`/api/checklist/client/${clientId}/item/${itemId}/complete`, {}, {
+    const response = await axios.put(`${API_BASE_URL}/api/checklist/client/${clientId}/item/${itemId}/complete`, {}, {
       headers: this.getHeaders()
     });
     return response.data.data;
@@ -53,7 +55,7 @@ class ChecklistService {
 
   // Mark a checklist item as incomplete
   async markAsIncomplete(clientId: number, itemId: string): Promise<ChecklistCompletion> {
-    const response = await axios.put(`/api/checklist/client/${clientId}/item/${itemId}/incomplete`, {}, {
+    const response = await axios.put(`${API_BASE_URL}/api/checklist/client/${clientId}/item/${itemId}/incomplete`, {}, {
       headers: this.getHeaders()
     });
     return response.data.data;
@@ -61,7 +63,7 @@ class ChecklistService {
 
   // Get completion statistics for a client
   async getCompletionStats(clientId: number): Promise<CompletionStats> {
-    const response = await axios.get(`/api/checklist/client/${clientId}/stats`, {
+    const response = await axios.get(`${API_BASE_URL}/api/checklist/client/${clientId}/stats`, {
       headers: this.getHeaders()
     });
     return response.data.data;
@@ -69,7 +71,7 @@ class ChecklistService {
 
   // Get completed items for a client
   async getCompletedItems(clientId: number): Promise<ChecklistCompletion[]> {
-    const response = await axios.get(`/api/checklist/client/${clientId}/completed`, {
+    const response = await axios.get(`${API_BASE_URL}/api/checklist/client/${clientId}/completed`, {
       headers: this.getHeaders()
     });
     return response.data.data;
@@ -77,7 +79,7 @@ class ChecklistService {
 
   // Get incomplete items for a client
   async getIncompleteItems(clientId: number): Promise<ChecklistCompletion[]> {
-    const response = await axios.get(`/api/checklist/client/${clientId}/incomplete`, {
+    const response = await axios.get(`${API_BASE_URL}/api/checklist/client/${clientId}/incomplete`, {
       headers: this.getHeaders()
     });
     return response.data.data;
@@ -85,7 +87,7 @@ class ChecklistService {
 
   // Reset all checklist items for a client
   async resetClientChecklist(clientId: number): Promise<void> {
-    await axios.delete(`/api/checklist/client/${clientId}/reset`, {
+    await axios.delete(`${API_BASE_URL}/api/checklist/client/${clientId}/reset`, {
       headers: this.getHeaders()
     });
   }
